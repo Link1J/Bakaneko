@@ -1,0 +1,6 @@
+/build/*
+/.vscode/*
+*.kdev4
+compile_commands.json
+/apks/*
+/install/*

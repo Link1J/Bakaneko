@@ -1,0 +1,20 @@
+<!--
+    SPDX-License-Identifier: GPL-3.0-or-later
+    SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
+-->
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/">
+        <file>ui/main.qml</file>
+
+        <file>ui/Bakaneko/Pages/qmldir</file>
+        <file>ui/Bakaneko/Pages/ServerListPage.qml</file>
+        <file>ui/Bakaneko/Pages/ServerPage.qml</file>
+
+        <file>ui/Bakaneko/Components/qmldir</file>
+        <file>ui/Bakaneko/Components/ServerListItem.qml</file>
+
+        <file>ui/Bakaneko/Dialogs/qmldir</file>
+        <file>ui/Bakaneko/Dialogs/AddServerDialog.qml</file>
+    </qresource>
+</RCC>

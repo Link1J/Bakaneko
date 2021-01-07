@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Bakaneko
+Comment=A server management tool
+Version=0.0.1
+Exec=bakaneko
+Icon=me.link1j.bakaneko
+Type=Application
+Terminal=false
+Categories=Network;

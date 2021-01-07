@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component type="desktop-application">
+  <id>me.link1j.bakaneko</id>
+
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <name>Bakaneko</name>
+  <summary>A server management tool</summary>
+  <description>
+    <p>A server management tool that has nothing to do with cats.</p>
+  </description>
+
+  <developer_name>Link1J</developer_name>
+
+  <categories>
+    <category>Network</category>
+  </categories>
+
+  <launchable type="desktop-id">me.link1j.bakaneko.desktop</launchable>
+</component>

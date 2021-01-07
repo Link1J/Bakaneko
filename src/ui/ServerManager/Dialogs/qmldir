@@ -1,0 +1,2 @@
+module ServerManager.Dialogs
+AddServer 1.0 AddServerDialog.qml

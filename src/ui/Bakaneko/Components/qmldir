@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
+
+module Bakaneko.Components
+ServerListItem 1.0 ServerListItem.qml
