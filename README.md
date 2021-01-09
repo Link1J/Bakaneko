@@ -37,7 +37,7 @@ cmake ..
 #### Requirements
 - A C++ compiler with C++17 support
 - [cmake](https://cmake.org/) >= 3.17
-- [Qt](https://www.qt.io/) >= 5.12
+- [Qt](https://www.qt.io/) >= 5.15
   - Core
   - Gui
   - Qml
