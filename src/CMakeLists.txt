@@ -46,7 +46,6 @@ target_link_libraries(bakaneko PRIVATE
     KF5::Notifications
     KF5::Kirigami2
     KF5::CoreAddons
-    KF5::IconThemes
 
     ssh
 )
@@ -54,6 +53,7 @@ if(WIN32)
     target_link_libraries(bakaneko PRIVATE
         Iphlpapi
         ws2_32
+        KF5::IconThemes
     )
 endif()
 

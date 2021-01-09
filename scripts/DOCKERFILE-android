@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
+FROM kdeorg/android-kf5-sdk
+RUN sudo apt install -y python3-pip
+RUN python3 -m pip install requests
+RUN /opt/helpers/build-cmake libssh https://git.libssh.org/projects/libssh.git -DWITH_INTERNAL_DOC=OFF -DWITH_TESTING=OFF -DWITH_SERVER=OFF -DWITH_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release \
+&& rm -rf src/* && rm -rf build-*/*

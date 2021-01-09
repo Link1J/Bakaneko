@@ -69,9 +69,13 @@ First clone the repo
 ```bash
 git clone https://github.com/link1j/bakaneko && cd bakaneko
 ```
+Build the docker image
+```bash
+docker build --pull --rm -f "scripts/DOCKERFILE-android" -t bakaneko-android:latest "scripts"
+```
 Then run docker
 ```bash
-docker run -ti --rm -v ${PWD}/apks:/output -v ${PWD}:/home/user/src/bakaneko kdeorg/android-sdk bash /home/user/src/bakaneko/scripts/build_android.sh
+docker run -ti --rm -v ${PWD}/apks:/output -v ${PWD}:/home/user/src/bakaneko bakaneko-android bash /home/user/src/bakaneko/scripts/build_android.sh
 ```
 
 
