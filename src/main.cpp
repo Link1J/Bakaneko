@@ -26,6 +26,7 @@
 
 #include "managers/servermanager.h"
 #include "managers/appinfo.h"
+#include "managers/settings.h"
 
 Q_DECL_EXPORT int main(int argc, char* argv[])
 {
@@ -64,6 +65,7 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     qmlRegisterType<Server         >("Bakaneko.Objects" , 1, 0, "Server"                                );
     qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "Server"    , &ServerManager::Instance());
     qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "AppInfo"   , &AppInfo      ::Instance());
+    qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "Settings"  , &Settings     ::Instance());
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/main.qml")));
 

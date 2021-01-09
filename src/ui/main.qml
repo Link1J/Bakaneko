@@ -31,6 +31,12 @@ Kirigami.ApplicationWindow {
     globalDrawer: Kirigami.GlobalDrawer {
         actions: [
             Kirigami.Action {
+                text: i18n("Settings")
+                icon.name: "settings-configure"
+                onTriggered: fullWindowLayer(settingsPage)
+                enabled: pageStack.layers.currentItem.title !== i18n("Settings")
+            },
+            Kirigami.Action {
                 text: i18n("About")
                 icon.name: "help-about"
                 onTriggered: fullWindowLayer(aboutPage)
@@ -45,5 +51,9 @@ Kirigami.ApplicationWindow {
             aboutData: Managers.AppInfo.about
         }
     }
-
+    Component {
+        id: settingsPage
+        Pages.Settings {
+        }
+    }
 }

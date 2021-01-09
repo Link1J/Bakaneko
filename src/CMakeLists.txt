@@ -7,6 +7,7 @@ set(SRCS
     objects/server.cpp
     managers/servermanager.cpp
     managers/appinfo.cpp
+    managers/settings.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -69,6 +70,8 @@ if (ANDROID)
         computer-laptop
         mail-send
         globe
+        settings-configure
+        system-reboot
     )
 endif()
 
