@@ -7,20 +7,27 @@
 #include "models/serverlistmodel.h"
 
 #include <QObject>
+#include <QTimer>
+
 #include <string>
 #include <vector>
 #include <memory>
+#include <mutex>
 
 class ServerManager : public QObject
 {
     Q_OBJECT
 
     std::vector<std::unique_ptr<Server>> servers;
+    std::shared_ptr<QTimer> timer;
+    std::mutex server_list_lock;
+
     ServerListModel* model = nullptr;
 
     ServerManager();
 
     void Reload();
+    void update_server_info();
 
 public:
     static ServerManager& Instance();

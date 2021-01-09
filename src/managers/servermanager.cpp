@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
 
 #include "servermanager.h"
+#include "settings.h"
 
 #include <QSettings>
 #include <libssh/libssh.h>
@@ -17,6 +18,8 @@ void ServerManager::AddServer(QString ip, QString username, QString password)
 
 void ServerManager::NewServer(std::string ip, std::string username, std::string password)
 {
+    std::lock_guard __lock_guard{server_list_lock};
+    
     if (model != nullptr)
     {
         model->beginRowAppend();
@@ -92,6 +95,12 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
 
 ServerManager::ServerManager()
 {
+    timer = std::make_shared<QTimer>(this);
+    connect(timer.get(), &QTimer::timeout, this, &ServerManager::update_server_info);
+    connect(&Settings::Instance(), &Settings::changed_server_refresh_rate, [this](){
+        this->timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
+    });
+    timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
     Reload();
 }
 
@@ -103,6 +112,8 @@ ServerManager& ServerManager::Instance()
 
 void ServerManager::Reload()
 {
+    std::lock_guard __lock_guard{server_list_lock};
+    
     QSettings settings;
     int size = settings.beginReadArray("servers");
     servers.clear();
@@ -140,6 +151,7 @@ void ServerManager::setModel(ServerListModel* in_model)
 {
     model = in_model;
 
+    std::lock_guard __lock_guard{server_list_lock};
     for (int a = 0; a < servers.size(); a++)
     {
         connect(servers[a].get(), &Server::changed_state, model, [=]() { model->update(a); });
@@ -148,6 +160,8 @@ void ServerManager::setModel(ServerListModel* in_model)
 
 void ServerManager::RemoveServer(int index)
 {
+    std::lock_guard __lock_guard{server_list_lock};
+
     if (model != nullptr)
     {
         model->beginRowRemove(index);
@@ -187,4 +201,13 @@ int ServerManager::GetIndex(Server* server)
 ServerListModel* ServerManager::GetModel()
 {
     return model;
+}
+
+void ServerManager::update_server_info()
+{
+    std::lock_guard __lock_guard{server_list_lock};
+
+    for (int a = 0; a < size(); a++) {
+        servers[a]->update_info();
+    }
 }

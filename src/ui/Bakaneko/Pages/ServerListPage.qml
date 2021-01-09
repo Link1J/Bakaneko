@@ -24,7 +24,7 @@ Kirigami.ScrollablePage {
     }
 
     actions {
-        right: serverAddAction
+        main: serverAddAction
     }
 
     ListView {

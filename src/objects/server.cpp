@@ -9,10 +9,12 @@
 
 #include <iostream>
 #include <string_view>
+#include <thread>
 
 #include <libssh/libssh.h>
 
 #include "managers/servermanager.h"
+#include "managers/settings.h"
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -67,6 +69,11 @@ void Server::update_info()
     State new_state = system(command.c_str()) == 0 ? State::Online : State::Offline;
 #endif
 
+    if (new_state != State::Offline)
+    {
+        //check_for_updates();
+    }
+
     if (new_state == state)
         return;
     state = new_state;
@@ -119,7 +126,7 @@ void Server::update_info()
     system_type      = QString::fromStdString(get_value("Chassis"         ));
     architecture     = QString::fromStdString(get_value("Architecture"    ));
     pretty_hostname  = QString::fromStdString(get_value("Pretty hostname" ));
-    vm_platform      = QString::fromStdString(get_value("Virtualization" ));
+    vm_platform      = QString::fromStdString(get_value("Virtualization"  ));
 
     Q_EMIT changed_system_icon();
     Q_EMIT changed_system_type();
@@ -134,9 +141,6 @@ void Server::update_info()
 Server::Server(QObject* parent)
     : QObject(parent)
 {
-    timer = std::make_shared<QTimer>(this);
-    connect(timer.get(), &QTimer::timeout, this, &Server::update_info);
-    timer->start(5000);
 }
 
 void Server::wake_up()
@@ -200,7 +204,7 @@ void Server::wake_up()
     sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = 0xFFFFFFFF;
-    addr.sin_port = htons(9);
+    addr.sin_port = htons(Settings::Instance().get_wol_port());
 
     // Send the packet out. 
     if (sendto(packet, magic_packet.c_str(), (int)magic_packet.length(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
@@ -267,6 +271,15 @@ std::tuple<int, std::string, std::string> Server::run_command(std::string comman
     ssh_free(session);
 
     return {code, std_out, std_err};
+}
+
+/*
+    For shutdown to work, sudo must be installed and the line below added to /etc/sudoers
+    user hostname =NOPASSWD: /usr/bin/systemctl poweroff,/usr/bin/systemctl reboot
+*/
+void Server::reboot()
+{
+    run_command("sudo systemctl reboot");
 }
 
 // pacman -Qu

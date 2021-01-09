@@ -51,10 +51,12 @@ public Q_SLOTS:
     Q_INVOKABLE QString get_arch       ();
     Q_INVOKABLE QString get_vm_platform();
 
-                void    update_info ();
+    void update_info      ();
+    //void check_for_updates();
 
-    Q_INVOKABLE void    wake_up     ();
-    Q_INVOKABLE void    shutdown    ();
+    Q_INVOKABLE void wake_up ();
+    Q_INVOKABLE void shutdown();
+    Q_INVOKABLE void reboot  ();
 
 Q_SIGNALS:
     void changed_hostname   ();
@@ -82,8 +84,6 @@ private:
     QString architecture;
     QString vm_platform = "";
     QString pretty_hostname = "";
-
-    std::shared_ptr<QTimer> timer;
 };
 
 using ServerPointer = Server*;

@@ -42,7 +42,7 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 #endif
 
     QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << ":/icons");
-    
+
     QCoreApplication::setOrganizationName("Link1J");
     KAboutData::setApplicationData(AppInfo::Instance().get_about());
     QApplication::setWindowIcon(QIcon::fromTheme("me.link1j.bakaneko"));
