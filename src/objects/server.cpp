@@ -12,6 +12,8 @@
 
 #include <libssh/libssh.h>
 
+#include "managers/servermanager.h"
+
 #if defined(_WIN32)
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -80,6 +82,7 @@ void Server::update_info()
         Q_EMIT changed_arch       ();
         Q_EMIT changed_vm_platform();
         Q_EMIT changed_hostname   ();
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
         return;
     }
 
@@ -98,6 +101,7 @@ void Server::update_info()
         Q_EMIT changed_arch       ();
         Q_EMIT changed_vm_platform();
         Q_EMIT changed_hostname   ();
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
         return;
     }
 
@@ -115,6 +119,7 @@ void Server::update_info()
     system_type      = QString::fromStdString(get_value("Chassis"         ));
     architecture     = QString::fromStdString(get_value("Architecture"    ));
     pretty_hostname  = QString::fromStdString(get_value("Pretty hostname" ));
+    vm_platform      = QString::fromStdString(get_value("Virtualization" ));
 
     Q_EMIT changed_system_icon();
     Q_EMIT changed_system_type();
@@ -122,20 +127,8 @@ void Server::update_info()
     Q_EMIT changed_kernel     ();
     Q_EMIT changed_arch       ();
     Q_EMIT changed_hostname   ();
-
-    std::tie(exit_code, std_out, std_err) = run_command("dmesg | grep -i hypervisor");
-
-    if (exit_code != 0)
-    {
-        vm_platform = "";
-        Q_EMIT changed_vm_platform();
-        return;
-    }
-
-    constexpr auto offset = "[    0.000000] Hypervisor detected: "sv.length();
-    vm_platform = QString::fromStdString(std_out.substr(offset, std_out.find('\n', offset) - offset));
-    
     Q_EMIT changed_vm_platform();
+    ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
 }
 
 Server::Server(QObject* parent)
@@ -207,7 +200,7 @@ void Server::wake_up()
     sockaddr_in addr = {0};
     addr.sin_family = AF_INET;
     addr.sin_addr.s_addr = 0xFFFFFFFF;
-    addr.sin_port = htons(40000);
+    addr.sin_port = htons(9);
 
     // Send the packet out. 
     if (sendto(packet, magic_packet.c_str(), (int)magic_packet.length(), 0, reinterpret_cast<sockaddr*>(&addr), sizeof(addr)) < 0) {
@@ -266,7 +259,6 @@ std::tuple<int, std::string, std::string> Server::run_command(std::string comman
     else
     {
         std::cerr << ssh_get_error(session) << "\n";
-        throw 1;
     }
 
     ssh_channel_close(channel);
@@ -276,3 +268,5 @@ std::tuple<int, std::string, std::string> Server::run_command(std::string comman
 
     return {code, std_out, std_err};
 }
+
+// pacman -Qu

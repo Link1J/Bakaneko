@@ -173,3 +173,18 @@ void ServerManager::RemoveServer(int index)
         model->endRowRemove();
     }
 }
+
+int ServerManager::GetIndex(Server* server)
+{
+    for (int a = 0; a < servers.size(); a++)
+    {
+        if (servers[a].get() == server)
+            return a;
+    }
+    return -1;
+}
+
+ServerListModel* ServerManager::GetModel()
+{
+    return model;
+}

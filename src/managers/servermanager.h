@@ -29,10 +29,13 @@ public:
     Server& operator[](size_t index);
     void NewServer(std::string ip, std::string username, std::string password);
 
+    int GetIndex(Server* server);
+
     Q_INVOKABLE void AddServer(QString ip, QString username, QString password);
     Q_INVOKABLE void RemoveServer(int index);
 
     void setModel(ServerListModel* in_model);
+    ServerListModel* GetModel();
 };
 
 using ServerManagerPointer = ServerManager*;

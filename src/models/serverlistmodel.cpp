@@ -57,7 +57,8 @@ QHash<int, QByteArray> ServerListModel::roleNames() const
 void ServerListModel::update(int index)
 {
     QVector<int> roles = {
-        StateRole
+        StateRole,
+        NameRole
     };
 
     int size = (int)ServerManager::Instance().size();
