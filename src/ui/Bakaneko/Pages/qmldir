@@ -5,3 +5,4 @@ module Bakaneko.Pages
 ServerList 1.0 ServerListPage.qml
 Server 1.0 ServerPage.qml
 Settings 1.0 Settings.qml
+Term 1.0 Term.qml

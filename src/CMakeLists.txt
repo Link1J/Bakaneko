@@ -8,6 +8,8 @@ set(SRCS
     managers/servermanager.cpp
     managers/appinfo.cpp
     managers/settings.cpp
+    term/pty.cpp
+    term/screen.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -34,6 +36,12 @@ target_compile_options(bakaneko PRIVATE
     >
 )
 
+target_include_directories(bakaneko PRIVATE
+    ${CMAKE_BINARY_DIR}
+    ../externals/Yat/backend
+    ../externals/Yat/qml/Yat/plugin
+)
+
 target_link_libraries(bakaneko PRIVATE
     Qt5::Core
     Qt5::Gui
@@ -41,6 +49,8 @@ target_link_libraries(bakaneko PRIVATE
     Qt5::Quick
     Qt5::QuickControls2
     Qt5::Svg
+
+    Qt5::QuickPrivate
     
     KF5::I18n
     KF5::Crash
@@ -72,6 +82,8 @@ if (ANDROID)
         globe
         settings-configure
         system-reboot
+        utilities-terminal
+        computer-fail-symbolic
     )
 endif()
 

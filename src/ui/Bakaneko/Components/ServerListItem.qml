@@ -6,16 +6,24 @@ import QtQuick.Layouts 1.15
 import org.kde.kirigami 2.12 as Kirigami
 import QtQuick.Controls 2.15 as Controls
 import Bakaneko.Objects 1.0 as Objects
+import Bakaneko.Pages 1.0 as Pages
 
 RowLayout {
     id: roomLayout
+
     spacing: Kirigami.Units.largeSpacing
     width: listView.width
+
     TapHandler {
         onTapped: {
             currentServer = model.data
-            pageStack.push("qrc:/ui/Bakaneko/Pages/ServerPage.qml")
+            pageStack.push(serverPage)
         }
+    }
+
+    Component {
+        id: serverPage
+        Pages.Server {}
     }
 
     Kirigami.Icon {

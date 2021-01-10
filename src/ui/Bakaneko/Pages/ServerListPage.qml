@@ -18,6 +18,7 @@ Kirigami.ScrollablePage {
         id: serverAddAction
         icon.name: "list-add"
         text: i18n("Add Server")
+        visible: listView.count !== 0
         onTriggered: {
             addServerDialog.createObject(overlay).open();
         }

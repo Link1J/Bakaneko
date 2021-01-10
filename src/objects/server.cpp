@@ -11,8 +11,6 @@
 #include <string_view>
 #include <thread>
 
-#include <libssh/libssh.h>
-
 #include "managers/servermanager.h"
 #include "managers/settings.h"
 
@@ -37,11 +35,17 @@ QString Server::get_hostname()
     return hostname;
 }
 
+QString Server::get_system_icon()
+{
+    if (system_icon.isEmpty())
+        return "computer-fail-symbolic";
+    return system_icon;
+}
+
 Server::State Server::get_state      () { return state           ;   }
 QString       Server::get_os         () { return operating_system;   }
 QString       Server::get_ip         () { return ip_address      ;   }
 QString       Server::get_mac        () { return mac_address     ;   }
-QString       Server::get_system_icon() { return system_icon     ;   }
 QString       Server::get_system_type() { return system_type     ;   }
 QString       Server::get_kernel     () { return kernel          ;   }
 QString       Server::get_arch       () { return architecture    ;   }
@@ -81,15 +85,8 @@ void Server::update_info()
 
     if (new_state == State::Offline)
     {
-        operating_system = kernel = system_icon = system_type = architecture = vm_platform = pretty_hostname = "";
+        system_icon = "";
         Q_EMIT changed_system_icon();
-        Q_EMIT changed_system_type();
-        Q_EMIT changed_os         ();
-        Q_EMIT changed_kernel     ();
-        Q_EMIT changed_arch       ();
-        Q_EMIT changed_vm_platform();
-        Q_EMIT changed_hostname   ();
-        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
         return;
     }
 
@@ -100,15 +97,8 @@ void Server::update_info()
 
     if (exit_code != 0)
     {
-        operating_system = kernel = system_icon = system_type = architecture = vm_platform = pretty_hostname = "";
+        system_icon = "";
         Q_EMIT changed_system_icon();
-        Q_EMIT changed_system_type();
-        Q_EMIT changed_os         ();
-        Q_EMIT changed_kernel     ();
-        Q_EMIT changed_arch       ();
-        Q_EMIT changed_vm_platform();
-        Q_EMIT changed_hostname   ();
-        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
         return;
     }
 
@@ -138,8 +128,13 @@ void Server::update_info()
     ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
 }
 
-Server::Server(QObject* parent)
+Server::Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent)
     : QObject(parent)
+    , hostname   {hostname   }
+    , ip_address {ip_address }
+    , mac_address{mac_address}
+    , username   {username   }
+    , password   {password   }
 {
 }
 
@@ -229,16 +224,7 @@ void Server::shutdown()
 
 std::tuple<int, std::string, std::string> Server::run_command(std::string command)
 {
-    auto session = ssh_new();
-
-    ssh_options_set(session, SSH_OPTIONS_HOST, ip_address.toUtf8().data());
-    ssh_options_set(session, SSH_OPTIONS_USER, username.toUtf8().data());
-
-    ssh_connect(session);
-    ssh_userauth_password(session, NULL, password.toUtf8().data());
-
-    auto channel = ssh_channel_new(session);
-    ssh_channel_open_session(channel);
+    auto connection = get_ssh_connection();
 
     std::string std_out;
     std::string std_err;
@@ -247,28 +233,23 @@ std::tuple<int, std::string, std::string> Server::run_command(std::string comman
     int nbytes;
     int volatile code;
 
-    while ((code = ssh_channel_request_exec(channel, command.c_str())) == SSH_AGAIN);
+    while ((code = ssh_channel_request_exec(connection, command.c_str())) == SSH_AGAIN);
     if (code == SSH_OK)
     {
         memset(buffer, 0, sizeof(buffer));
-        while ((nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), false)) > 0)
+        while ((nbytes = ssh_channel_read(connection, buffer, sizeof(buffer), false)) > 0)
             std_out += std::string(buffer, nbytes);
 
         memset(buffer, 0, sizeof(buffer));
-        while ((nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), true)) > 0)
+        while ((nbytes = ssh_channel_read(connection, buffer, sizeof(buffer), true)) > 0)
             std_err += std::string(buffer, nbytes);
 
-        code = ssh_channel_get_exit_status(channel);
+        code = ssh_channel_get_exit_status(connection);
     }
     else
     {
-        std::cerr << ssh_get_error(session) << "\n";
+        std::cerr << ssh_get_error((ssh_session)connection) << "\n";
     }
-
-    ssh_channel_close(channel);
-    ssh_channel_free(channel);
-    ssh_disconnect(session);
-    ssh_free(session);
 
     return {code, std_out, std_err};
 }
@@ -283,3 +264,23 @@ void Server::reboot()
 }
 
 // pacman -Qu
+
+
+ssh_connection Server::get_ssh_connection()
+{
+    auto session = ssh_new();
+
+    ssh_options_set(session, SSH_OPTIONS_HOST, ip_address.toUtf8().data());
+    ssh_options_set(session, SSH_OPTIONS_USER, username.toUtf8().data());
+
+    ssh_connect(session);
+
+    ssh_userauth_password(session, NULL, password.toUtf8().data());
+    
+    auto channel = ssh_channel_new(session);
+    ssh_channel_open_session(channel);
+
+    return {session, channel};
+}
+
+Server::~Server() = default;

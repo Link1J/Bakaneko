@@ -68,17 +68,23 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
     line++;
     MAC = network_info.substr(line, network_info.find('\n', line) - line);
 
+    auto q_hostname = QString::fromStdString(hostname);
+    auto q_MAC      = QString::fromStdString(MAC     );
+    auto q_ip       = QString::fromStdString(ip      );
+    auto q_username = QString::fromStdString(username);
+    auto q_password = QString::fromStdString(password);
+
     QSettings settings;
     int size = settings.beginReadArray("servers");
     settings.endArray();
     settings.beginWriteArray("servers");
     settings.setArrayIndex(size);
-    servers.push_back(std::make_unique<Server>());
-    settings.setValue("hostname", servers[size]->hostname    = QString::fromStdString(hostname));
-    settings.setValue("mac"     , servers[size]->mac_address = QString::fromStdString(MAC     ));
-    settings.setValue("ip"      , servers[size]->ip_address  = QString::fromStdString(ip      ));
-    settings.setValue("username", servers[size]->username    = QString::fromStdString(username));
-    settings.setValue("password", servers[size]->password    = QString::fromStdString(password));
+    servers.push_back(std::make_unique<Server>(q_hostname, q_MAC, q_ip, q_username, q_password));
+    settings.setValue("hostname", q_hostname);
+    settings.setValue("mac"     , q_MAC     );
+    settings.setValue("ip"      , q_ip      );
+    settings.setValue("username", q_username);
+    settings.setValue("password", q_password);
     settings.endArray();
 
     ssh_channel_close(channel);
@@ -121,13 +127,13 @@ void ServerManager::Reload()
     for (int a = 0; a < size; a++)
     {
         settings.setArrayIndex(a);
-        servers.push_back(std::make_unique<Server>());
-
-        servers[a]->hostname    = settings.value("hostname").toString();
-        servers[a]->mac_address = settings.value("mac"     ).toString();
-        servers[a]->ip_address  = settings.value("ip"      ).toString();
-        servers[a]->username    = settings.value("username").toString();
-        servers[a]->password    = settings.value("password").toString();
+        servers.push_back(std::make_unique<Server>(
+            settings.value("hostname").toString(),
+            settings.value("mac"     ).toString(),
+            settings.value("ip"      ).toString(),
+            settings.value("username").toString(),
+            settings.value("password").toString()
+        ));
 
         if (model != nullptr)
         {

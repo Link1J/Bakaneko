@@ -38,8 +38,6 @@ find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Not
 find_package(libssh REQUIRED)
 
 add_definitions(-DQT_NO_FOREACH -DQT_NO_KEYWORDS)
-include_directories(${CMAKE_BINARY_DIR})
-
 add_subdirectory(src)
 
 install(PROGRAMS assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})

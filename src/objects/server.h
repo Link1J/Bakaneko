@@ -8,13 +8,18 @@
 
 #include <memory>
 
+#include <libssh/libssh.h>
+
+#include <term/pty.h>
+
 class Server : public QObject
 {
     friend class ServerManager;
     Q_OBJECT
 
 public:
-    Server(QObject* parent = nullptr);
+    Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent = nullptr);
+    ~Server();
 
     enum class State
     {
@@ -38,6 +43,7 @@ private:
     std::tuple<int, std::string, std::string> run_command(std::string command);
 
 public:
+    ssh_connection get_ssh_connection();
 
 public Q_SLOTS:
     Q_INVOKABLE QString get_hostname   ();

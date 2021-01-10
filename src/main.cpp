@@ -8,6 +8,7 @@
 #include <QIcon>
 #include <QDebug>
 #include <QQuickStyle>
+#include <QFontDatabase>
 
 #include <KLocalizedContext>
 #include <KCrash>
@@ -27,6 +28,8 @@
 #include "managers/servermanager.h"
 #include "managers/appinfo.h"
 #include "managers/settings.h"
+
+#include "term/screen.h"
 
 Q_DECL_EXPORT int main(int argc, char* argv[])
 {
@@ -56,16 +59,20 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
 
+    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    engine.rootContext()->setContextProperty("fixedFont", fixedFont);
+
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
     QObject::connect(&engine, &QQmlApplicationEngine::quit, &app, &QCoreApplication::quit);
 
     engine.addImportPath("qrc:/ui");
 
-    qmlRegisterType<ServerListModel>("Bakaneko.Models"  , 1, 0, "ServerList"                            );
-    qmlRegisterType<Server         >("Bakaneko.Objects" , 1, 0, "Server"                                );
-    qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "Server"    , &ServerManager::Instance());
-    qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "AppInfo"   , &AppInfo      ::Instance());
-    qmlRegisterSingletonInstance    ("Bakaneko.Managers", 1, 0, "Settings"  , &Settings     ::Instance());
+    qmlRegisterType             <ServerListModel>("Bakaneko.Models"    , 1, 0, "ServerList"                            );
+    qmlRegisterType             <Screen         >("Bakaneko.Components", 1, 0, "Screen"                                );
+    qmlRegisterUncreatableType  <Server         >("Bakaneko.Objects"   , 1, 0, "Server"    , ""                        );
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Server"    , &ServerManager::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "AppInfo"   , &AppInfo      ::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Settings"  , &Settings     ::Instance());
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/main.qml")));
 

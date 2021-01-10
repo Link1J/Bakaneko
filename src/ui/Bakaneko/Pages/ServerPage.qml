@@ -6,26 +6,21 @@ import QtQuick.Layouts 1.15
 import org.kde.kirigami 2.12 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Objects 1.0 as Objects
+import Bakaneko.Pages 1.0 as Pages
 
 Kirigami.Page {
     id: page
     title: currentServer.hostname
 
-    // actions.left: Kirigami.Action {
-    //     id: powerStateChange
-    //     icon.name: "system-shutdown"
-    //     text: currentServer.state == Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
-    //     onTriggered: {
-    //         if (currentServer.state == Objects.Server.State.Online) {
-    //             currentServer.shutdown();
-    //         }
-    //         else {
-    //             currentServer.wake_up();
-    //         }
-    //     }
-    // }
-
     actions.contextualActions: [
+        Kirigami.Action {
+            icon.name: "utilities-terminal"
+            text: i18n("Shell")
+            enabled: currentServer.state == Objects.Server.State.Online
+            onTriggered: {
+                root.fullWindowLayer(terminalPage);
+            }
+        },
         Kirigami.Action {
             icon.name: "system-shutdown"
             text: currentServer.state == Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
@@ -48,7 +43,6 @@ Kirigami.Page {
         }
     ]
 
-    
     ColumnLayout {
         anchors.fill: parent
         
@@ -118,5 +112,10 @@ Kirigami.Page {
         }
         Kirigami.Separator {
         }
+    }
+
+    Component {
+        id: terminalPage
+        Pages.Term {}
     }
 }

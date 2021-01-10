@@ -11,6 +11,7 @@
         <file>ui/Bakaneko/Pages/ServerListPage.qml</file>
         <file>ui/Bakaneko/Pages/ServerPage.qml</file>
         <file>ui/Bakaneko/Pages/Settings.qml</file>
+        <file>ui/Bakaneko/Pages/Term.qml</file>
 
         <file>ui/Bakaneko/Components/qmldir</file>
         <file>ui/Bakaneko/Components/ServerListItem.qml</file>
