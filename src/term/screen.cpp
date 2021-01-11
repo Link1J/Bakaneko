@@ -32,8 +32,14 @@ Screen::Screen(QQuickItem* parent)
 
 Screen::~Screen()
 {
+    // Stops the thread.
+    pty_thread->quit();
+    while (pty_thread->isRunning());
+
+    // Memory cleanup
+    delete pty_thread;
     delete letter;
-    delete pty;
+    delete pty; // Make Qt complain about killing timers
 }
 
 QFontMetricsF Screen::Metrics() const
@@ -131,7 +137,7 @@ void Screen::on_font_change()
 
 void Screen::set_server(Server* server)
 {
-    if (pty) delete pty;
+    // This will leak memory if set_server is called more then once per a Screen.
     pty = new Pty(server);
     pty->moveToThread(pty_thread);
 
@@ -141,11 +147,7 @@ void Screen::set_server(Server* server)
         auto rows = (int)floor(parentItem()->height() / metrics.lineSpacing     ());
         pty->set_size(QSize{cols, rows});
     });
-    // connect(parentItem(), &QQuickItem::heightChanged, pty, [this, metrics](){
-    //     auto cols = (int)floor(parentItem()->width () / metrics.averageCharWidth());
-    //     auto rows = (int)floor(parentItem()->height() / metrics.lineSpacing     ());
-    //     pty->set_size(QSize{cols, rows});
-    // });
+
     connect(pty, &Pty::receved_data, letter, &Text::add_text);
 }
 
