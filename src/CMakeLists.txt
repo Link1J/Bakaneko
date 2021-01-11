@@ -10,6 +10,8 @@ set(SRCS
     managers/settings.cpp
     term/pty.cpp
     term/screen.cpp
+    term/terms/dumb.cpp
+    term/term.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -18,6 +20,7 @@ qt5_add_resources(RESOURCES
 ecm_add_app_icon(APP_ICONS
     ICONS
         ../assets/64-me.link1j.bakaneko.png
+        ../assets/128-me.link1j.bakaneko.png
         ../assets/256-me.link1j.bakaneko.png
 )
 

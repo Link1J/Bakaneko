@@ -4,48 +4,13 @@
 #pragma once
 
 #include <QQuickItem>
-#include <QColor>
 #include <QRawFont>
 #include <QFont>
 #include <QFontMetricsF>
 
-#include <vector>
-
 #include "objects/server.h"
 
-class Screen;
-
-class Text : public QObject
-{
-    Q_OBJECT
-
-public:
-    struct Block {
-        std::string text;
-        QColor foreground;
-        QColor background;
-    };
-
-    Text(Screen* parent = nullptr);
-    ~Text();
-
-    int line_count() const;
-
-    const std::vector<std::vector<Block>>& get_data() const;
-
-public Q_SLOTS:
-    void add_text(QString text);
-    void line_recount();
-
-Q_SIGNALS:
-    void on_line_count_change();
-    void new_text();
-
-private:
-    std::vector<std::vector<Block>> data;
-    int current_line = 0, current_block = 0, current_char = 0;
-    int line_wrap_count = 0;
-};
+#include "term.h"
 
 class Screen : public QQuickItem
 {
@@ -77,7 +42,7 @@ Q_SIGNALS:
     void want_line_recount();
 
 private:
-    Text   * letter;
+    Term   * letter;
     Pty    * pty        = nullptr;
     QThread* pty_thread;
     struct {
