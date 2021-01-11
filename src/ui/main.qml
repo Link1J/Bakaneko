@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
+// SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 import QtQuick 2.1
 import org.kde.kirigami 2.12 as Kirigami

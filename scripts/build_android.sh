@@ -1,6 +1,6 @@
 #!/bin/bash
 # SPDX-License-Identifier: GPL-3.0-or-later
-# SPDX-FileCopyrightText: 2020 Jared Irwin <jrairwin@sympatico.ca>
+# SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 rm /output/*bakaneko*.apk
 
