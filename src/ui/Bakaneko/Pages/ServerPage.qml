@@ -15,11 +15,12 @@ Kirigami.Page {
     actions.contextualActions: [
         Kirigami.Action {
             icon.name: "utilities-terminal"
-            text: i18n("Shell")
+            text: i18n("Terminal")
             enabled: currentServer.state == Objects.Server.State.Online
             onTriggered: {
                 root.fullWindowLayer(terminalPage);
             }
+            tooltip: i18n("Opens a terminal")
         },
         Kirigami.Action {
             icon.name: "system-shutdown"
@@ -32,6 +33,7 @@ Kirigami.Page {
                     currentServer.wake_up();
                 }
             }
+            tooltip: currentServer.state == Objects.Server.State.Online ? i18n("Powers down the computer") : i18n("Powers up the computer")
         },
         Kirigami.Action {
             icon.name: "system-reboot"
@@ -40,6 +42,7 @@ Kirigami.Page {
             onTriggered: {
                 currentServer.reboot();
             }
+            tooltip: "Reboots the computer"
         }
     ]
 

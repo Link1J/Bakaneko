@@ -22,6 +22,7 @@ Kirigami.ScrollablePage {
         onTriggered: {
             addServerDialog.createObject(overlay).open();
         }
+        tooltip: i18n("Adds server to list")
     }
 
     actions {
@@ -47,6 +48,7 @@ Kirigami.ScrollablePage {
                      onTriggered: {
                          Managers.Server.RemoveServer(index)
                      }
+                     tooltip: i18n("Removes server from list")
                  }
             ]
         }

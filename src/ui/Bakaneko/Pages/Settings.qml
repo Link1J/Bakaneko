@@ -19,28 +19,37 @@ Kirigami.ScrollablePage
 			Kirigami.FormData.isSection: true
 		}
 		Controls.SpinBox {
-			Controls.ToolTip.text: i18n("UDP to send the magic packet.\nIf unsure leave at 9.")
-			Controls.ToolTip.timeout: -1
 			Kirigami.FormData.label: i18n("Port")
 			from: 0
 			to: 65535
 			editable: true
 			value: Managers.Settings.wol_port
 			onValueModified: Managers.Settings.wol_port = value
+			Controls.ToolTip {
+				text: i18n("UDP to send the magic packet.\nIf unsure leave at 9.")
+			}
 		}
 		Kirigami.Separator {
 			Kirigami.FormData.label: i18n("Server")
 			Kirigami.FormData.isSection: true
 		}
 		Controls.Slider {
-			// Controls.ToolTip.text: i18n("\nIf unsure leave at 5.")
-			// Controls.ToolTip.timeout: -1
 			Kirigami.FormData.label: i18n("Refresh Rate")
 			from: 1
 			to: 10
 			stepSize: 1.0
 			value: Managers.Settings.server_refresh_rate
 			onMoved: Managers.Settings.server_refresh_rate = value
+
+			Controls.ToolTip {
+				visible: parent.pressed
+				delay: -1
+				text: parent.value
+				x: (parent.visualPosition * parent.implicitWidth) - (implicitWidth / 2)
+			}
+			Controls.ToolTip {
+				text: i18n("\nIf unsure leave at 5.")
+			}
 		}
 		Kirigami.Separator {
 			Kirigami.FormData.label: i18n("Terminal")
@@ -74,6 +83,9 @@ Kirigami.ScrollablePage
 				onRejected: {
 					close()
 				}
+			}
+			Controls.ToolTip {
+				text: i18n("This controls the font used by the terminal.")
 			}
 		}
 	}
