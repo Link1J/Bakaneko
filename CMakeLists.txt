@@ -37,7 +37,7 @@ find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml QuickContro
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Notifications CoreAddons IconThemes)
 find_package(libssh REQUIRED)
 
-add_definitions(-DQT_NO_FOREACH -DQT_NO_KEYWORDS)
+add_definitions(-DQT_NO_FOREACH -DQT_NO_KEYWORDS -DNOMINMAX)
 add_subdirectory(src)
 
 install(PROGRAMS assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})

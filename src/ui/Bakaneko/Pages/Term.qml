@@ -11,13 +11,9 @@ import Bakaneko.Components 1.0 as Components
 
 Kirigami.ScrollablePage {
 	title: i18n("Terminal")
-
-	// ColumnLayout {
-	// 	Controls.Label {
-	// 		font: fixedFont
-	// 		text: "Imagine a shell prompt.\nC:\\> del *.*\n~ > rm -rf --no-preserve-root /"
-	// 	}
-	// }
 	Components.Screen {
+		id: screen
+		server: currentServer
+		focus: true
 	}
 }

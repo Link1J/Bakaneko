@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QSize>
+#include <QThread>
 
 #include <libssh/libssh.h>
 
@@ -17,51 +18,39 @@ class ssh_connection
 
 public:
     ssh_connection() = default;
-
-    ssh_connection(ssh_session session, ssh_channel channel)
-        : session(session), channel(channel)
-    {}
+    ssh_connection(ssh_session session, ssh_channel channel);
 
     ssh_connection(const ssh_connection&) = delete;
     ssh_connection& operator=(const ssh_connection&) = delete;
 
-    ssh_connection(ssh_connection&& other)
-        : session(other.session), channel(other.channel)
-    {
-        other.session = nullptr;
-        other.channel = nullptr;
-    }
+    ssh_connection(ssh_connection&& other);
+    ssh_connection& operator=(ssh_connection&& other);
 
-    ssh_connection& operator=(ssh_connection&& other)
-    {
-        session = other.session;
-        channel = other.channel;
-        other.session = nullptr;
-        other.channel = nullptr;
-        return *this;
-    }
+    ~ssh_connection();
 
-    ~ssh_connection()
-    {
-        if (channel)
-        {
-            ssh_channel_close(channel);
-            ssh_channel_send_eof(channel);
-            ssh_channel_free(channel);
-        }
-        if (session)
-        {
-            ssh_disconnect(session);
-            ssh_free(session);
-        }
-    }
+    operator ssh_session();
+    operator ssh_channel();
+};
 
-    operator ssh_session() { return session; }
-    operator ssh_channel() { return channel; }
+class Pty;
+
+class PtyReaderThread : public QThread
+{
+    Q_OBJECT
+
+    PtyReaderThread(Pty* pty);
+    void run() override;
+
+Q_SIGNALS:
+
+private:
+    Pty* pty;
 };
 
 class Pty : public QObject
 {
+    friend class PtyReaderThread;
+
     Q_OBJECT
 
 public:
@@ -70,16 +59,21 @@ public:
 
 public Q_SLOTS:
     Q_INVOKABLE void send_signal(int signal);
+    Q_INVOKABLE void send_data(QString data);
 
     Q_INVOKABLE void  set_size(QSize size);
     Q_INVOKABLE QSize get_size(          );
 
+    void check_for_data();
+
 Q_SIGNALS:
     void receved_signal(int signal);
+    void receved_data(QString data);
 
     void changed_size();
 
 private:
     ssh_connection connection;
     QSize size;
+    QTimer* data_check;
 };
