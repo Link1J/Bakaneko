@@ -6,6 +6,7 @@
 #include <QObject>
 #include <QSize>
 #include <QThread>
+#include <QTimer>
 
 #include <libssh/libssh.h>
 
@@ -32,25 +33,8 @@ public:
     operator ssh_channel();
 };
 
-class Pty;
-
-class PtyReaderThread : public QThread
-{
-    Q_OBJECT
-
-    PtyReaderThread(Pty* pty);
-    void run() override;
-
-Q_SIGNALS:
-
-private:
-    Pty* pty;
-};
-
 class Pty : public QObject
 {
-    friend class PtyReaderThread;
-
     Q_OBJECT
 
 public:
@@ -61,16 +45,13 @@ public Q_SLOTS:
     Q_INVOKABLE void send_signal(int signal);
     Q_INVOKABLE void send_data(QString data);
 
-    Q_INVOKABLE void  set_size(QSize size);
-    Q_INVOKABLE QSize get_size(          );
+    Q_INVOKABLE void set_size(QSize size);
 
     void check_for_data();
 
 Q_SIGNALS:
     void receved_signal(int signal);
     void receved_data(QString data);
-
-    void changed_size();
 
 private:
     ssh_connection connection;

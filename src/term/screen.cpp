@@ -70,10 +70,11 @@ QSGNode* Screen::updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*)
 
     for (auto& line : letter->get_data())
     {
-        for (auto& block : line)
+        for (auto& something : line)
         {
+            auto block = something;
             if (block.text.size() == 0)
-                continue;
+                break;
 
             for (auto letter : block.text)
             {

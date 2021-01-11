@@ -68,15 +68,11 @@ Pty::~Pty()
 
 void Pty::set_size(QSize size)
 {
+    if (this->size == size)
+        return;
     if (ssh_channel_change_pty_size(connection, size.width(), size.height()) == SSH_ERROR)
         return;
-    //this->size = size;
-    //Q_EMIT changed_size();
-}
-
-QSize Pty::get_size()
-{
-    return size;
+    this->size = size;
 }
 
 std::array signal_strings {

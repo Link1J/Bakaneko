@@ -18,7 +18,7 @@ class Server : public QObject
     Q_OBJECT
 
 public:
-    Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent = nullptr);
+    Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QString kernal_type, QObject* parent = nullptr);
     ~Server();
 
     enum class State
@@ -90,6 +90,8 @@ private:
     QString architecture;
     QString vm_platform = "";
     QString pretty_hostname = "";
+
+    QString kernal_type;
 };
 
 using ServerPointer = Server*;

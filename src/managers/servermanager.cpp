@@ -31,66 +31,70 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
     std::string hostname;
     std::string MAC;
     std::string network_info;
+;
 
-    memset(buffer, 0, sizeof(buffer));
-
-    auto session = ssh_new();
-
-    ssh_options_set(session, SSH_OPTIONS_HOST, ip.c_str());
-    ssh_options_set(session, SSH_OPTIONS_USER, username.c_str());
-
-    ssh_connect(session);
-    if (auto error_code = ssh_userauth_password(session, NULL, password.c_str()); error_code != SSH_AUTH_SUCCESS)
-    {
-        std::cerr << ssh_get_error(session) << "\n";
-        return;
-    }
-
-    auto channel = ssh_channel_new(session);
-    ssh_channel_open_session(channel);
-
-    while ((code = ssh_channel_request_exec(channel, "cat /etc/hostname && cat /sys/class/net/*/address")) == SSH_AGAIN);
-    if (code == SSH_OK)
-    {
-        while ((nbytes = ssh_channel_read(channel, buffer, sizeof(buffer), false)) > 0)
-        {
-            network_info += buffer;
-        }
-    }
-    else
-    {
-        std::cerr << ssh_get_error(session) << "\n";
-        throw 1;
-    }
-    
-    auto line = network_info.find('\n');
-    hostname = network_info.substr(0, line);
-    line++;
-    MAC = network_info.substr(line, network_info.find('\n', line) - line);
-
-    auto q_hostname = QString::fromStdString(hostname);
-    auto q_MAC      = QString::fromStdString(MAC     );
     auto q_ip       = QString::fromStdString(ip      );
     auto q_username = QString::fromStdString(username);
     auto q_password = QString::fromStdString(password);
+
+    auto temp = std::make_unique<Server>("", "", q_ip, q_username, q_password, "");
+
+    int exit_code;
+    std::string std_out;
+    std::string std_err;
+
+    QString q_kernal_type;
+    QString q_hostname   ;
+    QString q_MAC        ;
+
+    std::tie(exit_code, std_out, std_err) = temp->run_command("uname");
+
+    if (exit_code != 0)
+        q_kernal_type = "Windows";
+    else
+        q_kernal_type = QString::fromStdString(std_out);
+
+    if (q_kernal_type == "Linux")
+    {
+        std::tie(exit_code, std_out, std_err) = temp->run_command("cat /etc/hostname");
+        q_hostname = QString::fromStdString(std_out.substr(0, std_out.find('\n')));
+
+        std::tie(exit_code, std_out, std_err) = temp->run_command("cat /sys/class/net/*/address");
+        q_MAC = QString::fromStdString(std_out.substr(0, std_out.find('\n')));
+    }
+    else if (q_kernal_type == "Windows")
+    {
+        std::tie(exit_code, std_out, std_err) = temp->run_command("ipconfig /all");
+
+        auto get_value = [std_out](std::string key) -> std::string {
+            auto text_pos = std_out.find(key) + key.length();
+            if (text_pos == std::string::npos + key.length())
+                return "";
+            text_pos = std_out.find(':', text_pos) + 2;
+            auto newline_pos = std_out.find('\n', text_pos);
+            return std_out.substr(text_pos, newline_pos - text_pos);
+        };
+
+        q_hostname = QString::fromStdString(get_value("Host Name"));
+
+        auto temp = get_value("Physical Address");
+        std::replace(temp.begin(), temp.end(), '-', ':');
+        q_MAC = QString::fromStdString(temp);
+    }
 
     QSettings settings;
     int size = settings.beginReadArray("servers");
     settings.endArray();
     settings.beginWriteArray("servers");
     settings.setArrayIndex(size);
-    servers.push_back(std::make_unique<Server>(q_hostname, q_MAC, q_ip, q_username, q_password));
-    settings.setValue("hostname", q_hostname);
-    settings.setValue("mac"     , q_MAC     );
-    settings.setValue("ip"      , q_ip      );
-    settings.setValue("username", q_username);
-    settings.setValue("password", q_password);
+    servers.push_back(std::make_unique<Server>(q_hostname, q_MAC, q_ip, q_username, q_password, q_kernal_type));
+    settings.setValue("hostname"   , q_hostname   );
+    settings.setValue("mac"        , q_MAC        );
+    settings.setValue("ip"         , q_ip         );
+    settings.setValue("username"   , q_username   );
+    settings.setValue("password"   , q_password   );
+    settings.setValue("kernal_type", q_kernal_type);
     settings.endArray();
-
-    ssh_channel_close(channel);
-    ssh_channel_free(channel);
-    ssh_disconnect(session);
-    ssh_free(session);
     
     if (model != nullptr)
     {
@@ -128,11 +132,12 @@ void ServerManager::Reload()
     {
         settings.setArrayIndex(a);
         servers.push_back(std::make_unique<Server>(
-            settings.value("hostname").toString(),
-            settings.value("mac"     ).toString(),
-            settings.value("ip"      ).toString(),
-            settings.value("username").toString(),
-            settings.value("password").toString()
+            settings.value("hostname"   ).toString(),
+            settings.value("mac"        ).toString(),
+            settings.value("ip"         ).toString(),
+            settings.value("username"   ).toString(),
+            settings.value("password"   ).toString(),
+            settings.value("kernal_type").toString()
         ));
 
         if (model != nullptr)
@@ -180,11 +185,12 @@ void ServerManager::RemoveServer(int index)
     for (int a = 0; a < servers.size(); a++)
     {
         settings.setArrayIndex(a);
-        settings.setValue("hostname", servers[a]->hostname   );
-        settings.setValue("mac"     , servers[a]->mac_address);
-        settings.setValue("ip"      , servers[a]->ip_address );
-        settings.setValue("username", servers[a]->username   );
-        settings.setValue("password", servers[a]->password   );
+        settings.setValue("hostname"   , servers[a]->hostname   );
+        settings.setValue("mac"        , servers[a]->mac_address);
+        settings.setValue("ip"         , servers[a]->ip_address );
+        settings.setValue("username"   , servers[a]->username   );
+        settings.setValue("password"   , servers[a]->password   );
+        settings.setValue("kernal_type", servers[a]->kernal_type);
     }
     settings.endArray();
 

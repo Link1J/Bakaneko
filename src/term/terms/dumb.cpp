@@ -10,7 +10,7 @@ Dumb::Dumb(Screen* parent)
 
 const char* Dumb::term_type() const
 {
-	return "dumb";
+    return "dumb";
 }
 
 Dumb::~Dumb()  = default;
@@ -83,7 +83,7 @@ void Dumb::add_text(QString text)
         else
         {
             auto& block = data[current_line][current_block];
-            if (current_char == block.text.size())
+            if (current_char >= block.text.size())
                 block.text += letter;
             else
                 block.text[current_char] = letter;

@@ -21,7 +21,7 @@
 #### Instructions
 From a Craft prompt, run the command bellow to install the needed libaries.
 ```powershell
-craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes
+craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-style
 ```
 Then clone the repo,
 ```powershell
