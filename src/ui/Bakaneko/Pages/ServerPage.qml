@@ -14,6 +14,7 @@ Kirigami.Page {
 
     actions.contextualActions: [
         Kirigami.Action {
+            visible: !Kirigami.Settings.isMobile
             icon.name: "utilities-terminal"
             text: i18n("Terminal")
             enabled: currentServer.state == Objects.Server.State.Online

@@ -54,9 +54,11 @@ Kirigami.ScrollablePage
 		Kirigami.Separator {
 			Kirigami.FormData.label: i18n("Terminal")
 			Kirigami.FormData.isSection: true
+			visible: !Kirigami.Settings.isMobile
 		}
 		RowLayout {
 			Kirigami.FormData.label: i18n("Font")
+			visible: !Kirigami.Settings.isMobile
 
 			Controls.TextField {
 				readOnly: true
@@ -90,6 +92,7 @@ Kirigami.ScrollablePage
 		}
 		Controls.ComboBox {
 			Kirigami.FormData.label: i18n("Terminal Emulator")
+			visible: !Kirigami.Settings.isMobile
 			model: Managers.TermInfo.terms
 			onAccepted: {}
 			Controls.ToolTip {
