@@ -6,8 +6,8 @@ project(bakaneko)
 
 include(FeatureSummary)
 
-set(QT5_MIN_VERSION 5.12)
-set(KF5_MIN_VERSION 5.65)
+set(QT5_MIN_VERSION 5.14)
+set(KF5_MIN_VERSION 5.75)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
@@ -19,7 +19,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)
 include(KDECMakeSettings)
-# include(KDECompilerSettings NO_POLICY_SCOPE)
+include(KDECompilerSettings NO_POLICY_SCOPE)
 
 include(ECMSetupVersion)
 include(ECMGenerateHeaders)

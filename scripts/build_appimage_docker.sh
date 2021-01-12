@@ -10,5 +10,7 @@ rm /output/Bakaneko*.AppImage
 cmake -B build -S src -G Ninja -DCMAKE_INSTALL_PREFIX=/usr
 ninja -C build
 DESTDIR=../appdir ninja -C build install
-./linuxdeploy-x86_64.AppImage --appimage-extract-and-run --appdir appdir --plugin qt --output appimage
-mv Bakaneko*.AppImage /output
+QML_SOURCES_PATHS=src/src ./linuxdeploy-x86_64.AppImage --appdir appdir --plugin qt --output appimage --appimage-extract-and-run
+cp Bakaneko*.AppImage /output 
+
+ninja -C build && DESTDIR=../appdir ninja -C build install && QML_SOURCES_PATHS=src/src ./linuxdeploy-x86_64.AppImage --appdir appdir --plugin qt --output appimage --appimage-extract-and-run

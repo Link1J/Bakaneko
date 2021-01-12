@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND noninteractive
 RUN apt update && apt install -o Acquire::http::Pipeline-Depth="0" --no-install-recommends -y \
 sudo cmake g++ wget ninja-build libssh-dev kirigami2-dev libkf5crash-dev libkf5i18n-dev libkf5iconthemes-dev \
 libkf5iconthemes-dev libkf5qqc2desktopstyle-dev libkf5notifications-dev extra-cmake-modules qtdeclarative5-dev \
-libqt5svg5-dev qtquickcontrols2-5-dev gettext qtdeclarative5-private-dev qtbase5-private-dev
+libqt5svg5-dev qtquickcontrols2-5-dev gettext qtdeclarative5-private-dev qtbase5-private-dev qml-module-qtqml 
 
 RUN useradd -ms /bin/bash user && echo 'user ALL=NOPASSWD: ALL' > /etc/sudoers.d/user
 RUN echo 'user:U6aMy0wojraho' | chpasswd -e
@@ -24,6 +24,6 @@ RUN wget --no-check-certificate https://github.com/linuxdeploy/linuxdeploy-plugi
 RUN wget --no-check-certificate https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
 RUN chmod +x linuxdeploy*.AppImage
 
-RUN mkdir /home/user/build
-RUN mkdir /home/user/src
-RUN mkdir /home/user/appdir
+RUN mkdir build
+RUN mkdir src
+RUN mkdir appdir

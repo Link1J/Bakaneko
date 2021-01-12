@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 import QtQuick 2.1
-import org.kde.kirigami 2.12 as Kirigami
+import org.kde.kirigami 2.6 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Pages 1.0 as Pages
 import Bakaneko.Managers 1.0 as Managers
