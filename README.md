@@ -44,12 +44,13 @@ cmake ..
   - QuickControls2
   - Svg
 - [git](https://git-scm.com/)
-- Kirigami >= 5.65.0
-- KI18n >= 5.65.0
-- KCrash >= 5.65.0
-- KCoreAddons >= 5.65.0
-- KIconThemes >= 5.65.0
-- Extra CMake Modules >= 5.65.0
+- KDE Frameworks >= 5.75.0
+  - Kirigami
+  - KI18n
+  - KCrash
+  - KCoreAddons
+  - KIconThemes
+- Extra CMake Modules
 > All of these can be installed by your package manager
 
 #### Instructions
