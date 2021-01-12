@@ -21,12 +21,22 @@ class Term : public QObject
     Q_OBJECT
 
 public:
+    enum Types
+    {
+        Dumb, Linux
+    };
+    Q_ENUM(Types)
+
     Term(Screen* parent = nullptr);
     virtual ~Term() = default;
 
     virtual int line_count() const = 0;
     virtual const std::vector<std::vector<TextBlock>>& get_data() const = 0;
     virtual const char* term_type() const = 0;
+
+    static Term* create_term(Types type, Screen* screen);
+    static const char* term_type(Types type);
+    static Types term_type(const char* type);
 
 public Q_SLOTS:
     virtual void add_text(QString text) = 0;

@@ -88,5 +88,13 @@ Kirigami.ScrollablePage
 				text: i18n("This controls the font used by the terminal.")
 			}
 		}
+		Controls.ComboBox {
+			Kirigami.FormData.label: i18n("Terminal Emulator")
+			model: Managers.TermInfo.terms
+			onAccepted: {}
+			Controls.ToolTip {
+				text: i18n("This controls the TERM variable, and may effect how command line applications output.\nIf unsure what this does, don't touch it.")
+			}
+		}
 	}
 }

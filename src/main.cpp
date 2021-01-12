@@ -28,6 +28,7 @@
 #include "managers/servermanager.h"
 #include "managers/appinfo.h"
 #include "managers/settings.h"
+#include "managers/terminfo.h"
 
 #include "term/screen.h"
 
@@ -73,6 +74,7 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Server"    , &ServerManager::Instance());
     qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "AppInfo"   , &AppInfo      ::Instance());
     qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Settings"  , &Settings     ::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "TermInfo"  , &TermInfo     ::Instance());
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/main.qml")));
 

@@ -12,6 +12,8 @@ set(SRCS
     term/screen.cpp
     term/terms/dumb.cpp
     term/term.cpp
+    term/terms/linux.cpp
+    managers/terminfo.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
