@@ -38,23 +38,22 @@ target_compile_options(bakaneko PRIVATE
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
+    -Wno-c++98-compat
+    -Wno-c++98-compat-pedantic
 )
 
-target_include_directories(bakaneko PRIVATE
+target_include_directories(bakaneko PUBLIC
     ${CMAKE_BINARY_DIR}
-    ../externals/Yat/backend
-    ../externals/Yat/qml/Yat/plugin
+    ${Qt5Quick_PRIVATE_INCLUDE_DIRS}
 )
 
-target_link_libraries(bakaneko PRIVATE
+target_link_libraries(bakaneko PUBLIC
     Qt5::Core
     Qt5::Gui
     Qt5::Qml
     Qt5::Quick
     Qt5::QuickControls2
     Qt5::Svg
-
-    Qt5::QuickPrivate
     
     KF5::I18n
     KF5::Crash

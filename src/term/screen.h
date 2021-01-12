@@ -27,10 +27,10 @@ public:
     int get_columns() const;
 
 protected:
-    void keyPressEvent(QKeyEvent* event);
+    void keyPressEvent(QKeyEvent* event) override;
 
 public Q_SLOTS:
-    QSGNode* updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*);
+    QSGNode* updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*) override;
     
     void on_font_change();
     void update_scroll_height();

@@ -36,8 +36,8 @@ cmake ..
 ### Linux
 #### Requirements
 - A C++ compiler with C++17 support
-- [cmake](https://cmake.org/) >= 3.17
-- [Qt](https://www.qt.io/) >= 5.15
+- [cmake](https://cmake.org/) >= 3.16
+- [Qt](https://www.qt.io/) >= 5.14 < 6.0.0
   - Core
   - Gui
   - Qml
@@ -71,11 +71,11 @@ git clone https://github.com/link1j/bakaneko && cd bakaneko
 ```
 Build the docker image
 ```bash
-docker build --pull --rm -f "scripts/DOCKERFILE-android" -t bakaneko-android:latest "scripts"
+docker build -f "scripts/Dockerfile.android" -t bakaneko-android:latest "scripts"
 ```
 Then run docker
 ```bash
-docker run -ti --rm -v ${PWD}/apks:/output -v ${PWD}:/home/user/src/bakaneko bakaneko-android bash /home/user/src/bakaneko/scripts/build_android.sh
+docker run -ti --rm -v ${PWD}/apks:/output -v ${PWD}:/home/user/src/bakaneko bakaneko-android bash /home/user/src/bakaneko/scripts/build_android_docker.sh
 ```
 
 

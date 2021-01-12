@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
+FROM ubuntu:20.10
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN apt update && apt install -o Acquire::http::Pipeline-Depth="0" --no-install-recommends -y \
+sudo cmake g++ wget ninja-build libssh-dev kirigami2-dev libkf5crash-dev libkf5i18n-dev libkf5iconthemes-dev \
+libkf5iconthemes-dev libkf5qqc2desktopstyle-dev libkf5notifications-dev extra-cmake-modules qtdeclarative5-dev \
+libqt5svg5-dev qtquickcontrols2-5-dev gettext qtdeclarative5-private-dev qtbase5-private-dev
+
+RUN useradd -ms /bin/bash user && echo 'user ALL=NOPASSWD: ALL' > /etc/sudoers.d/user
+RUN echo 'user:U6aMy0wojraho' | chpasswd -e
+
+RUN mkdir /output
+RUN chmod -R 777 /output
+
+USER user
+WORKDIR /home/user
+ENV HOME /home/user
+
+RUN wget --no-check-certificate https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+RUN wget --no-check-certificate https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+RUN wget --no-check-certificate https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
+RUN chmod +x linuxdeploy*.AppImage
+
+RUN mkdir /home/user/build
+RUN mkdir /home/user/src
+RUN mkdir /home/user/appdir

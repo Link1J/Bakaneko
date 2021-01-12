@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
-#include "Linux.h"
+#include "linux.h"
 #include "../screen.h"
 
 Linux::Linux(Screen* parent)
