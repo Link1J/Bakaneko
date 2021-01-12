@@ -9,5 +9,7 @@ sudo cp /home/user/src/bakaneko/scripts/cp-with-prefix.sh /opt/helpers/cp-with-p
 
 sudo chmod -R +x /opt/helpers
 
+export ONLY_ARM64=true
+
 /opt/helpers/build-cmake bakaneko bakaneko -DCMAKE_BUILD_TYPE=Release `python3 /opt/helpers/get-apk-args.py /home/user/src/bakaneko`
 /opt/helpers/create-apk bakaneko

@@ -19,7 +19,7 @@ AppInfo& AppInfo::Instance()
 constexpr auto app_id         = "bakaneko";
 constexpr auto app_name       = "Bakaneko";
 constexpr auto app_desciption = "A server management tool that has nothing to do with cats.";
-constexpr auto app_copyright  = "© 2020 Jared Irwin";
+constexpr auto app_copyright  = "© 2021 Jared Irwin";
 
 KAboutData AppInfo::get_about()
 {

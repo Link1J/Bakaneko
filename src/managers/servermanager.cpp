@@ -52,7 +52,7 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
     if (exit_code != 0)
         q_kernal_type = "Windows";
     else
-        q_kernal_type = QString::fromStdString(std_out);
+        q_kernal_type = QString::fromStdString(std_out.substr(0, std_out.size() - 1));
 
     if (q_kernal_type == "Linux")
     {

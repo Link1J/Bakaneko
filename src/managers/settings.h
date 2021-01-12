@@ -24,6 +24,7 @@ public Q_SLOTS:
     Q_INVOKABLE uint16_t get_wol_port           ();
     Q_INVOKABLE double   get_server_refresh_rate();
     Q_INVOKABLE QFont    get_font               ();
+    // Q_INVOKABLE QFont    get_term_type          ();
 
     Q_INVOKABLE void set_wol_port           (uint16_t value);
     Q_INVOKABLE void set_server_refresh_rate(double   value);
