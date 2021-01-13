@@ -38,8 +38,6 @@ target_compile_options(bakaneko PRIVATE
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
-    -Wno-c++98-compat
-    -Wno-c++98-compat-pedantic
 )
 
 target_include_directories(bakaneko PUBLIC

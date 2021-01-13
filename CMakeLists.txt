@@ -19,11 +19,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)
 include(KDECMakeSettings)
-include(KDECompilerSettings NO_POLICY_SCOPE)
 
 include(ECMSetupVersion)
-include(ECMGenerateHeaders)
-include(ECMPoQmTools)
 include(ECMInstallIcons)
 include(ECMAddAppIcon)
 include(ECMEnableSanitizers)
@@ -45,7 +42,3 @@ install(FILES assets/me.link1j.bakaneko.appdata.xml DESTINATION ${KDE_INSTALL_ME
 install(FILES assets/me.link1j.bakaneko.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
 
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
-
-set(CPACK_PACKAGE_NAME "Server Manager")
-set(CPACK_PACKAGE_NAME "Link1J")
-
