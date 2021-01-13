@@ -8,7 +8,9 @@
 #include <QThread>
 
 #include <libssh/libssh.h>
+
 #include <iostream>
+#include <atomic>
 
 void ServerManager::AddServer(QString ip, QString username, QString password)
 {
@@ -109,7 +111,7 @@ ServerManager::ServerManager()
 {
     timer = std::make_shared<QTimer>(this);
     connect(timer.get(), &QTimer::timeout, this, &ServerManager::update_server_info);
-    connect(&Settings::Instance(), &Settings::changed_server_refresh_rate, [this](){
+    connect(&Settings::Instance(), &Settings::changed_server_refresh_rate, this, [this](){
         this->timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
     });
     timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
@@ -217,17 +219,27 @@ ServerListModel* ServerManager::GetModel()
     return model;
 }
 
+static std::atomic<size_t> active_threads;
+
 void ServerManager::update_server_info()
 {
     std::lock_guard __lock_guard{server_list_lock};
-
-    // This spawns a thread for each server. It could break when a server is deleted
-    // or slow down a computer because of too many server. If a problem arises, we can
-    // solve it then.
+    // This spawns a thread for each server. It could slow down a computer because of too many server.
+    // If a problem arises, we can solve it then.
     for (int a = 0; a < size(); a++) {
-        QThread::create([this, a](){
+        // Does this leak memory?
+        auto thread = QThread::create([this, a](){
             servers[a]->update_info();
             QThread::currentThread()->quit();
-        })->start();
+        });
+        connect(thread, &QThread::started , [](){ active_threads++; });
+        connect(thread, &QThread::finished, [](){ active_threads--; });
+        thread->start();
     }
+}
+
+ServerManager::~ServerManager()
+{
+    std::lock_guard __lock_guard{server_list_lock};
+    while (active_threads > 0);
 }

@@ -25,6 +25,7 @@ class ServerManager : public QObject
     ServerListModel* model = nullptr;
 
     ServerManager();
+    ~ServerManager();
 
     void Reload();
     void update_server_info();
