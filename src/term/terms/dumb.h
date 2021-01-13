@@ -13,13 +13,11 @@ public:
     Dumb(Screen* parent = nullptr);
     ~Dumb() override;
 
-    int line_count() const override;
-    const std::vector<std::vector<TextBlock>>& get_data() const override;
-    const char* term_type() const override;
+    const char* term_type  () const override;
+    const char* term_report() const override;
 
 public Q_SLOTS:
     void add_text(QString text) override;
-    void line_recount() override;
 
 Q_SIGNALS:
 

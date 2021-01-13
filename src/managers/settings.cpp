@@ -65,15 +65,28 @@ void Settings::set_font(QFont value)
     Q_EMIT changed_font();
 }
 
-Term::Types Settings::get_term_type()
+constexpr auto _i_term_type_default = Term::Dumb;
+
+int Settings::get_term_type()
 {
     settings.beginGroup("term");
-    auto value = settings.value("type", Term::Types::Linux);
+    auto value = settings.value("type", _i_term_type_default);
     settings.endGroup();
-    return value.value<Term::Types>();
+    return value.value<int>();
 }
 
-void Settings::set_term_type(Term::Types value)
+int Settings::get_term_type(bool)
+{
+    settings.beginGroup("term");
+    auto value = settings.value("type", _i_term_type_default);
+    settings.endGroup();
+    auto data = value.value<int>();
+    if (Term::term_type(data) == Term::term_type(Term::Null))
+        data = Term::Dumb;
+    return data;
+}
+
+void Settings::set_term_type(int value)
 {
     settings.beginGroup("term");
     settings.setValue("type", value);

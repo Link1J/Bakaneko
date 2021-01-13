@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include <QQuickItem>
+#include <QQuickPaintedItem>
 #include <QRawFont>
 #include <QFont>
 #include <QFontMetricsF>
@@ -12,7 +12,7 @@
 
 #include "term.h"
 
-class Screen : public QQuickItem
+class Screen : public QQuickPaintedItem
 {
     Q_OBJECT
 
@@ -30,8 +30,8 @@ protected:
     void keyPressEvent(QKeyEvent* event) override;
 
 public Q_SLOTS:
-    QSGNode* updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*) override;
-    
+    void paint(QPainter *painter) override;
+
     void on_font_change();
     void update_scroll_height();
 

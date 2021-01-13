@@ -22,6 +22,7 @@
 #endif
 
 #include "models/serverlistmodel.h"
+#include "models/termlist.h"
 
 #include "objects/server.h"
 
@@ -31,20 +32,6 @@
 #include "managers/terminfo.h"
 
 #include "term/screen.h"
-
-// #if QT_VERSION < QT_VERSION_CHECK(5, 14, 0)
-template<typename T>
-inline QObject* _i_helper(QQmlEngine* engine, QJSEngine* scriptEngine)
-{
-    return &T::Instance();
-}
-
-template<typename T>
-inline auto qmlRegisterSingletonInstance_temp(const char* uri, int versionMajor, int versionMinor, const char* typeName, T* cppObject)
-{
-    return qmlRegisterSingletonType<T>(uri, versionMajor, versionMinor, typeName, _i_helper<T>);
-}
-// #endif
 
 Q_DECL_EXPORT int main(int argc, char* argv[])
 {
@@ -83,12 +70,13 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     engine.addImportPath("qrc:/ui");
 
     qmlRegisterType             <ServerListModel>("Bakaneko.Models"    , 1, 0, "ServerList"                            );
+    qmlRegisterType             <TermList       >("Bakaneko.Models"    , 1, 0, "TermList"                              );
     qmlRegisterType             <Screen         >("Bakaneko.Components", 1, 0, "Screen"                                );
     qmlRegisterUncreatableType  <Server         >("Bakaneko.Objects"   , 1, 0, "Server"    , ""                        );
-    qmlRegisterSingletonInstance_temp                 ("Bakaneko.Managers"  , 1, 0, "Server"    , &ServerManager::Instance());
-    qmlRegisterSingletonInstance_temp                 ("Bakaneko.Managers"  , 1, 0, "AppInfo"   , &AppInfo      ::Instance());
-    qmlRegisterSingletonInstance_temp                 ("Bakaneko.Managers"  , 1, 0, "Settings"  , &Settings     ::Instance());
-    qmlRegisterSingletonInstance_temp                 ("Bakaneko.Managers"  , 1, 0, "TermInfo"  , &TermInfo     ::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Server"    , &ServerManager::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "AppInfo"   , &AppInfo      ::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Settings"  , &Settings     ::Instance());
+    qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "TermInfo"  , &TermInfo     ::Instance());
 
     engine.load(QUrl(QStringLiteral("qrc:/ui/main.qml")));
 

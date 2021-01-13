@@ -7,6 +7,7 @@ import QtQuick.Dialogs 1.3
 import org.kde.kirigami 2.5 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Managers 1.0 as Managers
+import Bakaneko.Models 1.0 as Models
 
 Kirigami.ScrollablePage
 {
@@ -92,10 +93,24 @@ Kirigami.ScrollablePage
 		}
 		Controls.ComboBox {
 			Kirigami.FormData.label: i18n("Terminal Emulator")
+			
+			id: term_type_emun
+
 			visible: !Kirigami.Settings.isMobile
-			model: Managers.TermInfo.terms
-			currentIndex: Managers.Settings.term_type
-			onActivated: Managers.Settings.term_type = currentIndex
+			model: Models.TermList {}
+			currentIndex: Managers.TermInfo.emun_to_avalible(Managers.Settings.term_type)
+			textRole: "display"
+
+			//delegate: Controls.ItemDelegate {
+			//	width: term_type_emun.width
+			//	contentItem: Text {
+			//		text: term_type_emun.model[Managers.TermInfo.emun_to_avalible(index)]
+			//	}
+			//	highlighted: term_type_emun.highlightedIndex === Managers.TermInfo.emun_to_avalible(index)
+			//}
+			
+			onActivated: Managers.Settings.term_type = Managers.TermInfo.avalible_to_emun(currentIndex)
+
 			Controls.ToolTip {
 				text: i18n("This controls the TERM variable, and may effect how command line applications output.\nIf unsure what this does, don't touch it.")
 			}

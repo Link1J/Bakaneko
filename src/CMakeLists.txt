@@ -14,6 +14,8 @@ set(SRCS
     term/term.cpp
     term/terms/linux.cpp
     managers/terminfo.cpp
+    term/terms/null.cpp
+    models/termlist.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc

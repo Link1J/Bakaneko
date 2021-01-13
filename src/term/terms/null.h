@@ -5,13 +5,13 @@
 
 #include "../term.h"
 
-class Linux : public Term
+class Null : public Term
 {
     Q_OBJECT
 
 public:
-    Linux(Screen* parent = nullptr);
-    ~Linux() override;
+    Null(Screen* parent = nullptr);
+    ~Null() override;
 
     const char* term_type  () const override;
     const char* term_report() const override;
@@ -22,5 +22,4 @@ public Q_SLOTS:
 Q_SIGNALS:
 
 private:
-    std::string command_buffer;
 };

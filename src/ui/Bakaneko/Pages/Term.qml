@@ -7,7 +7,7 @@ import Bakaneko.Components 1.0 as Components
 
 Kirigami.ScrollablePage {
 	title: i18n("Terminal")
-	leftPadding: 5
+	padding: 5
 	Components.Screen {
 		id: screen
 		server: currentServer

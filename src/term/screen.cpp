@@ -3,30 +3,27 @@
 
 #include "screen.h"
 
-#include <QSGRectangleNode>
-#include <QSGFlatColorMaterial>
-
-// Hello implemtation details. Aren't you just great?
-#include <QtQuick/private/qsgadaptationlayer_p.h>
-#include <QtQuick/private/qquickitem_p.h>
+#include <QBrush>
+#include <QGlyphRun>
+#include <QPainter>
 
 #include "managers/settings.h"
 
 #include "terms/dumb.h"
 
 Screen::Screen(QQuickItem* parent)
-    : QQuickItem(parent)
-    , letter(Term::create_term(Settings::Instance().get_term_type(), this))
+    : QQuickPaintedItem(parent)
+    , letter(Term::create_term(Settings::Instance().get_term_type(true), this))
     , pty_thread(new QThread)
 {
     pty_thread->start();
 
-    connect(&Settings::Instance(), &Settings::changed_font        , this  , &Screen::on_font_change      );
-    connect(this                 , &Screen  ::widthChanged        , letter, &Term  ::line_recount        );
-    connect(this                 , &Screen  ::want_line_recount   , letter, &Term  ::line_recount        );
-    connect(letter               , &Term    ::on_line_count_change, this  , &Screen::update_scroll_height);
-    connect(letter               , &Term    ::on_line_count_change, this  , &Screen::update              );
-    connect(letter               , &Term    ::new_text            , this  , &Screen::update              );
+    connect(&Settings::Instance(), &Settings::changed_font        , this  , &Screen    ::on_font_change      );
+    connect(this                 , &Screen  ::widthChanged        , letter, &Term      ::line_recount        );
+    connect(this                 , &Screen  ::want_line_recount   , letter, &Term      ::line_recount        );
+    connect(letter               , &Term    ::on_line_count_change, this  , &Screen    ::update_scroll_height);
+    connect(letter               , &Term    ::on_line_count_change, this  , &QQuickItem::update              );
+    connect(letter               , &Term    ::new_text            , this  , &QQuickItem::update              );
 
     setFlag(ItemHasContents, true);
     on_font_change();
@@ -49,76 +46,48 @@ QFontMetricsF Screen::Metrics() const
     return QFontMetricsF{font.base};
 }
 
-QSGNode* Screen::updatePaintNode(QSGNode* old_node, UpdatePaintNodeData*)
+void Screen::paint(QPainter* painter)
 {
-    auto sgr = QQuickItemPrivate::get(this)->sceneGraphRenderContext();
-
-    if (!old_node) {
-        old_node = new QSGTransformNode();
-    }
-
-    old_node->removeAllChildNodes();
+    painter->setBackgroundMode(Qt::OpaqueMode);
 
     QVector<QPointF> positions;
 
     auto columns = get_columns();
     auto metrics = Metrics();
+    auto top_pad = parentItem()->property("topPadding").value<double>();
 
     double x_pos = 0;
-    double y_pos = parentItem()->property("topPadding").value<double>();
+    double y_pos = 0;
     int    count = 0;
 
     for (auto& line : letter->get_data())
     {
-        for (auto& something : line)
+        for (auto& symbol : line)
         {
-            auto block = something;
-            if (block.text.size() == 0)
-                break;
+            font.base.setBold     (symbol.bold     );
+            font.base.setItalic   (symbol.italic   );
+            font.base.setUnderline(symbol.underline);
 
-            for (auto letter : block.text)
+            painter->setFont      (font  .base      );
+            painter->setPen       (symbol.foreground);
+            painter->setBackground(symbol.background);
+
+            if (count > columns)
             {
-                if (count > columns)
-                {
-                    y_pos += metrics.lineSpacing();
-                    x_pos = 0;
-                    count = 0;
-                }
-                positions << QPointF(x_pos, y_pos);
-                x_pos += metrics.averageCharWidth();
-                count++;
+                y_pos += metrics.lineSpacing();
+                x_pos = 0;
+                count = 0;
             }
 
-            QRawFont font_to_use = font.normal;
-            
-            QGlyphRun glyphrun;
-            glyphrun.setRawFont(font_to_use);
-            glyphrun.setGlyphIndexes(font_to_use.glyphIndexesForString(QString::fromStdString(block.text)));
-            glyphrun.setPositions(positions);
+            painter->drawText(x_pos, y_pos + metrics.ascent(), QString(symbol.letter));
 
-            auto node = sgr->sceneGraphContext()->createGlyphNode(sgr, false);
-
-            node->setOwnerElement(this);
-
-            node->geometry()->setIndexDataPattern(QSGGeometry::StaticPattern);
-            node->geometry()->setVertexDataPattern(QSGGeometry::StaticPattern);
-        
-            node->setGlyphs(QPointF(0, font_to_use.ascent()), glyphrun);
-            node->setStyle(QQuickText::Normal);
-            node->setColor(QColor(0, 0, 0));
-
-            node->update();
-
-            old_node->appendChildNode(node);
-
-            y_pos += metrics.lineSpacing();
-            x_pos = 0;
-            count = 0;
-            positions.clear();
+            x_pos += metrics.averageCharWidth();
+            count++;
         }
+        y_pos += metrics.lineSpacing();
+        x_pos = 0;
+        count = 0;
     }
-
-    return old_node;
 }
 
 void Screen::on_font_change()
@@ -138,7 +107,7 @@ void Screen::on_font_change()
 void Screen::set_server(Server* server)
 {
     // This will leak memory if set_server is called more then once per a Screen.
-    pty = new Pty(server, letter->term_type());
+    pty = new Pty(server, letter->term_report());
     pty->moveToThread(pty_thread);
 
     auto metrics = Metrics();

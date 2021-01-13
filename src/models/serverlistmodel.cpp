@@ -20,22 +20,16 @@ ServerListModel::~ServerListModel() = default;
 
 QVariant ServerListModel::data(const QModelIndex& index, int role) const
 {
-    if (!index.isValid()) {
+    if (!index.isValid())
         return QVariant();
-    }
+
     Server& temp = ServerManager::Instance()[index.row()];
     if (role == NameRole)
-    {
         return QVariant(temp.get_hostname());
-    }
     else if (role == StateRole)
-    {
         return QVariant::fromValue(temp.get_state());
-    }
     else if (role == IPRole)
-    {
         return QVariant::fromValue(temp.get_ip());
-    }
     return QVariant::fromValue<Server*>(&temp);
 }
 
