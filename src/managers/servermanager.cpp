@@ -5,6 +5,8 @@
 #include "settings.h"
 
 #include <QSettings>
+#include <QThread>
+
 #include <libssh/libssh.h>
 #include <iostream>
 
@@ -219,7 +221,13 @@ void ServerManager::update_server_info()
 {
     std::lock_guard __lock_guard{server_list_lock};
 
+    // This spawns a thread for each server. It could break when a server is deleted
+    // or slow down a computer because of too many server. If a problem arises, we can
+    // solve it then.
     for (int a = 0; a < size(); a++) {
-        servers[a]->update_info();
+        QThread::create([this, a](){
+            servers[a]->update_info();
+            QThread::currentThread()->quit();
+        })->start();
     }
 }
