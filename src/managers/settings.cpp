@@ -64,3 +64,19 @@ void Settings::set_font(QFont value)
     settings.endGroup();
     Q_EMIT changed_font();
 }
+
+Term::Types Settings::get_term_type()
+{
+    settings.beginGroup("term");
+    auto value = settings.value("type", Term::Types::Linux);
+    settings.endGroup();
+    return value.value<Term::Types>();
+}
+
+void Settings::set_term_type(Term::Types value)
+{
+    settings.beginGroup("term");
+    settings.setValue("type", value);
+    settings.endGroup();
+    Q_EMIT changed_term_type();
+}

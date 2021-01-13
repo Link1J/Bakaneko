@@ -16,7 +16,7 @@
 
 Screen::Screen(QQuickItem* parent)
     : QQuickItem(parent)
-    , letter(new Dumb{this})
+    , letter(Term::create_term(Settings::Instance().get_term_type(), this))
     , pty_thread(new QThread)
 {
     pty_thread->start();

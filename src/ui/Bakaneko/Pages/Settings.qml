@@ -75,8 +75,9 @@ Kirigami.ScrollablePage
 				id: fontDialog
 				title: "Please choose a font"
 				font: Managers.Settings.font
-				modality: Qt.Modal
+				modality: Qt.WindowModal
 				monospacedFonts: true
+				proportionalFonts: false
 				onAccepted: {
 					Managers.Settings.font = font
 					close();
@@ -93,7 +94,8 @@ Kirigami.ScrollablePage
 			Kirigami.FormData.label: i18n("Terminal Emulator")
 			visible: !Kirigami.Settings.isMobile
 			model: Managers.TermInfo.terms
-			onAccepted: {}
+			currentIndex: Managers.Settings.term_type
+			onActivated: Managers.Settings.term_type = currentIndex
 			Controls.ToolTip {
 				text: i18n("This controls the TERM variable, and may effect how command line applications output.\nIf unsure what this does, don't touch it.")
 			}
