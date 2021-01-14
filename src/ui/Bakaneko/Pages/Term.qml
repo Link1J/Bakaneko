@@ -7,10 +7,20 @@ import Bakaneko.Components 1.0 as Components
 
 Kirigami.ScrollablePage {
 	title: i18n("Terminal")
-	padding: 5
+
+	topPadding   : 0
+	leftPadding  : 0
+	rightPadding : 0
+	bottomPadding: 0
+
+	//flickableItem.ScrollBar.vertical.width
+
+	verticalScrollBarPolicy: Qt.ScrollBarAlwaysOff
+	//Component.onCompleted: verticalScrollBarPolicy = Qt.ScrollBarAlwaysOn
+
 	Components.Screen {
 		id: screen
-		server: currentServer
 		focus: true
+		Component.onCompleted: screen.server = currentServer
 	}
 }

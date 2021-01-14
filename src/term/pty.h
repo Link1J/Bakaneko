@@ -38,7 +38,7 @@ class Pty : public QObject
     Q_OBJECT
 
 public:
-    Pty(Server* server, const char* term, QObject* parent = nullptr);
+    Pty(Server* server, const char* term, QSize size, QObject* parent = nullptr);
     ~Pty();
 
 public Q_SLOTS:

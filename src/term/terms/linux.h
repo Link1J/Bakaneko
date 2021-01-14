@@ -22,5 +22,13 @@ public Q_SLOTS:
 Q_SIGNALS:
 
 private:
+    void parse_buffer();
+    void add_letter(char32_t letter);
+    void reset(int type);
+
     std::string command_buffer;
+    QColor foreground, background;
+    bool light = true;
+    bool swaped = false;
+    int foreground_index;
 };

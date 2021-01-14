@@ -4,6 +4,8 @@
 #include "dumb.h"
 #include "../screen.h"
 
+#include <QApplication>
+
 Dumb::Dumb(Screen* parent)
     : Term(parent)
 {}
@@ -48,13 +50,17 @@ void Dumb::add_text(QString text)
             }
             continue;
         }
+        else if (letter == '\a')
+        {
+            QApplication::beep();
+        }
         else
         {
             auto& line = data[current_line];
             if (current_char == line.size())
             {
                 line.push_back({
-                    letter,
+                    (char32_t)letter,
                     QColor{ 85,255, 85},
                     QColor{  0,  0,  0},
                     false,
@@ -65,7 +71,7 @@ void Dumb::add_text(QString text)
             else if (current_char < line.size())
             {
                 line[current_char] = {
-                    letter,
+                    (char32_t)letter,
                     QColor{ 85,255, 85},
                     QColor{  0,  0,  0},
                     false,
@@ -78,7 +84,7 @@ void Dumb::add_text(QString text)
                 while (line.size() != current_char)
                 {
                     line.push_back({
-                        ' ',
+                        U' ',
                         QColor{ 85,255, 85},
                         QColor{  0,  0,  0},
                         false,
@@ -87,7 +93,7 @@ void Dumb::add_text(QString text)
                     });
                 }
                 line.push_back({
-                    letter,
+                    (char32_t)letter,
                     QColor{ 85,255, 85},
                     QColor{  0,  0,  0},
                     false,

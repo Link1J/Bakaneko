@@ -12,7 +12,7 @@ class Screen;
 
 struct Symbol 
 {
-    char letter;
+    char32_t letter;
     QColor foreground, background;
     bool bold, italic, underline;
 };
@@ -47,7 +47,7 @@ public:
 
 public Q_SLOTS:
     virtual void add_text(QString text) = 0;
-    void line_recount();
+    virtual void line_recount();
 
 Q_SIGNALS:
     void on_line_count_change();

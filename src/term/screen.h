@@ -25,6 +25,7 @@ public:
     QFontMetricsF Metrics() const;
 
     int get_columns() const;
+    int get_rows() const;
 
 protected:
     void keyPressEvent(QKeyEvent* event) override;
