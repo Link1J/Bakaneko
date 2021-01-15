@@ -15,6 +15,9 @@
 
         <file>ui/Bakaneko/Components/qmldir</file>
         <file>ui/Bakaneko/Components/ServerListItem.qml</file>
+        <file>ui/Bakaneko/Components/Updates.qml</file>
+        <file>ui/Bakaneko/Components/ColumnBlock.qml</file>
+        <file>ui/Bakaneko/Components/ServerInfo.qml</file>
 
         <file>ui/Bakaneko/Dialogs/qmldir</file>
         <file>ui/Bakaneko/Dialogs/AddServerDialog.qml</file>

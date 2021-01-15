@@ -16,6 +16,7 @@ set(SRCS
     managers/terminfo.cpp
     term/terms/null.cpp
     models/termlist.cpp
+    models/updatemodel.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -66,6 +67,7 @@ target_link_libraries(bakaneko PUBLIC
     KF5::ConfigGui
 
     ssh
+    ljh
 )
 if(WIN32)
     target_link_libraries(bakaneko PRIVATE

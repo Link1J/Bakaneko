@@ -10,6 +10,8 @@
 
 #include <libssh/libssh.h>
 
+#include <ljh/expected.hpp>
+
 class Server;
 
 class ssh_connection
@@ -38,8 +40,11 @@ class Pty : public QObject
     Q_OBJECT
 
 public:
-    Pty(Server* server, const char* term, QSize size, QObject* parent = nullptr);
+    Pty(Server* server, const char* term, QSize size, bool auto_read = true, QObject* parent = nullptr);
     ~Pty();
+
+    std::string read_stdout(bool blocking = true);
+    std::string read_stderr(bool blocking = true);
 
 public Q_SLOTS:
     Q_INVOKABLE void send_signal(int signal);
@@ -54,6 +59,8 @@ Q_SIGNALS:
     void receved_data(QString data);
 
 private:
+    std::string read(bool std_err, bool blocking);
+
     ssh_connection connection;
     QSize size;
     QTimer* data_check;

@@ -46,14 +46,15 @@ QString Server::get_system_icon()
     return system_icon;
 }
 
-Server::State Server::get_state      () { return state           ;   }
-QString       Server::get_os         () { return operating_system;   }
-QString       Server::get_ip         () { return ip_address      ;   }
-QString       Server::get_mac        () { return mac_address     ;   }
-QString       Server::get_system_type() { return system_type     ;   }
-QString       Server::get_kernel     () { return kernel          ;   }
-QString       Server::get_arch       () { return architecture    ;   }
-QString       Server::get_vm_platform() { return vm_platform     ;   }
+Server::State Server::get_state      () { return state           ; }
+QString       Server::get_os         () { return operating_system; }
+QString       Server::get_ip         () { return ip_address      ; }
+QString       Server::get_mac        () { return mac_address     ; }
+QString       Server::get_system_type() { return system_type     ; }
+QString       Server::get_kernel     () { return kernel          ; }
+QString       Server::get_arch       () { return architecture    ; }
+QString       Server::get_vm_platform() { return vm_platform     ; }
+UpdateList    Server::get_updates    () { return updates         ; }
 
 std::string chassis_type_as_string(int a)
 {
@@ -166,6 +167,8 @@ std::string chassis_type_as_system_icon(int a)
 // Fix here, https://superuser.com/a/1137913
 void Server::update_info()
 {
+    std::lock_guard __lock_guard{update_lock};
+    
 #if defined(_WIN32)
     static char SendData[32] = "Data Buffer";
     static auto hIcmpFile = IcmpCreateFile();
@@ -184,13 +187,15 @@ void Server::update_info()
     State new_state = system(command.c_str()) == 0 ? State::Online : State::Offline;
 #endif
 
-    if (new_state != State::Offline)
+    if (new_state == state)
     {
-        //check_for_updates();
+        if (state == State::Online)
+        {
+            check_for_updates();
+        }
+        return;
     }
 
-    if (new_state == state)
-        return;
     state = new_state;
     Q_EMIT changed_state();
 
@@ -203,121 +208,7 @@ void Server::update_info()
     }
 
     Q_EMIT this_online(this);
-
-    int exit_code;
-    std::string std_out;
-    std::string std_err;
-
-    if (kernal_type == "Linux")
-    {
-        std::tie(exit_code, std_out, std_err) = run_command("hostnamectl status");
-
-        if (exit_code != 0)
-        {
-            system_icon = "";
-            Q_EMIT changed_system_icon();
-            return;
-        }
-
-        auto get_value = [std_out](std::string key) -> std::string {
-            auto text_pos = std_out.find(key) + key.length() + 2;
-            if (text_pos == std::string::npos + key.length() + 2)
-                return "";
-            auto newline_pos = std_out.find('\n', text_pos);
-            return std_out.substr(text_pos, newline_pos - text_pos);
-        };
-
-        operating_system = QString::fromStdString(get_value("Operating System"));
-        kernel           = QString::fromStdString(get_value("Kernel"          ));
-        system_icon      = QString::fromStdString(get_value("Icon name"       ));
-        system_type      = QString::fromStdString(get_value("Chassis"         ));
-        architecture     = QString::fromStdString(get_value("Architecture"    ));
-        pretty_hostname  = QString::fromStdString(get_value("Pretty hostname" ));
-        vm_platform      = QString::fromStdString(get_value("Virtualization"  ));
-
-        Q_EMIT changed_system_icon();
-        Q_EMIT changed_system_type();
-        Q_EMIT changed_os         ();
-        Q_EMIT changed_kernel     ();
-        Q_EMIT changed_arch       ();
-        Q_EMIT changed_hostname   ();
-        Q_EMIT changed_vm_platform();
-        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
-    }
-    else if (kernal_type == "Windows")
-    {
-        auto get_info = [this](std::string clazz, std::string key) -> std::string {
-            auto [exit_code, std_out, std_err] = run_command("wmic " + clazz + " get " + key);
-            if (exit_code != 0)
-                return "";
-            auto newline_pos1 = std_out.find('\n') + 1;
-            auto newline_pos2 = std_out.find_last_not_of(' ', std_out.find('\r', newline_pos1) - 1) + 1;
-            return std_out.substr(newline_pos1, newline_pos2 - newline_pos1);
-        };
-
-        auto get_env_var = [this](std::string var) -> std::string {
-            auto [exit_code, std_out, std_err] = run_command("echo %" + var + "%");
-            if (std_out.find("%"+var+"%") != std::string::npos)
-                std::tie(exit_code, std_out, std_err) = run_command("echo $env:" + var);
-            if (exit_code != 0)
-                return "";
-            return std_out.substr(0, std_out.find('\n'));
-        };
-
-        auto get_reg_value = [this](std::string path, std::string key) -> std::string {
-            auto command = "reg query \\\"" + path + "\\\" /v " + key;
-            auto [exit_code, std_out, std_err] = run_command(command);
-            if (exit_code != 0)
-                return "";
-            auto start = std_out.find("REG_");
-            start = std_out.find(' ', start);
-            start = std_out.find_first_not_of(' ', start);
-            auto length = std_out.find("\r", start) - start;
-            return std_out.substr(start, length);
-        };
-
-        auto os_name = get_info("OS", "Caption");
-        if (os_name.find("Microsoft ") == 0)
-            os_name = os_name.substr(10);
-
-        if (int line = os_name.find("Windows 10"); line != std::string::npos)
-        {
-            line += 10;
-            auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
-            if (version == "")
-                version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
-            if (version != "")
-                os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
-        }
-        else
-        {
-            line += os_name.find_first_of(' ', line + 11);
-            auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CSDVersion");
-            if (version != "")
-                os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
-        }
-
-        operating_system = QString::fromStdString(os_name);
-
-        auto kernel_version = "NT " + get_info("OS", "Version");
-        auto UBR = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
-        if (UBR != "") kernel_version += "." + std::to_string(std::stoi(UBR, nullptr, 0));
-
-        kernel           = QString::fromStdString(kernel_version);
-
-        architecture     = QString::fromStdString(get_env_var("PROCESSOR_ARCHITECTURE"));
-
-        int chassis_type = std::stoi(get_info("SystemEnclosure", "ChassisTypes").substr(1));
-        system_icon      = QString::fromStdString(chassis_type_as_system_icon(chassis_type));
-        system_type      = QString::fromStdString(chassis_type_as_system_type(chassis_type));
-
-        Q_EMIT changed_system_icon();
-        Q_EMIT changed_system_type();
-        Q_EMIT changed_os         ();
-        Q_EMIT changed_kernel     ();
-        Q_EMIT changed_arch       ();
-        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
-    }
+    collect_info();
 }
 
 Server::Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QString kernal_type, QObject* parent)
@@ -336,26 +227,13 @@ void Server::wake_up()
 {
     std::string mac = mac_address.toUtf8().data();
     std::string ip  = ip_address .toUtf8().data();
-
-    auto char_to_hex = [](char letter) -> char {
-        if (isdigit(letter))
-            return letter - '0';
-        else if (letter >= 'a' && letter <= 'f') 
-            return letter - 'a' + 10;
-        else if (letter >= 'A' && letter <= 'F') 
-            return letter - 'A' + 10;
-        return '\xFF';
-    };
-
     std::string dest(6, (char)0);
 
     sscanf(mac.c_str(), "%hhx:%hhx:%hhx:%hhx:%hhx:%hhx", &dest[0], &dest[1], &dest[2], &dest[3], &dest[4], &dest[5]);
 
     std::string magic_packet(6, '\xFF');
     for (int a = 0; a < 16; a++)
-    {
         magic_packet += dest;
-    }
 
     auto packet = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
@@ -471,9 +349,6 @@ void Server::reboot()
     }
 }
 
-// pacman -Qu
-
-
 ssh_connection Server::get_ssh_connection()
 {
     auto session = ssh_new();
@@ -492,3 +367,220 @@ ssh_connection Server::get_ssh_connection()
 }
 
 Server::~Server() = default;
+
+static std::vector<std::string> split(const std::string& s, char seperator)
+{
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+
+    while((pos = s.find(seperator, pos)) != std::string::npos)
+    {
+        std::string substring(s.substr(prev_pos, pos - prev_pos));
+        output.push_back(substring);
+        prev_pos = ++pos;
+    }
+
+    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+    return output;
+}
+
+void Server::check_for_updates()
+{
+    UpdateList data;
+    int exit_code;
+    std::string std_out;
+    std::string std_err;
+
+    auto run = [this, &data](std::string command, bool(*decode)(Update*, std::string)) {
+        if (data.size() == 0)
+        {
+            auto [exit_code, std_out, std_err] = run_command(command);
+            if (exit_code == 0)
+            {
+                auto packages = split(std_out, '\n');
+                for (auto& package : packages)
+                {
+                    if (package.empty())
+                        continue;
+
+                    Update* update = new Update;
+                    decode(update, package);
+                    data.append(update);
+                }
+            }
+        }
+    };
+
+    auto arch_decode = [](Update* update, std::string package) {
+        size_t space = package.find(' '), pre_space = 0;
+        update->m_name = QString::fromStdString(package.substr(pre_space, space - pre_space));
+
+        pre_space = space;
+        space = package.find(' ', space + 1);
+        update->m_old_version = QString::fromStdString(package.substr(pre_space, space - pre_space));
+
+        pre_space = space + 4;
+        update->m_new_version = QString::fromStdString(package.substr(pre_space));
+
+        return true;
+    };
+    run("yay -Qu"   , arch_decode);
+    run("pacman -Qu", arch_decode);
+
+    run("apt list --upgradable", [](Update* update, std::string package) {
+        auto info = split(package, ' ');
+        if (info.size() != 6)
+            return false;
+
+        update->m_name        = QString::fromStdString(info[0].substr(0, info[0].find('/')));
+        update->m_old_version = QString::fromStdString(info[5].substr(0, info[5].size()-1 ));
+        update->m_new_version = QString::fromStdString(info[1]                             );
+
+        return true;
+    });
+
+    if (updates.size() != data.size())
+    {
+        for (int a = 0; a < updates.size(); a++)
+            delete updates[a];
+        updates = data;
+        Q_EMIT new_updates(updates);
+        Q_EMIT changed_updates();
+    }
+}
+
+QString Server::get_kernal_type()
+{
+    return kernal_type;
+}
+
+void Server::collect_info()
+{
+    int exit_code;
+    std::string std_out;
+    std::string std_err;
+
+    if (kernal_type == "Linux")
+    {
+        std::tie(exit_code, std_out, std_err) = run_command("hostnamectl status");
+
+        if (exit_code != 0)
+        {
+            system_icon = "";
+            Q_EMIT changed_system_icon();
+            return;
+        }
+
+        auto get_value = [std_out](std::string key) -> std::string {
+            auto text_pos = std_out.find(key) + key.length() + 2;
+            if (text_pos == std::string::npos + key.length() + 2)
+                return "";
+            auto newline_pos = std_out.find('\n', text_pos);
+            return std_out.substr(text_pos, newline_pos - text_pos);
+        };
+
+        operating_system = QString::fromStdString(get_value("Operating System"));
+        kernel           = QString::fromStdString(get_value("Kernel"          ));
+        system_icon      = QString::fromStdString(get_value("Icon name"       ));
+        system_type      = QString::fromStdString(get_value("Chassis"         ));
+        architecture     = QString::fromStdString(get_value("Architecture"    ));
+        pretty_hostname  = QString::fromStdString(get_value("Pretty hostname" ));
+        vm_platform      = QString::fromStdString(get_value("Virtualization"  ));
+
+        Q_EMIT changed_system_icon();
+        Q_EMIT changed_system_type();
+        Q_EMIT changed_os         ();
+        Q_EMIT changed_kernel     ();
+        Q_EMIT changed_arch       ();
+        Q_EMIT changed_hostname   ();
+        Q_EMIT changed_vm_platform();
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
+    }
+    else if (kernal_type == "Windows")
+    {
+        auto get_info = [this](std::string clazz, std::string key) -> std::string {
+            auto [exit_code, std_out, std_err] = run_command("wmic " + clazz + " get " + key);
+            if (exit_code != 0)
+                return "";
+            auto newline_pos1 = std_out.find('\n') + 1;
+            auto newline_pos2 = std_out.find_last_not_of(' ', std_out.find('\r', newline_pos1) - 1) + 1;
+            return std_out.substr(newline_pos1, newline_pos2 - newline_pos1);
+        };
+
+        auto get_env_var = [this](std::string var) -> std::string {
+            auto [exit_code, std_out, std_err] = run_command("echo %" + var + "%");
+            if (std_out.find("%"+var+"%") != std::string::npos)
+                std::tie(exit_code, std_out, std_err) = run_command("echo $env:" + var);
+            if (exit_code != 0)
+                return "";
+            return std_out.substr(0, std_out.find('\n'));
+        };
+
+        auto get_reg_value = [this](std::string path, std::string key) -> std::string {
+            auto command = "reg query \\\"" + path + "\\\" /v " + key;
+            auto [exit_code, std_out, std_err] = run_command(command);
+            if (exit_code != 0)
+                return "";
+            auto start = std_out.find("REG_");
+            start = std_out.find(' ', start);
+            start = std_out.find_first_not_of(' ', start);
+            auto length = std_out.find("\r", start) - start;
+            return std_out.substr(start, length);
+        };
+
+        std::thread os_thread{[this, get_info, get_env_var, get_reg_value]() {
+            auto os_name = get_info("OS", "Caption");
+            if (os_name.find("Microsoft ") == 0)
+                os_name = os_name.substr(10);
+
+            if (int line = os_name.find("Windows 10"); line != std::string::npos)
+            {
+                line += 10;
+                auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+                if (version == "")
+                    version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+                if (version != "")
+                    os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
+            }
+            else
+            {
+                line += os_name.find_first_of(' ', line + 11);
+                auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CSDVersion");
+                if (version != "")
+                    os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
+            }
+
+            operating_system = QString::fromStdString(os_name);
+        }};
+
+        std::thread kernel_thread{[this, get_info, get_env_var, get_reg_value]() {
+            auto kernel_version = "NT " + get_info("OS", "Version");
+            auto UBR = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+            if (UBR != "") kernel_version += "." + std::to_string(std::stoi(UBR, nullptr, 0));
+
+            kernel           = QString::fromStdString(kernel_version);
+        }};
+
+        std::thread architecture_thread{[this, get_info, get_env_var, get_reg_value]() {
+            architecture     = QString::fromStdString(get_env_var("PROCESSOR_ARCHITECTURE"));
+        }};
+
+        std::thread system_thread{[this, get_info, get_env_var, get_reg_value]() {
+            int chassis_type = std::stoi(get_info("SystemEnclosure", "ChassisTypes").substr(1));
+            system_icon      = QString::fromStdString(chassis_type_as_system_icon(chassis_type));
+            system_type      = QString::fromStdString(chassis_type_as_system_type(chassis_type));
+        }};
+
+        os_thread          .join();
+        kernel_thread      .join();
+        architecture_thread.join();
+        system_thread      .join();
+
+        Q_EMIT changed_system_icon();
+        Q_EMIT changed_system_type();
+        Q_EMIT changed_os         ();
+        Q_EMIT changed_kernel     ();
+        Q_EMIT changed_arch       ();
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
+    }
+}

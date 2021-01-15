@@ -22,6 +22,7 @@
 
 #include "models/serverlistmodel.h"
 #include "models/termlist.h"
+#include "models/updatemodel.h"
 
 #include "objects/server.h"
 
@@ -70,6 +71,7 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     qmlRegisterType             <ServerListModel>("Bakaneko.Models"    , 1, 0, "ServerList"                            );
     qmlRegisterType             <TermList       >("Bakaneko.Models"    , 1, 0, "TermList"                              );
+    qmlRegisterType             <UpdateModel    >("Bakaneko.Models"    , 1, 0, "Updates"                               );
     qmlRegisterType             <Screen         >("Bakaneko.Components", 1, 0, "Screen"                                );
     qmlRegisterUncreatableType  <Server         >("Bakaneko.Objects"   , 1, 0, "Server"    , ""                        );
     qmlRegisterSingletonInstance                 ("Bakaneko.Managers"  , 1, 0, "Server"    , &ServerManager::Instance());
@@ -81,6 +83,9 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     if (engine.rootObjects().isEmpty())
         return -1;
+
+    ServerManager::Instance().update_server_info();
+    ServerManager::Instance().update_server_info();
 
     auto exit_code = app.exec();
 

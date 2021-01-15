@@ -28,10 +28,11 @@ class ServerManager : public QObject
     ~ServerManager();
 
     void Reload();
-    void update_server_info();
 
 public:
     static ServerManager& Instance();
+    
+    void update_server_info();
 
     size_t size() const;
     Server& operator[](size_t index);

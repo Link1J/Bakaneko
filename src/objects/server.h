@@ -7,15 +7,17 @@
 #include <QTimer>
 
 #include <memory>
+#include <mutex>
 
 #include <libssh/libssh.h>
 
 #include <term/pty.h>
+#include <models/updatemodel.h>
 
 class Server : public QObject
 {
     friend class ServerManager;
-    Q_OBJECT
+    Q_OBJECT;
 
 public:
     Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QString kernal_type, QObject* parent = nullptr);
@@ -27,39 +29,43 @@ public:
         Offline,
         Unknown,
     };
-    Q_ENUM(State)
+    Q_ENUM(State);
 
 private:
-    Q_PROPERTY(QString hostname    READ get_hostname    NOTIFY changed_hostname   )
-    Q_PROPERTY(State   state       READ get_state       NOTIFY changed_state      )
-    Q_PROPERTY(QString ip          READ get_ip          NOTIFY changed_ip         )
-    Q_PROPERTY(QString mac         READ get_mac         NOTIFY changed_mac        )
-    Q_PROPERTY(QString system_icon READ get_system_icon NOTIFY changed_system_icon)
-    Q_PROPERTY(QString system_type READ get_system_type NOTIFY changed_system_type)
-    Q_PROPERTY(QString os          READ get_os          NOTIFY changed_os         )
-    Q_PROPERTY(QString kernel      READ get_kernel      NOTIFY changed_kernel     )
-    Q_PROPERTY(QString arch        READ get_arch        NOTIFY changed_arch       )
-    Q_PROPERTY(QString vm_platform READ get_vm_platform NOTIFY changed_vm_platform)
+    Q_PROPERTY(QString         hostname    READ get_hostname    NOTIFY changed_hostname   );
+    Q_PROPERTY(State           state       READ get_state       NOTIFY changed_state      );
+    Q_PROPERTY(QString         ip          READ get_ip          NOTIFY changed_ip         );
+    Q_PROPERTY(QString         mac         READ get_mac         NOTIFY changed_mac        );
+    Q_PROPERTY(QString         system_icon READ get_system_icon NOTIFY changed_system_icon);
+    Q_PROPERTY(QString         system_type READ get_system_type NOTIFY changed_system_type);
+    Q_PROPERTY(QString         os          READ get_os          NOTIFY changed_os         );
+    Q_PROPERTY(QString         kernel      READ get_kernel      NOTIFY changed_kernel     );
+    Q_PROPERTY(QString         arch        READ get_arch        NOTIFY changed_arch       );
+    Q_PROPERTY(QString         vm_platform READ get_vm_platform NOTIFY changed_vm_platform);
+    Q_PROPERTY(QList<QObject*> updates     READ get_updates     NOTIFY changed_updates    );
 
     std::tuple<int, std::string, std::string> run_command(std::string command);
 
 public:
     ssh_connection get_ssh_connection();
+    QString        get_kernal_type   ();
 
 public Q_SLOTS:
-    Q_INVOKABLE QString get_hostname   ();
-    Q_INVOKABLE State   get_state      ();
-    Q_INVOKABLE QString get_os         ();
-    Q_INVOKABLE QString get_ip         ();
-    Q_INVOKABLE QString get_mac        ();
-    Q_INVOKABLE QString get_system_icon();
-    Q_INVOKABLE QString get_system_type();
-    Q_INVOKABLE QString get_kernel     ();
-    Q_INVOKABLE QString get_arch       ();
-    Q_INVOKABLE QString get_vm_platform();
+    Q_INVOKABLE QString      get_hostname   ();
+    Q_INVOKABLE State        get_state      ();
+    Q_INVOKABLE QString      get_os         ();
+    Q_INVOKABLE QString      get_ip         ();
+    Q_INVOKABLE QString      get_mac        ();
+    Q_INVOKABLE QString      get_system_icon();
+    Q_INVOKABLE QString      get_system_type();
+    Q_INVOKABLE QString      get_kernel     ();
+    Q_INVOKABLE QString      get_arch       ();
+    Q_INVOKABLE QString      get_vm_platform();
+    Q_INVOKABLE UpdateList   get_updates    ();
 
     void update_info      ();
-    //void check_for_updates();
+    void check_for_updates();
+    void collect_info     ();
 
     Q_INVOKABLE void wake_up ();
     Q_INVOKABLE void shutdown();
@@ -76,26 +82,31 @@ Q_SIGNALS:
     void changed_kernel     ();
     void changed_arch       ();
     void changed_vm_platform();
+    void changed_updates    ();
+
+    void new_updates(QList<QObject*>);
 
     void this_online (Server*);
     void this_offline(Server*);
 
 private:
-    QString hostname;
-    QString ip_address;
-    QString mac_address;
-    QString username;
-    QString password;
-    State   state = State::Unknown;
-    QString system_icon;
-    QString system_type;
-    QString operating_system;
-    QString kernel;
-    QString architecture;
-    QString vm_platform = "";
-    QString pretty_hostname = "";
+    QString      hostname;
+    QString      ip_address;
+    QString      mac_address;
+    QString      username;
+    QString      password;
+    State        state = State::Unknown;
+    QString      system_icon;
+    QString      system_type;
+    QString      operating_system;
+    QString      kernel;
+    QString      architecture;
+    QString      vm_platform = "";
+    QString      pretty_hostname = "";
+    UpdateList   updates;
 
     QString kernal_type;
+    std::mutex update_lock;
 };
 
 using ServerPointer = Server*;

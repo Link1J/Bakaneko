@@ -4,122 +4,100 @@
 import QtQuick 2.4
 import QtQuick.Layouts 1.0
 import org.kde.kirigami 2.5 as Kirigami
-import QtQuick.Controls 2.0 as Controls
+import QtQuick.Controls 2.9 as Controls
 import Bakaneko.Objects 1.0 as Objects
 import Bakaneko.Pages 1.0 as Pages
+import Bakaneko.Models 1.0 as Models
+import Bakaneko.Components 1.0 as Components
 
 Kirigami.Page {
-    id: page
-    title: currentServer.hostname
+	id: page
+	title: currentServer.hostname
+	padding: 0
 
-    actions.contextualActions: [
-        Kirigami.Action {
-            visible: !Kirigami.Settings.isMobile
-            icon.name: "utilities-terminal"
-            text: i18n("Terminal")
-            enabled: currentServer.state == Objects.Server.State.Online
-            onTriggered: {
-                root.fullWindowLayer(terminalPage);
-            }
-            tooltip: i18n("Opens a terminal")
-        },
-        Kirigami.Action {
-            icon.name: "system-shutdown"
-            text: currentServer.state == Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
-            onTriggered: {
-                if (currentServer.state == Objects.Server.State.Online) {
-                    currentServer.shutdown();
-                }
-                else {
-                    currentServer.wake_up();
-                }
-            }
-            tooltip: currentServer.state == Objects.Server.State.Online ? i18n("Powers down the computer") : i18n("Powers up the computer")
-        },
-        Kirigami.Action {
-            icon.name: "system-reboot"
-            text: i18n("Reboot")
-            enabled: currentServer.state == Objects.Server.State.Online
-            onTriggered: {
-                currentServer.reboot();
-            }
-            tooltip: "Reboots the computer"
-        }
-    ]
+	actions.contextualActions: [
+		Kirigami.Action {
+			visible: !Kirigami.Settings.isMobile
+			icon.name: "utilities-terminal"
+			text: i18n("Terminal")
+			enabled: currentServer.state == Objects.Server.State.Online
+			onTriggered: {
+				root.fullWindowLayer(terminalPage);
+			}
+			tooltip: i18n("Opens a terminal")
+		},
+		Kirigami.Action {
+			icon.name: "system-shutdown"
+			text: currentServer.state == Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
+			onTriggered: {
+				if (currentServer.state == Objects.Server.State.Online) {
+					currentServer.shutdown();
+				}
+				else {
+					currentServer.wake_up();
+				}
+			}
+			tooltip: currentServer.state == Objects.Server.State.Online ? i18n("Powers down the computer") : i18n("Powers up the computer")
+		},
+		Kirigami.Action {
+			icon.name: "system-reboot"
+			text: i18n("Reboot")
+			enabled: currentServer.state == Objects.Server.State.Online
+			onTriggered: {
+				currentServer.reboot();
+			}
+			tooltip: "Reboots the computer"
+		}
+	]
 
-    ColumnLayout {
-        anchors.fill: parent
-        
-        RowLayout {
-            Layout.alignment: Qt.AlignTop
-            Layout.fillWidth: true
+	ColumnLayout {
+		anchors.fill: parent
+		
+		Components.ServerInfo {}
 
-            FontMetrics {
-                id: fontMetrics
-            }
+		RowLayout {
+			implicitWidth: page.width
+			height: 0
+		}
 
-            Kirigami.Icon {
-                readonly property var max_height: 6 * (temp.height + Kirigami.Units.smallSpacing) + Kirigami.Units.smallSpacing - 1
-                readonly property var item_width: icon.width + Kirigami.Units.largeSpacing + icon.x
-                readonly property var page_width: page.width - page.leftPadding - page.rightPadding * 2
+		Kirigami.Separator {
+			Layout.fillWidth: true
+		}
+	
+		Controls.ScrollView {
+			Controls.ScrollBar.horizontal.policy: Controls.ScrollBar.AlwaysOff
+			Controls.ScrollBar.vertical.policy  : Controls.ScrollBar.AsNeeded
+			
+			Layout.fillWidth : true
+			Layout.fillHeight: true
+	
+			clip: true
+	
+			ColumnLayout {
+				Layout.fillWidth : true
+				Layout.fillHeight: true
 
-                id: icon
+				width: page.width
 
-                Layout.alignment: Qt.AlignTop | Qt.AlignRight
-                Layout.rightMargin: Kirigami.Units.largeSpacing
+				Components.ColumnBlock {
+					title: "Updates (" + updates.info.rowCount() + ")"
+					Components.UpdateList {}
+				}
+			}
+		}
+	}
 
-                source: currentServer.system_icon
-                implicitHeight:
-                    page_width - info.x < info.width
-                    ? page_width - info.width < max_height
-                        ? page_width - info.width
-                        : max_height
-                    : max_height
-                implicitWidth: icon.implicitHeight
-            }
-
-            Kirigami.FormLayout {
-                id: info
-            
-                Layout.fillWidth: false
-                Layout.alignment: Qt.AlignTop
-
-                wideMode: true
-
-                Controls.Label {
-                    id: temp
-                    Kirigami.FormData.label: "OS:"
-                    text: currentServer.os
-                }
-                Controls.Label {
-                    Kirigami.FormData.label: "Kernel:"
-                    text: currentServer.kernel
-                }
-                Controls.Label {
-                    Kirigami.FormData.label: "Architecture:"
-                    text: currentServer.arch
-                }
-                Controls.Label {
-                    Kirigami.FormData.label: "VM Platform:"
-                    text: currentServer.vm_platform
-                    visible: currentServer.vm_platform != ""
-                }
-                Controls.Label {
-                    Kirigami.FormData.label: "IP:"
-                    text: currentServer.ip
-                }
-                Controls.Label {
-                    Kirigami.FormData.label: "MAC:"
-                    text: currentServer.mac
-                }
-            }
-        }
-        Kirigami.Separator {
-        }
-    }
-
-    Component {
-        id: terminalPage
-        Pages.Term {}
-    }
+	Component {
+		id: terminalPage
+		Pages.Term {}
+	}
+	Item {
+		id: updates
+		property var info : Models.Updates {
+			server: currentServer
+		}
+	}
+	FontMetrics {
+		id: fontMetrics
+	}
 }

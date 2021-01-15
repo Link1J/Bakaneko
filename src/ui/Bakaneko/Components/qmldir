@@ -3,3 +3,6 @@
 
 module Bakaneko.Components
 ServerListItem 1.0 ServerListItem.qml
+UpdateList 1.0 Updates.qml
+ColumnBlock 1.0 ColumnBlock.qml
+ServerInfo 1.0 ServerInfo.qml
