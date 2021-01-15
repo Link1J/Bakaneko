@@ -39,11 +39,15 @@ public:
 
     int GetIndex(Server* server);
 
+    void setModel(ServerListModel* in_model);
+    ServerListModel* GetModel();
+
+public Q_SLOTS:
     Q_INVOKABLE void AddServer(QString ip, QString username, QString password);
     Q_INVOKABLE void RemoveServer(int index);
 
-    void setModel(ServerListModel* in_model);
-    ServerListModel* GetModel();
+    Q_INVOKABLE void server_offline(Server* server);
+    Q_INVOKABLE void server_online (Server* server);
 };
 
 using ServerManagerPointer = ServerManager*;

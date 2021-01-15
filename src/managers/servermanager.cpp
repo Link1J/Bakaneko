@@ -6,6 +6,10 @@
 
 #include <QSettings>
 #include <QThread>
+#include <QIcon>
+
+#include <KLocalizedString>
+#include <KNotification>
 
 #include <libssh/libssh.h>
 
@@ -35,13 +39,12 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
     std::string hostname;
     std::string MAC;
     std::string network_info;
-;
 
     auto q_ip       = QString::fromStdString(ip      );
     auto q_username = QString::fromStdString(username);
     auto q_password = QString::fromStdString(password);
 
-    auto temp = std::make_unique<Server>("", "", q_ip, q_username, q_password, "");
+    auto temp = std::make_unique<Server>("", "", q_ip, q_username, q_password, "", this);
 
     int exit_code;
     std::string std_out;
@@ -99,6 +102,9 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
     settings.setValue("password"   , q_password   );
     settings.setValue("kernal_type", q_kernal_type);
     settings.endArray();
+
+    connect(servers[size].get(), &Server::this_online , this, &ServerManager::server_online );
+    connect(servers[size].get(), &Server::this_offline, this, &ServerManager::server_offline);
     
     if (model != nullptr)
     {
@@ -141,8 +147,12 @@ void ServerManager::Reload()
             settings.value("ip"         ).toString(),
             settings.value("username"   ).toString(),
             settings.value("password"   ).toString(),
-            settings.value("kernal_type").toString()
+            settings.value("kernal_type").toString(),
+            this
         ));
+
+        connect(servers[a].get(), &Server::this_online , this, &ServerManager::server_online );
+        connect(servers[a].get(), &Server::this_offline, this, &ServerManager::server_offline);
 
         if (model != nullptr)
         {
@@ -242,4 +252,24 @@ ServerManager::~ServerManager()
 {
     std::lock_guard __lock_guard{server_list_lock};
     while (active_threads > 0);
+}
+
+void ServerManager::server_offline(Server* server)
+{
+    KNotification::event(
+        "server_offline",
+        "Server Offline",
+        i18n("%1 has gone offline", server->get_hostname()),
+        QIcon::fromTheme("offline").pixmap(32)
+    );
+}
+
+void ServerManager::server_online(Server* server)
+{
+    KNotification::event(
+        "server_online",
+        "Server Online",
+        i18n("%1 has come online", server->get_hostname()),
+        QIcon::fromTheme("online").pixmap(32)
+    );
 }

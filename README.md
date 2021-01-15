@@ -10,9 +10,6 @@
 - [Craft](https://community.kde.org/Craft)
 - [Visual Studio](https://visualstudio.microsoft.com/) 2019 
 - [cmake](https://cmake.org/)
-- [libssh](https://www.libssh.org/)
-
-> libssh is not provided, as I could not get it to build a working version. Using vcpkg to provide it is valid.
 
 > Craft has a guide for installation [here](https://community.kde.org/Guidelines_and_HOWTOs/Build_from_source/Windows). It is used to provide the KDE libaries on Windows.
 
@@ -21,7 +18,7 @@
 #### Instructions
 From a Craft prompt, run the command bellow to install the needed libaries.
 ```powershell
-craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-style
+craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-style libssh
 ```
 Then clone the repo,
 ```powershell
@@ -51,7 +48,8 @@ cmake ..
   - KCoreAddons
   - KIconThemes
 - Extra CMake Modules
-> All of these can be installed by your package manager
+> All of these can be installed by your package manager. 
+> If not follow the Windows guide.
 
 #### Instructions
 ```bash

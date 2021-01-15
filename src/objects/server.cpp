@@ -6,6 +6,7 @@
 #include <QProcess>
 #include <QSettings>
 #include <QtNetwork>
+#include <QIcon>
 
 #include <iostream>
 #include <string_view>
@@ -38,7 +39,10 @@ QString Server::get_hostname()
 QString Server::get_system_icon()
 {
     if (system_icon.isEmpty())
-        return "computer-fail";
+        if (QIcon::hasThemeIcon("computer-fail"))
+            return "computer-fail";
+        else
+            return "computer-fail-symbolic";
     return system_icon;
 }
 
@@ -171,7 +175,7 @@ void Server::update_info()
     
     DWORD ReplySize = sizeof(ICMP_ECHO_REPLY) + sizeof(SendData);
     auto ReplyBuffer = (void*)malloc(ReplySize);
-    auto dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 50);
+    auto dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 1000);
     free(ReplyBuffer);
 
     auto new_state = dwRetVal != 0 ? State::Online : State::Offline;
@@ -192,10 +196,13 @@ void Server::update_info()
 
     if (new_state == State::Offline)
     {
+        Q_EMIT this_offline(this);
         system_icon = "";
         Q_EMIT changed_system_icon();
         return;
     }
+
+    Q_EMIT this_online(this);
 
     int exit_code;
     std::string std_out;
@@ -322,6 +329,7 @@ Server::Server(QString hostname, QString mac_address, QString ip_address, QStrin
     , password   {password   }
     , kernal_type{kernal_type}
 {
+    state = State::Unknown;
 }
 
 void Server::wake_up()

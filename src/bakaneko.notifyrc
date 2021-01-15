@@ -1,0 +1,23 @@
+[Global]
+Icon=me.link1j.bakaneko
+Name=Bakaneko
+Comment=A server management tool
+DesktopEntry=me.link1j.bakaneko.desktop
+
+[Context/server_state]
+Name=Server State
+Comment=Server State
+
+[Event/server_online]
+Name=Server Online
+Comment=A Server has come online
+Contexts=server_state
+Action=Sound|Popup
+Urgency=Normal
+
+[Event/server_offline]
+Name=Server Offline
+Comment=A Server has gone offline
+Contexts=server_state
+Action=Sound|Popup
+Urgency=Critical

@@ -7,6 +7,8 @@
 #include <QGlyphRun>
 #include <QPainter>
 
+#include <cmath>
+
 #include "managers/settings.h"
 
 #include "terms/dumb.h"

@@ -25,6 +25,7 @@ public:
     {
         Online,
         Offline,
+        Unknown,
     };
     Q_ENUM(State)
 
@@ -76,13 +77,16 @@ Q_SIGNALS:
     void changed_arch       ();
     void changed_vm_platform();
 
+    void this_online (Server*);
+    void this_offline(Server*);
+
 private:
     QString hostname;
     QString ip_address;
     QString mac_address;
     QString username;
     QString password;
-    State   state = State::Offline;
+    State   state = State::Unknown;
     QString system_icon;
     QString system_type;
     QString operating_system;

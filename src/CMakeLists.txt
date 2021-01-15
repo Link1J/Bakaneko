@@ -61,6 +61,9 @@ target_link_libraries(bakaneko PUBLIC
     KF5::Notifications
     KF5::Kirigami2
     KF5::CoreAddons
+    
+    KF5::ConfigCore
+    KF5::ConfigGui
 
     ssh
 )
@@ -71,7 +74,11 @@ if(WIN32)
         KF5::IconThemes
     )
 endif()
-
+if(APPLE)
+    target_link_libraries(bakaneko PRIVATE
+        KF5::IconThemes
+    )
+endif()
 if (ANDROID)
     kirigami_package_breeze_icons(ICONS
         list-add

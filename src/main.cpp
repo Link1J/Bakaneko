@@ -15,7 +15,6 @@
 
 #include <iostream>
 #include <string>
-#include <filesystem>
 
 #ifdef Q_OS_WINDOWS
 #include <winsock2.h>
