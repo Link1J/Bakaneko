@@ -6,6 +6,8 @@ project(bakaneko)
 
 include(FeatureSummary)
 
+add_subdirectory(externals)
+
 set(QT5_MIN_VERSION 5.14)
 set(KF5_MIN_VERSION 5.75)
 
