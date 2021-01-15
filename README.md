@@ -1,6 +1,6 @@
 # Bakaneko
-![Version](https://img.shields.io/badge/version-0.0.1-blue.svg?cacheSeconds=2592000)
-[![License: GPL v3 or later](https://img.shields.io/badge/License-GPL%20v3%20or%20later-yellow.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/link1j/Bakaneko?sort=semver)](https://github.com/Link1J/Bakaneko/releases/latest)
+[![GitHub](https://img.shields.io/github/license/link1j/Bakaneko)](https://www.gnu.org/licenses/gpl-3.0)
 
 > A server management tool that has nothing to do with cats.
 

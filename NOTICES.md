@@ -15,3 +15,9 @@ This file contains the licenses for external projects used.
 [![Website](https://img.shields.io/badge/Website-lightgrey.svg?cacheSeconds=2592000)](https://www.libssh.org/)
 [![Repository](https://img.shields.io/badge/Repository-lightgrey.svg?cacheSeconds=2592000)](https://git.libssh.org/projects/libssh.git/)
 [![License](https://img.shields.io/badge/License-LGPL%20v2%20or%20later-yellow.svg)](https://git.libssh.org/projects/libssh.git/tree/COPYING?id=6f934cc488b9fb2162ea701e6e829e5d5a8d5fb1)
+
+
+
+## ljh
+[![Repository](https://img.shields.io/badge/Repository-lightgrey.svg?cacheSeconds=2592000)](https://github.com/Link1J/ljh)
+[![License](https://img.shields.io/github/license/link1j/ljh)](https://github.com/Link1J/ljh/blob/master/LICENSE_1_0.txt)
