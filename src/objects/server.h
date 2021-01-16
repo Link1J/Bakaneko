@@ -13,6 +13,7 @@
 
 #include <term/pty.h>
 #include "update.h"
+#include "drives.h"
 
 class Server : public QObject
 {
@@ -45,6 +46,7 @@ public:
     Q_PROPERTY(QString        arch        READ get_arch        NOTIFY changed_arch       );
     Q_PROPERTY(QString        vm_platform READ get_vm_platform NOTIFY changed_vm_platform);
     Q_PROPERTY(QList<Update*> updates     READ get_updates     NOTIFY changed_updates    );
+    Q_PROPERTY(QList<Drive*>  drives      READ get_drives      NOTIFY changed_drives     );
 
 protected:
     std::tuple<int, std::string, std::string> run_command(std::string command);
@@ -53,17 +55,18 @@ public:
     ssh_connection get_ssh_connection();
 
 public Q_SLOTS:
-    Q_INVOKABLE QString      get_hostname   ();
-    Q_INVOKABLE State        get_state      ();
-    Q_INVOKABLE QString      get_os         ();
-    Q_INVOKABLE QString      get_ip         ();
-    Q_INVOKABLE QString      get_mac        ();
-    Q_INVOKABLE QString      get_system_icon();
-    Q_INVOKABLE QString      get_system_type();
-    Q_INVOKABLE QString      get_kernel     ();
-    Q_INVOKABLE QString      get_arch       ();
-    Q_INVOKABLE QString      get_vm_platform();
-    Q_INVOKABLE UpdateList   get_updates    ();
+    Q_INVOKABLE QString       get_hostname   ();
+    Q_INVOKABLE State         get_state      ();
+    Q_INVOKABLE QString       get_os         ();
+    Q_INVOKABLE QString       get_ip         ();
+    Q_INVOKABLE QString       get_mac        ();
+    Q_INVOKABLE QString       get_system_icon();
+    Q_INVOKABLE QString       get_system_type();
+    Q_INVOKABLE QString       get_kernel     ();
+    Q_INVOKABLE QString       get_arch       ();
+    Q_INVOKABLE QString       get_vm_platform();
+    Q_INVOKABLE UpdateList    get_updates    ();
+    Q_INVOKABLE QList<Drive*> get_drives     ();
 
     virtual QString get_kernal_type() = 0;
 
@@ -88,6 +91,7 @@ Q_SIGNALS:
     void changed_arch       ();
     void changed_vm_platform();
     void changed_updates    ();
+    void changed_drives     ();
 
     void new_updates(QList<Update*>);
 
@@ -95,20 +99,21 @@ Q_SIGNALS:
     void this_offline(Server*);
 
 protected:
-    QString    hostname;
-    QString    ip_address;
-    QString    mac_address;
-    QString    username;
-    QString    password;
-    State      state = State::Unknown;
-    QString    system_icon;
-    QString    system_type;
-    QString    operating_system;
-    QString    kernel;
-    QString    architecture;
-    QString    vm_platform = "";
-    QString    pretty_hostname = "";
-    UpdateList updates;
+    QString       hostname;
+    QString       ip_address;
+    QString       mac_address;
+    QString       username;
+    QString       password;
+    State         state = State::Unknown;
+    QString       system_icon;
+    QString       system_type;
+    QString       operating_system;
+    QString       kernel;
+    QString       architecture;
+    QString       vm_platform = "";
+    QString       pretty_hostname = "";
+    UpdateList    updates;
+    QList<Drive*> drives;
 
     std::mutex update_lock;
 };

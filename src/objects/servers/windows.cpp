@@ -161,7 +161,7 @@ void WindowsComputer::collect_info()
         if (os_name.find("Microsoft ") == 0)
             os_name = os_name.substr(10);
 
-        if (int line = os_name.find("Windows 10"); line != std::string::npos)
+        if (auto line = os_name.find("Windows 10"); line != std::string::npos)
         {
             line += 10;
             auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
@@ -209,7 +209,9 @@ void WindowsComputer::collect_info()
     Q_EMIT changed_os         ();
     Q_EMIT changed_kernel     ();
     Q_EMIT changed_arch       ();
-    ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
+
+    if (ServerManager::Instance().GetModel())
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
 }
 
 std::string WindowsComputer::get_info(std::string clazz, std::string key)

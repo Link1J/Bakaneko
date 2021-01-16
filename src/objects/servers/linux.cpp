@@ -154,5 +154,7 @@ void LinuxComputer::collect_info()
     Q_EMIT changed_arch       ();
     Q_EMIT changed_hostname   ();
     Q_EMIT changed_vm_platform();
-    ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
+
+    if (ServerManager::Instance().GetModel())
+        ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
 }

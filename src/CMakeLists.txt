@@ -20,6 +20,7 @@ set(SRCS
     objects/servers/windows.cpp
     objects/servers/linux.cpp
     objects/update.cpp
+    objects/drives.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc

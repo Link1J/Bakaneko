@@ -58,6 +58,7 @@ QString       Server::get_kernel     () { return kernel          ; }
 QString       Server::get_arch       () { return architecture    ; }
 QString       Server::get_vm_platform() { return vm_platform     ; }
 UpdateList    Server::get_updates    () { return updates         ; }
+QList<Drive*> Server::get_drives     () { return drives          ; }
 
 void Server::update_info()
 {
@@ -96,6 +97,7 @@ void Server::update_info()
     }
 
     collect_info();
+    check_for_updates();
 }
 
 // Note: pings to Windows computers fail if "File and Printer Sharing" is not enabled
