@@ -26,25 +26,18 @@ ColumnLayout {
 
 		Item {
 			id: place
-			height: 0
-			anchors.bottom: sep.top;
-			Component.onCompleted: {
-				var size_update = function(){
-					place.height = 0;
-					place.implicitHeight = 0;
-					for (var i = 0; i < place.data.length; i++) {
-						place.height += place.data[i].height
-						place.implicitHeight += place.data[i].implicitHeight
-					}
+			implicitHeight: {
+				var temp_height = 0
+				for (var i = 0; i < data.length; i++) {
+					temp_height += data[i].implicitHeight
 				}
-				size_update();
+				return temp_height
 			}
 		}
 	}
 
 	Kirigami.Separator {
 		id: sep
-		// anchors.top: place.bottom;
 		Layout.fillWidth: true
 	}
 }

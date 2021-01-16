@@ -14,6 +14,7 @@ class UpdateModel : public QAbstractListModel
     Q_OBJECT
 
     Q_PROPERTY(QObject* server MEMBER m_server WRITE set_server NOTIFY changed_updates);
+    Q_PROPERTY(int count READ rowCount NOTIFY changed_count);
 
 public:
     enum ServerRoles {
@@ -27,7 +28,7 @@ public:
     ~UpdateModel() override;
 
     [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
-    Q_INVOKABLE [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
@@ -37,6 +38,7 @@ public Q_SLOT:
 
 Q_SIGNALS:
     void changed_updates();
+    void changed_count  ();
 
 private:
     Server* m_server;

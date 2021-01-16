@@ -7,11 +7,12 @@ import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Models 1.0 as Models
 
 Grid {
+	id: base
 	columns: 3
 	columnSpacing: Kirigami.Units.gridUnit
 
 	Repeater {
-		model: Models.Updates { server: currentServer }
+		model: _updates
 		Repeater {
 			model: [name, old_version, new_version]
 
@@ -19,5 +20,14 @@ Grid {
 				text: modelData
 			}
 		}
+	}
+
+	property Models.Updates updates : Models.Updates {
+		id: _updates
+		server: currentServer
+	}
+	
+	FontMetrics {
+		id: fontMetrics
 	}
 }

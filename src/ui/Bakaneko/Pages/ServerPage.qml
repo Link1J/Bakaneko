@@ -20,7 +20,7 @@ Kirigami.Page {
 			visible: !Kirigami.Settings.isMobile
 			icon.name: "utilities-terminal"
 			text: i18n("Terminal")
-			enabled: currentServer.state == Objects.Server.State.Online
+            enabled: currentServer.state === Objects.Server.State.Online
 			onTriggered: {
 				root.fullWindowLayer(terminalPage);
 			}
@@ -28,21 +28,21 @@ Kirigami.Page {
 		},
 		Kirigami.Action {
 			icon.name: "system-shutdown"
-			text: currentServer.state == Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
+            text: currentServer.state === Objects.Server.State.Online ? i18n("Shutdown") : i18n("Power On")
 			onTriggered: {
-				if (currentServer.state == Objects.Server.State.Online) {
+                if (currentServer.state === Objects.Server.State.Online) {
 					currentServer.shutdown();
 				}
 				else {
 					currentServer.wake_up();
 				}
 			}
-			tooltip: currentServer.state == Objects.Server.State.Online ? i18n("Powers down the computer") : i18n("Powers up the computer")
+            tooltip: currentServer.state === Objects.Server.State.Online ? i18n("Powers down the computer") : i18n("Powers up the computer")
 		},
 		Kirigami.Action {
 			icon.name: "system-reboot"
 			text: i18n("Reboot")
-			enabled: currentServer.state == Objects.Server.State.Online
+            enabled: currentServer.state === Objects.Server.State.Online
 			onTriggered: {
 				currentServer.reboot();
 			}
@@ -80,13 +80,13 @@ Kirigami.Page {
 				width: page.width
 
 				Components.ColumnBlock {
-					title: "Hard Drives"
+					title: "Drives"
 				}
 				
 				Components.ColumnBlock {
-					visible: currentServer.get_kernal_type() == "Linux"
-					title: "Updates (" + updates.info.rowCount() + ")"
-					Components.UpdateList {}
+                    visible: currentServer.get_kernal_type() === "Linux"
+                    title: "Updates (" + info.updates.count + ")"
+                    Components.UpdateList { id: info }
 				}
 			}
 		}
@@ -95,14 +95,5 @@ Kirigami.Page {
 	Component {
 		id: terminalPage
 		Pages.Term {}
-	}
-	Item {
-		id: updates
-		property var info : Models.Updates {
-			server: currentServer
-		}
-	}
-	FontMetrics {
-		id: fontMetrics
 	}
 }

@@ -62,24 +62,23 @@ void UpdateModel::set_server(QObject* updates)
 void UpdateModel::set_updates(UpdateList updates)
 {
     QModelIndex index1 = createIndex(0, 0, nullptr);
-    QModelIndex index2 = createIndex(pre_size, 0, nullptr);
+    QModelIndex index2 = createIndex(std::min(updates.size(), pre_size), 0, nullptr);
     QVector<int> roles = { NameRole, OldVersionRole, NewVersionRole, };
-
+    
     if (updates.size() > pre_size)
     {
-        Q_EMIT dataChanged(index1, index2, roles);
         beginInsertRows(QModelIndex(), pre_size, updates.size());
         endInsertRows();
+        Q_EMIT changed_count();
     }
     else if (updates.size() < pre_size)
     {
         beginRemoveRows(QModelIndex(), updates.size(), pre_size);
         endRemoveRows();
+        Q_EMIT changed_count();
     }
-    else
-    {
-        Q_EMIT dataChanged(index1, index2, roles);
-    }
+    
+    Q_EMIT dataChanged(index1, index2, roles);
 
     pre_size = updates.size();
 }

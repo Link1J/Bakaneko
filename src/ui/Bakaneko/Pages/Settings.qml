@@ -100,14 +100,6 @@ Kirigami.ScrollablePage
 			model: Models.TermList {}
 			currentIndex: Managers.TermInfo.emun_to_avalible(Managers.Settings.term_type)
 			textRole: "display"
-
-			//delegate: Controls.ItemDelegate {
-			//	width: term_type_emun.width
-			//	contentItem: Text {
-			//		text: term_type_emun.model[Managers.TermInfo.emun_to_avalible(index)]
-			//	}
-			//	highlighted: term_type_emun.highlightedIndex === Managers.TermInfo.emun_to_avalible(index)
-			//}
 			
 			onActivated: Managers.Settings.term_type = Managers.TermInfo.avalible_to_emun(currentIndex)
 
