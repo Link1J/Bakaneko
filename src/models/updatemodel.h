@@ -3,26 +3,9 @@
 
 #pragma once
 
-#include <QObject>
 #include <QAbstractListModel>
 
-class Update : public QObject
-{
-    Q_OBJECT;
-
-public:
-    Update(QObject* parent = nullptr) : QObject(parent) {}
-
-    Q_PROPERTY(QString name        MEMBER m_name        CONSTANT);
-    Q_PROPERTY(QString old_version MEMBER m_old_version CONSTANT);
-    Q_PROPERTY(QString new_version MEMBER m_new_version CONSTANT);
-
-    QString m_name       ;
-    QString m_old_version;
-    QString m_new_version;
-};
-
-using UpdateList = QList<QObject*>;
+#include <objects/update.h>
 
 class Server;
 
@@ -50,7 +33,7 @@ public:
 
 public Q_SLOT:
     void set_server (QObject* updates);
-    void set_updates(QList<QObject*> updates);
+    void set_updates(QList<Update*> updates);
 
 Q_SIGNALS:
     void changed_updates();

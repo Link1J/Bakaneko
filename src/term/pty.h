@@ -43,8 +43,8 @@ public:
     Pty(Server* server, const char* term, QSize size, bool auto_read = true, QObject* parent = nullptr);
     ~Pty();
 
-    std::string read_stdout(bool blocking = true);
-    std::string read_stderr(bool blocking = true);
+    std::string read_stdout(bool blocking = true, unsigned char bytes = 255);
+    std::string read_stderr(bool blocking = true, unsigned char bytes = 255);
 
 public Q_SLOTS:
     Q_INVOKABLE void send_signal(int signal);
@@ -59,7 +59,7 @@ Q_SIGNALS:
     void receved_data(QString data);
 
 private:
-    std::string read(bool std_err, bool blocking);
+    std::string read(bool std_err, bool blocking, unsigned char bytes);
 
     ssh_connection connection;
     QSize size;

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
-#include "serverlistmodel.h"
+#include "updatemodel.h"
 
 #include <iostream>
 
 #include <QSettings>
 
-#include "objects/server.h"
+#include <objects/server.h>
 
 UpdateModel::UpdateModel(QObject* parent)
     : QAbstractListModel(parent)
@@ -21,7 +21,7 @@ QVariant UpdateModel::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    auto temp = dynamic_cast<Update*>(m_server->get_updates()[index.row()]);
+    auto temp = m_server->get_updates()[index.row()];
     if (temp != nullptr)
     {
         if (role == NameRole)
@@ -31,7 +31,7 @@ QVariant UpdateModel::data(const QModelIndex& index, int role) const
         else if (role == NewVersionRole)
             return QVariant::fromValue(temp->m_new_version);
     }
-    return QVariant();
+    return QVariant::fromValue(temp);
 }
 
 int UpdateModel::rowCount(const QModelIndex& parent) const

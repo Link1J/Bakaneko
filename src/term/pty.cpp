@@ -134,41 +134,32 @@ void Pty::send_data(QString data)
     ssh_channel_write(connection, buffer.data(), buffer.size());
 }
 
-std::string Pty::read_stdout(bool blocking)
+std::string Pty::read_stdout(bool blocking, unsigned char bytes)
 {
     if (!(ssh_channel_is_open(connection) && !ssh_channel_is_eof(connection)))
         return "";
-    return read(false, blocking);
+    return read(false, blocking, bytes);
 }
 
-std::string Pty::read_stderr(bool blocking)
+std::string Pty::read_stderr(bool blocking, unsigned char bytes)
 {
     if (!(ssh_channel_is_open(connection) && !ssh_channel_is_eof(connection)))
         return "";
-    return read(true, blocking);
+    return read(true, blocking, bytes);
 }
 
-std::string Pty::read(bool std_err, bool blocking)
+std::string Pty::read(bool std_err, bool blocking, unsigned char bytes)
 {
-    char buffer[256] = {0};
     int bytes_receved;
+    std::vector<char> buffer(bytes + 1, '\000');
     std::string output;
 
-    if (blocking)
+    auto read_function = blocking ? ssh_channel_read : ssh_channel_read_nonblocking;
+
+    while (bytes_receved = read_function(connection, buffer.data(), bytes, std_err))
     {
-        while (bytes_receved = ssh_channel_read(connection, buffer, sizeof(buffer) - 1, false))
-        {
-            output += buffer;
-            memset(buffer, 0, sizeof(buffer));
-        }
-    }
-    else
-    {
-        while (bytes_receved = ssh_channel_read_nonblocking(connection, buffer, sizeof(buffer) - 1, false))
-        {
-            output += buffer;
-            memset(buffer, 0, sizeof(buffer));
-        }
+        output += buffer.data();
+        memset(buffer.data(), 0, bytes);
     }
 
     return output;

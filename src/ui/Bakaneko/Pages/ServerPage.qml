@@ -80,6 +80,11 @@ Kirigami.Page {
 				width: page.width
 
 				Components.ColumnBlock {
+					title: "Hard Drives"
+				}
+				
+				Components.ColumnBlock {
+					visible: currentServer.get_kernal_type() == "Linux"
 					title: "Updates (" + updates.info.rowCount() + ")"
 					Components.UpdateList {}
 				}

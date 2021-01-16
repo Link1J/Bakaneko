@@ -18,14 +18,7 @@
 
 void ServerManager::AddServer(QString ip, QString username, QString password)
 {
-    std::string temp_ip       = ip      .toUtf8().constData();
-    std::string temp_username = username.toUtf8().constData();
-    std::string temp_password = password.toUtf8().constData();
-    NewServer(temp_ip, temp_username, temp_password);
-}
-
-void ServerManager::NewServer(std::string ip, std::string username, std::string password)
-{
+    
     std::lock_guard __lock_guard{server_list_lock};
     
     if (model != nullptr)
@@ -33,75 +26,27 @@ void ServerManager::NewServer(std::string ip, std::string username, std::string 
         model->beginRowAppend();
     }
 
-    char buffer[256];
-    int nbytes;
-    int volatile code;
-    std::string hostname;
-    std::string MAC;
-    std::string network_info;
-
-    auto q_ip       = QString::fromStdString(ip      );
-    auto q_username = QString::fromStdString(username);
-    auto q_password = QString::fromStdString(password);
-
-    auto temp = std::make_unique<Server>("", "", q_ip, q_username, q_password, "", this);
-
-    int exit_code;
-    std::string std_out;
-    std::string std_err;
-
-    QString q_kernal_type;
-    QString q_hostname   ;
-    QString q_MAC        ;
-
-    std::tie(exit_code, std_out, std_err) = temp->run_command("uname");
-
-    if (exit_code != 0)
-        q_kernal_type = "Windows";
-    else
-        q_kernal_type = QString::fromStdString(std_out.substr(0, std_out.size() - 1));
-
-    if (q_kernal_type == "Linux")
-    {
-        std::tie(exit_code, std_out, std_err) = temp->run_command("cat /etc/hostname");
-        q_hostname = QString::fromStdString(std_out.substr(0, std_out.find('\n')));
-
-        std::tie(exit_code, std_out, std_err) = temp->run_command("cat /sys/class/net/*/address");
-        q_MAC = QString::fromStdString(std_out.substr(0, std_out.find('\n')));
-    }
-    else if (q_kernal_type == "Windows")
-    {
-        std::tie(exit_code, std_out, std_err) = temp->run_command("ipconfig /all");
-
-        auto get_value = [std_out](std::string key) -> std::string {
-            auto text_pos = std_out.find(key) + key.length();
-            if (text_pos == std::string::npos + key.length())
-                return "";
-            text_pos = std_out.find(':', text_pos) + 2;
-            auto newline_pos = std_out.find('\n', text_pos);
-            return std_out.substr(text_pos, newline_pos - text_pos);
-        };
-
-        q_hostname = QString::fromStdString(get_value("Host Name"));
-
-        auto temp = get_value("Physical Address");
-        std::replace(temp.begin(), temp.end(), '-', ':');
-        q_MAC = QString::fromStdString(temp);
-    }
+    auto temp = Server::create("", "", ip, username, password, "");
 
     QSettings settings;
+
     int size = settings.beginReadArray("servers");
     settings.endArray();
+
     settings.beginWriteArray("servers");
     settings.setArrayIndex(size);
-    servers.push_back(std::make_unique<Server>(q_hostname, q_MAC, q_ip, q_username, q_password, q_kernal_type));
-    settings.setValue("hostname"   , q_hostname   );
-    settings.setValue("mac"        , q_MAC        );
-    settings.setValue("ip"         , q_ip         );
-    settings.setValue("username"   , q_username   );
-    settings.setValue("password"   , q_password   );
-    settings.setValue("kernal_type", q_kernal_type);
+    
+    settings.setValue("username", username);
+    settings.setValue("password", password);
+
+    settings.setValue("hostname"   , temp->get_hostname   ());
+    settings.setValue("mac"        , temp->get_mac        ());
+    settings.setValue("ip"         , temp->get_ip         ());
+    settings.setValue("kernal_type", temp->get_kernal_type());
+
     settings.endArray();
+    
+    servers.push_back(std::unique_ptr<Server>(temp));
 
     connect(servers[size].get(), &Server::this_online , this, &ServerManager::server_online );
     connect(servers[size].get(), &Server::this_offline, this, &ServerManager::server_offline);
@@ -141,15 +86,14 @@ void ServerManager::Reload()
     for (int a = 0; a < size; a++)
     {
         settings.setArrayIndex(a);
-        servers.push_back(std::make_unique<Server>(
+        servers.push_back(std::unique_ptr<Server>(Server::create(
             settings.value("hostname"   ).toString(),
             settings.value("mac"        ).toString(),
             settings.value("ip"         ).toString(),
             settings.value("username"   ).toString(),
             settings.value("password"   ).toString(),
-            settings.value("kernal_type").toString(),
-            this
-        ));
+            settings.value("kernal_type").toString()
+        )));
 
         connect(servers[a].get(), &Server::this_online , this, &ServerManager::server_online );
         connect(servers[a].get(), &Server::this_offline, this, &ServerManager::server_offline);
@@ -199,12 +143,14 @@ void ServerManager::RemoveServer(int index)
     for (int a = 0; a < servers.size(); a++)
     {
         settings.setArrayIndex(a);
-        settings.setValue("hostname"   , servers[a]->hostname   );
-        settings.setValue("mac"        , servers[a]->mac_address);
-        settings.setValue("ip"         , servers[a]->ip_address );
-        settings.setValue("username"   , servers[a]->username   );
-        settings.setValue("password"   , servers[a]->password   );
-        settings.setValue("kernal_type", servers[a]->kernal_type);
+
+        settings.setValue("username", servers[a]->username);
+        settings.setValue("password", servers[a]->password);
+
+        settings.setValue("hostname"   , servers[a]->get_hostname   ());
+        settings.setValue("mac"        , servers[a]->get_mac        ());
+        settings.setValue("ip"         , servers[a]->get_ip         ());
+        settings.setValue("kernal_type", servers[a]->get_kernal_type());
     }
     settings.endArray();
 

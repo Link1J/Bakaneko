@@ -13,10 +13,6 @@ Grid {
 	Repeater {
 		model: Models.Updates { server: currentServer }
 		Repeater {
-			required property string name
-			required property string old_version
-			required property string new_version
-
 			model: [name, old_version, new_version]
 
 			Controls.Label {

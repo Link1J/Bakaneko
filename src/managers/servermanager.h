@@ -36,7 +36,6 @@ public:
 
     size_t size() const;
     Server& operator[](size_t index);
-    void NewServer(std::string ip, std::string username, std::string password);
 
     int GetIndex(Server* server);
 

@@ -17,6 +17,9 @@ set(SRCS
     term/terms/null.cpp
     models/termlist.cpp
     models/updatemodel.cpp
+    objects/servers/windows.cpp
+    objects/servers/linux.cpp
+    objects/update.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
