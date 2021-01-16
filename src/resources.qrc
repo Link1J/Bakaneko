@@ -9,5 +9,6 @@
     </qresource>
     <qresource prefix="/">
         <file alias="qtquickcontrols2.conf">../assets/qtquickcontrols2.conf</file>
+        <file alias="bakaneko-splash.png">../assets/256-me.link1j.bakaneko.png</file>
     </qresource>
 </RCC>

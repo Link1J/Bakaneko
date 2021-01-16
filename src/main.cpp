@@ -9,6 +9,7 @@
 #include <QDebug>
 #include <QQuickStyle>
 #include <QFontDatabase>
+#include <QSplashScreen>
 
 #include <KLocalizedContext>
 #include <KCrash>
@@ -43,6 +44,11 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     QQuickStyle::setStyle("Material");
 #else
     QApplication app(argc, argv);
+    QPixmap pixmap(":/bakaneko-splash.png");
+    QSplashScreen splash(pixmap);
+    splash.show();
+    app.processEvents();
+
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
         QQuickStyle::setStyle("org.kde.desktop");
 #endif
@@ -55,6 +61,8 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     KCrash::initialize();
 
+    ServerManager::Instance().update_server_info();
+
 #ifdef Q_OS_WINDOWS
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2,2), &wsaData);
@@ -62,11 +70,12 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     QQmlApplicationEngine engine;
 
-    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    engine.rootContext()->setContextProperty("fixedFont", fixedFont);
-
     engine.rootContext()->setContextObject(new KLocalizedContext(&engine));
     QObject::connect(&engine, &QQmlApplicationEngine::quit, &app, &QCoreApplication::quit);
+
+#ifndef Q_OS_ANDROID
+    QObject::connect(&engine, &QQmlApplicationEngine::objectCreated, &splash, &QSplashScreen::close);
+#endif
 
     engine.addImportPath("qrc:/ui");
 
@@ -85,9 +94,6 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     if (engine.rootObjects().isEmpty())
         return -1;
-
-    ServerManager::Instance().update_server_info();
-    ServerManager::Instance().update_server_info();
 
     auto exit_code = app.exec();
 

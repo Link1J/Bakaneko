@@ -5,3 +5,4 @@ compile_commands.json
 /apks/*
 /install/*
 /appimages/*
+CMakeLists.txt.user
