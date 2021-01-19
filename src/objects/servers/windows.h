@@ -16,8 +16,10 @@ private:
     std::string get_info     (std::string clazz, std::string key);
     std::string get_env_var  (std::string var                   );
     std::string get_reg_value(std::string path , std::string key);
-    
-    std::vector<std::vector<std::string>> listify_wmic_command(std::string class_name, std::string filter, std::string associated, std::vector<std::string> properties);
+
+    std::vector<std::vector<std::string>> powershell(std::string& command, std::vector<std::string>& properties);
+    std::vector<std::vector<std::string>> wmic      (std::string class_name, std::string filter, std::string associated, std::vector<std::string> properties);
+                std::vector<std::string>  registry  (std::string path, std::vector<std::string> properties);
 
 public:
 

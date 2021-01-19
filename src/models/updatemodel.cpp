@@ -54,9 +54,12 @@ void UpdateModel::set_server(QObject* updates)
         disconnect(connection);
 
     m_server = dynamic_cast<Server*>(updates);
-    connection = connect(m_server, &Server::new_updates, this, &UpdateModel::set_updates, Qt::UniqueConnection);
 
-    set_updates(m_server->get_updates());
+    if (m_server)
+    {
+        connection = connect(m_server, &Server::new_updates, this, &UpdateModel::set_updates, Qt::UniqueConnection);
+        set_updates(m_server->get_updates());
+    }
 }
 
 void UpdateModel::set_updates(UpdateList updates)

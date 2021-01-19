@@ -158,23 +158,23 @@ QString WindowsComputer::get_kernal_type()
 void WindowsComputer::collect_info()
 {
     std::thread os_thread{[this]() {
-        auto os_name = get_info("OS", "Caption");
+        auto os_name = wmic("OperatingSystem", "", "", {"Caption"})[0][0];
         if (os_name.find("Microsoft ") == 0)
             os_name = os_name.substr(10);
 
         if (auto line = os_name.find("Windows 10"); line != std::string::npos)
         {
             line += 10;
-            auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "DisplayVersion");
+            auto version = registry("HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", {"DisplayVersion"})[0];
             if (version == "")
-                version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "ReleaseId");
+                version = registry("HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", {"ReleaseId"})[0];
             if (version != "")
                 os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
         }
         else
         {
             line += os_name.find_first_of(' ', line + 11);
-            auto version = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "CSDVersion");
+            auto version = registry("HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", {"CSDVersion"})[0];
             if (version != "")
                 os_name = os_name.substr(0, line + 1) + version + os_name.substr(line);
         }
@@ -183,8 +183,8 @@ void WindowsComputer::collect_info()
     }};
 
     std::thread kernel_thread{[this]() {
-        auto kernel_version = "NT " + get_info("OS", "Version");
-        auto UBR = get_reg_value("HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", "UBR");
+        auto kernel_version = wmic("OperatingSystem", "", "", {"Version"})[0][0];
+        auto UBR = registry("HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion", {"UBR"})[0];
         if (UBR != "") kernel_version += "." + std::to_string(std::stoi(UBR, nullptr, 0));
 
         kernel           = QString::fromStdString(kernel_version);
@@ -195,7 +195,8 @@ void WindowsComputer::collect_info()
     }};
 
     std::thread system_thread{[this]() {
-        int chassis_type = std::stoi(get_info("SystemEnclosure", "ChassisTypes").substr(1));
+        auto temp = wmic("SystemEnclosure", "", "", {"ChassisTypes"})[0][0];
+        int chassis_type = std::stoi(temp.substr(1));
         system_icon      = QString::fromStdString(chassis_type_as_system_icon(chassis_type));
         system_type      = QString::fromStdString(chassis_type_as_system_type(chassis_type));
     }};
@@ -215,44 +216,17 @@ void WindowsComputer::collect_info()
         ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
 }
 
-std::string WindowsComputer::get_info(std::string clazz, std::string key)
+std::string WindowsComputer::get_env_var(std::string var)
 {
-    auto [exit_code, std_out, std_err] = run_command("wmic " + clazz + " get " + key);
+    auto [exit_code, std_out, std_err] = run_command("echo $env:" + var);
     if (exit_code != 0) return "";
-
-    auto newline_pos1 = std_out.find('\n') + 1;
-    auto newline_pos2 = std_out.find_last_not_of(' ', std_out.find('\r', newline_pos1) - 1) + 1;
-    return std_out.substr(newline_pos1, newline_pos2 - newline_pos1);
-};
-
-std::string WindowsComputer::get_env_var(std::string var) {
-    auto [exit_code, std_out, std_err] = run_command("echo %" + var + "%");
-
-    if (std_out.find("%"+var+"%") != std::string::npos)
-        std::tie(exit_code, std_out, std_err) = run_command("echo $env:" + var);
-
-    if (exit_code != 0) return "";
-
     return std_out.substr(0, std_out.find('\n'));
-};
-
-std::string WindowsComputer::get_reg_value(std::string path, std::string key) {
-    auto command = "reg query \\\"" + path + "\\\" /v " + key;
-    auto [exit_code, std_out, std_err] = run_command(command);
-
-    if (exit_code != 0) return "";
-
-    auto start = std_out.find("REG_");
-    start = std_out.find(' ', start);
-    start = std_out.find_first_not_of(' ', start);
-    auto length = std_out.find("\r", start) - start;
-    return std_out.substr(start, length);
 };
 
 void WindowsComputer::collect_drives()
 {
     using namespace std::string_literals;
-    auto disk_list = listify_wmic_command("DiskDrive", "", "", {"DeviceID"s,"Model"s,"Size"s});
+    auto disk_list = wmic("DiskDrive", "", "", {"DeviceID"s,"Model"s,"Size"s});
 
     for (auto& drive_data : disk_list)
     {
@@ -270,11 +244,11 @@ void WindowsComputer::collect_drives()
 
         drives.push_back(drive);
 
-        auto partitions_list = listify_wmic_command("DiskDrive", "DeviceID LIKE \"" + drive_data[0] + "\"", "DiskDriveToDiskPartition", {"DeviceID"s,"Size"s});
+        auto partitions_list = wmic("DiskDrive", "DeviceID LIKE \"" + drive_data[0] + "\"", "DiskDriveToDiskPartition", {"DeviceID"s,"Size"s});
         
         for (auto& partition_data : partitions_list)
         {
-            auto volume_data = listify_wmic_command("DiskPartition", "DeviceID LIKE \"" + partition_data[0] + "\"", "LogicalDiskToPartition", {"DeviceID"s,"FileSystem"s,"FreeSpace"s,"Size"s,"VolumeName"s});
+            auto volume_data = wmic("DiskPartition", "DeviceID LIKE \"" + partition_data[0] + "\"", "LogicalDiskToPartition", {"DeviceID"s,"FileSystem"s,"FreeSpace"s,"Size"s,"VolumeName"s});
 
             auto partition = new Parition;
 
@@ -305,7 +279,7 @@ void WindowsComputer::collect_drives()
 
 #include <iostream>
 
-std::vector<std::vector<std::string>> WindowsComputer::listify_wmic_command(std::string class_name, std::string filter, std::string associated, std::vector<std::string> properties)
+std::vector<std::vector<std::string>> WindowsComputer::wmic(std::string class_name, std::string filter, std::string associated, std::vector<std::string> properties)
 {
     if (class_name.empty())
         return {};
@@ -331,6 +305,13 @@ std::vector<std::vector<std::string>> WindowsComputer::listify_wmic_command(std:
         command += " | Get-CimAssociatedInstance -Association Win32_" + associated;
     }
 
+    return powershell(command, properties);
+}
+
+std::vector<std::vector<std::string>> WindowsComputer::powershell(std::string& command, std::vector<std::string>& properties)
+{
+    std::string backup = command;
+
     if (!properties.empty())
     {
         command += " | Select-Object -Property ";
@@ -341,6 +322,23 @@ std::vector<std::vector<std::string>> WindowsComputer::listify_wmic_command(std:
     command += " | ConvertTo-Csv -NoTypeInformation";
 
     auto [exit_code, std_out, std_err] = run_command(command);
+
+    if (std_out.find("System.") != std::string::npos)
+    {
+        command = backup;
+
+        if (!properties.empty())
+        {
+            command += " | Select-Object -Property ";
+            for (int a = 0; a < properties.size(); a++)
+                command += properties[a] + (a < properties.size() - 1 ? "," : "");
+        }
+
+        command += " | Select-Object -Index 0";
+        command += " | ConvertTo-Csv -NoTypeInformation";
+
+        std::tie(exit_code, std_out, std_err) = run_command(command);
+    }
     
     auto lines = split(std_out, "\"\r\n");
     lines.erase(lines.begin());
@@ -361,4 +359,14 @@ std::vector<std::vector<std::string>> WindowsComputer::listify_wmic_command(std:
     }
 
     return data;
+}
+
+std::vector<std::string> WindowsComputer::registry(std::string path, std::vector<std::string> properties)
+{
+    using namespace std::string_literals;
+    std::string command = "Get-ItemProperty -Path " + path;
+    auto data = powershell(command, properties);
+    if (data.size() == 0)
+        return {""s};
+    return data[0];
 }
