@@ -1,0 +1,14 @@
+<!--
+    SPDX-License-Identifier: GPL-3.0-or-later
+    SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
+-->
+<!DOCTYPE RCC>
+<RCC version="1.0">
+    <qresource prefix="/icons">
+        <file alias="me.link1j.bakaneko.svg">../../assets/me.link1j.bakaneko.svg</file>
+    </qresource>
+    <qresource prefix="/">
+        <file alias="qtquickcontrols2.conf">../../assets/qtquickcontrols2.conf</file>
+        <file alias="bakaneko-splash.png">../../assets/256-me.link1j.bakaneko.png</file>
+    </qresource>
+</RCC>

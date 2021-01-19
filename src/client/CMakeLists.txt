@@ -1,6 +1,27 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
+set(QT5_MIN_VERSION 5.14)
+set(KF5_MIN_VERSION 5.75)
+
+include(ECMSetupVersion)
+include(ECMInstallIcons)
+include(ECMAddAppIcon)
+include(ECMEnableSanitizers)
+
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
+ecm_setup_version(0.0.2
+    VARIABLE_PREFIX BAKANEKO
+    VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
+)
+
+find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg Concurrent)
+find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Notifications CoreAddons IconThemes Config)
+find_package(libssh REQUIRED)
+
 set(SRCS
     main.cpp
     models/serverlistmodel.cpp
@@ -28,42 +49,36 @@ qt5_add_resources(RESOURCES
 )
 ecm_add_app_icon(APP_ICONS
     ICONS
-        ../assets/64-me.link1j.bakaneko.png
-        ../assets/128-me.link1j.bakaneko.png
-        ../assets/256-me.link1j.bakaneko.png
+        ../../assets/64-me.link1j.bakaneko.png
+        ../../assets/128-me.link1j.bakaneko.png
+        ../../assets/256-me.link1j.bakaneko.png
 )
 
-add_executable(bakaneko ${SRCS} ${RESOURCES} ${APP_ICONS})
+add_executable(client ${SRCS} ${RESOURCES} ${APP_ICONS})
 
-set_target_properties(bakaneko PROPERTIES
+set_target_properties(client PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
     WIN32_EXECUTABLE TRUE
     MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
-target_compile_options(bakaneko PUBLIC
+target_compile_options(client PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
-#    /fsanitize=address
+    -DQT_NO_FOREACH
+    -DQT_NO_KEYWORDS
+    -DNOMINMAX
 )
-#target_link_options(bakaneko PUBLIC
-#    /fsanitize=address
-#    /debug 
-#    -incremental:no 
-#    "/wholearchive:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x64\\clang_rt.asan_dynamic-x86_64.lib"
-#    "/wholearchive:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x64\\clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
-#)
 
-# /debug -incremental:no /wholearchive:C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.28.29333\lib\x64\clang_rt.asan_dynamic-x86_64.lib /wholearchive:C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.28.29333\lib\x64\clang_rt.asan_dynamic_runtime_thunk-x86_64.lib
-
-target_include_directories(bakaneko PUBLIC
+target_include_directories(client PUBLIC
     ${CMAKE_BINARY_DIR}
     ${Qt5Quick_PRIVATE_INCLUDE_DIRS}
+    ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-target_link_libraries(bakaneko PUBLIC
+target_link_libraries(client PUBLIC
     Qt5::Core
     Qt5::Gui
     Qt5::Qml
@@ -85,14 +100,14 @@ target_link_libraries(bakaneko PUBLIC
     ljh
 )
 if(WIN32)
-    target_link_libraries(bakaneko PRIVATE
+    target_link_libraries(client PRIVATE
         Iphlpapi
         ws2_32
         KF5::IconThemes
     )
 endif()
 if(APPLE)
-    target_link_libraries(bakaneko PRIVATE
+    target_link_libraries(client PRIVATE
         KF5::IconThemes
     )
 endif()
@@ -115,4 +130,8 @@ if (ANDROID)
     )
 endif()
 
-install(TARGETS bakaneko ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(TARGETS client ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(PROGRAMS ../../assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+install(FILES ../../assets/me.link1j.bakaneko.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+install(FILES ../../assets/me.link1j.bakaneko.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
+install(FILES bakaneko.notifyrc DESTINATION ${KNOTIFYRC_INSTALL_DIR})
