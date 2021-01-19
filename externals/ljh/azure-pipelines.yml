@@ -1,0 +1,97 @@
+trigger:
+- master
+
+stages:
+- stage: Build
+  displayName: Build
+
+  jobs:
+  - job: BuildTest
+    displayName: Build & Test
+
+    strategy:
+      matrix:
+        Linux_Debug:
+          OS: 'Linux'
+          imageName: 'ubuntu-20.04'
+          BuildConfiguration: 'Debug'
+          Generator: ''
+        Linux_Release:
+          OS: 'Linux'
+          imageName: 'ubuntu-20.04'
+          BuildConfiguration: 'RelWithDebInfo'
+          Generator: ''
+        MacOS_Debug:
+          OS: 'MacOS'
+          imageName: 'macos-latest'
+          BuildConfiguration: 'Debug'
+          Generator: ''
+        MacOS_Release:
+          OS: 'MacOS'
+          imageName: 'macos-latest'
+          BuildConfiguration: 'RelWithDebInfo'
+          Generator: ''
+        Windows_32bit_Debug:
+          OS: 'Windows'
+          imageName: 'windows-latest'
+          BuildConfiguration: 'Debug'
+          Generator: '-G "Visual Studio 16 2019" -A Win32'
+        Windows_32bit_Release:
+          OS: 'Windows'
+          imageName: 'windows-latest'
+          BuildConfiguration: 'RelWithDebInfo'
+          Generator: '-G "Visual Studio 16 2019" -A Win32'
+        Windows_64bit_Debug:
+          OS: 'Windows'
+          imageName: 'windows-latest'
+          BuildConfiguration: 'Debug'
+          Generator: '-G "Visual Studio 16 2019" -A x64'
+        Windows_64bit_Release:
+          OS: 'Windows'
+          imageName: 'windows-latest'
+          BuildConfiguration: 'RelWithDebInfo'
+          Generator: '-G "Visual Studio 16 2019" -A x64'
+
+    pool:
+      vmImage: $(imageName)
+
+    steps:
+    - script: mkdir $(BuildConfiguration)
+      displayName: Create Build Directory
+      workingDirectory: $(Build.SourcesDirectory)
+    - task: CMake@1
+      displayName: Generate CMake Cache
+      inputs:
+        workingDirectory: $(BuildConfiguration)
+        cmakeArgs: '-DCMAKE_BUILD_TYPE=$(BuildConfiguration) $(Generator) .. -Dljh_BUILD_TESTS=ON'
+    - task: CMake@1
+      displayName: Run Build Process
+      inputs:
+        workingDirectory: $(BuildConfiguration)
+        cmakeArgs: '--build . --config $(BuildConfiguration)'
+    - pwsh: | 
+        ./$(BuildConfiguration)/tests_11.exe -r jUnit -s --out tests_11_data.xml
+        ./$(BuildConfiguration)/tests_17.exe -r jUnit -s --out tests_17_data.xml
+        ./$(BuildConfiguration)/tests_20.exe -r jUnit -s --out tests_20_data.xml
+      ignoreLASTEXITCODE: true
+      displayName: Run Tests (Windows)
+      workingDirectory: '$(BuildConfiguration)/tests'
+      condition: eq(variables['agent.os'], 'Windows_NT')
+    - pwsh: | 
+        ./tests_11 -r jUnit -s --out tests_11_data.xml
+        ./tests_17 -r jUnit -s --out tests_17_data.xml
+        ./tests_20 -r jUnit -s --out tests_20_data.xml
+      ignoreLASTEXITCODE: true
+      displayName: Run Tests (Linux)
+      workingDirectory: '$(BuildConfiguration)/tests'
+      condition: in(variables['agent.os'], 'Linux', 'Darwin')
+    - task: PublishTestResults@2
+      displayName: Publish Test Results
+      inputs:
+        testResultsFormat: JUnit
+        testResultsFiles: '**/tests_*.xml'
+        failTaskOnFailedTests: true
+        configuration: '$(BuildConfiguration)'
+        searchFolder: '$(BuildConfiguration)'
+        mergeTestResults: true
+        testRunTitle: '$(Agent.JobName)'
