@@ -7,6 +7,7 @@
 #include <QSettings>
 #include <QThread>
 #include <QIcon>
+#include <QtConcurrent>
 
 #include <KLocalizedString>
 #include <KNotification>
@@ -14,11 +15,11 @@
 #include <libssh/libssh.h>
 
 #include <iostream>
+#include <thread>
 #include <atomic>
 
 void ServerManager::AddServer(QString ip, QString username, QString password)
 {
-    
     std::lock_guard __lock_guard{server_list_lock};
     
     if (model != nullptr)
@@ -60,13 +61,17 @@ void ServerManager::AddServer(QString ip, QString username, QString password)
 
 ServerManager::ServerManager()
 {
+    Reload();
+}
+
+void ServerManager::start()
+{
     timer = std::make_shared<QTimer>(this);
-    connect(timer.get(), &QTimer::timeout, this, &ServerManager::update_server_info);
+    connect(timer.get(), SIGNAL(timeout()), this, SLOT(update_server_info()));
     connect(&Settings::Instance(), &Settings::changed_server_refresh_rate, this, [this](){
         this->timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
     });
     timer->start(Settings::Instance().get_server_refresh_rate() * 1000);
-    Reload();
 }
 
 ServerManager& ServerManager::Instance()
@@ -177,20 +182,32 @@ ServerListModel* ServerManager::GetModel()
 
 static std::atomic<size_t> active_threads;
 
-void ServerManager::update_server_info()
+void ServerManager::update_server_info(bool wait)
 {
+    using namespace std::chrono_literals;
     std::lock_guard __lock_guard{server_list_lock};
     // This spawns a thread for each server. It could slow down a computer because of too many server.
     // If a problem arises, we can solve it then.
     for (int a = 0; a < size(); a++) {
         // Does this leak memory?
-        auto thread = QThread::create([this, a](){
+        // auto thread = QThread::create([this, a](){
+        //     servers[a]->update_info();
+        //     QThread::currentThread()->quit();
+        // });
+        // connect(thread, &QThread::started , [](){ active_threads++; });
+        // connect(thread, &QThread::finished, [](){ active_threads--; });
+        // thread->start();
+        QtConcurrent::run([this, a](){
+            active_threads++;
             servers[a]->update_info();
-            QThread::currentThread()->quit();
+            active_threads--;
         });
-        connect(thread, &QThread::started , [](){ active_threads++; });
-        connect(thread, &QThread::finished, [](){ active_threads--; });
-        thread->start();
+    }
+    if (wait)
+    {
+        std::this_thread::sleep_for(10ms);
+        while (active_threads > 0)
+            std::this_thread::sleep_for(1ms);
     }
 }
 

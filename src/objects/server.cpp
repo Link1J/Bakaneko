@@ -42,10 +42,12 @@ QString Server::get_hostname()
 QString Server::get_system_icon()
 {
     if (system_icon.isEmpty())
+    {
         if (QIcon::hasThemeIcon("computer-fail"))
             return "computer-fail";
         else
             return "computer-fail-symbolic";
+    }
     return system_icon;
 }
 
@@ -97,6 +99,7 @@ void Server::update_info()
     }
 
     collect_info();
+    collect_drives();
     check_for_updates();
 }
 
@@ -247,22 +250,6 @@ ssh_connection Server::get_ssh_connection()
 
 Server::~Server() = default;
 
-static std::vector<std::string> split(const std::string& s, char seperator)
-{
-    std::vector<std::string> output;
-    std::string::size_type prev_pos = 0, pos = 0;
-
-    while((pos = s.find(seperator, pos)) != std::string::npos)
-    {
-        std::string substring(s.substr(prev_pos, pos - prev_pos));
-        output.push_back(substring);
-        prev_pos = ++pos;
-    }
-
-    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
-    return output;
-}
-
 class Temp : public Server
 {
 public:
@@ -273,6 +260,7 @@ public:
     QString get_kernal_type() override { return ""; }
     void check_for_updates () override {            }
     void collect_info      () override {            }
+    void collect_drives    () override {            }
     void shutdown          () override {            }
     void reboot            () override {            }
 };

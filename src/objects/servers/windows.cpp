@@ -3,6 +3,7 @@
 
 #include "windows.h"
 #include <managers/servermanager.h>
+#include <thread>
 
 std::string chassis_type_as_string(int a)
 {
@@ -247,3 +248,117 @@ std::string WindowsComputer::get_reg_value(std::string path, std::string key) {
     auto length = std_out.find("\r", start) - start;
     return std_out.substr(start, length);
 };
+
+void WindowsComputer::collect_drives()
+{
+    using namespace std::string_literals;
+    auto disk_list = listify_wmic_command("DiskDrive", "", "", {"DeviceID"s,"Model"s,"Size"s});
+
+    for (auto& drive_data : disk_list)
+    {
+        if (drive_data.empty())
+            continue;
+        if (drive_data[2].empty())
+            continue;
+
+        auto drive = new Drive;
+
+        drive->m_dev_node = QString::fromStdString(drive_data[0]);
+        drive->m_model    = QString::fromStdString(drive_data[1]);
+
+        drive->m_size = QString::fromStdString(bytes_to_string(std::stoull(drive_data[2])));
+
+        drives.push_back(drive);
+
+        auto partitions_list = listify_wmic_command("DiskDrive", "DeviceID LIKE \"" + drive_data[0] + "\"", "DiskDriveToDiskPartition", {"DeviceID"s,"Size"s});
+        
+        for (auto& partition_data : partitions_list)
+        {
+            auto volume_data = listify_wmic_command("DiskPartition", "DeviceID LIKE \"" + partition_data[0] + "\"", "LogicalDiskToPartition", {"DeviceID"s,"FileSystem"s,"FreeSpace"s,"Size"s,"VolumeName"s});
+
+            auto partition = new Parition;
+
+            partition->m_dev_node = QString::fromStdString(partition_data[0]);
+
+            if (volume_data.size() == 1)
+            {
+                auto size = std::stoull(volume_data[0][3]);
+                auto free_space = std::stoull(volume_data[0][2]);
+
+                partition->m_mountpoint = QString::fromStdString(volume_data[0][0]);
+                partition->m_filesystem = QString::fromStdString(volume_data[0][1]);
+                partition->m_size       = QString::fromStdString(bytes_to_string(size));
+                partition->m_used       = QString::number((int)(((size - free_space) / (double)size) * 100)) + '%';
+            }
+            else
+            {
+                partition->m_size = QString::fromStdString(bytes_to_string(std::stoull(partition_data[1])));
+                partition->m_used = "100%";
+            }
+
+            drive->m_paritions.push_back(partition);
+        }
+    }
+    
+    Q_EMIT changed_drives();
+}
+
+#include <iostream>
+
+std::vector<std::vector<std::string>> WindowsComputer::listify_wmic_command(std::string class_name, std::string filter, std::string associated, std::vector<std::string> properties)
+{
+    if (class_name.empty())
+        return {};
+
+    std::string command = "Get-CimInstance";
+    command += " -ClassName Win32_" + class_name;
+
+    if (!filter.empty())
+    {
+        for (int a = 0; a < filter.size(); a++)
+        {
+            if (filter[a] == '\\' || filter[a] == '"')
+            {
+                filter.insert(a, "\\");
+                a++;
+            }
+        }
+        command += " -Filter '" + filter + "'";
+    }
+
+    if (!associated.empty())
+    {
+        command += " | Get-CimAssociatedInstance -Association Win32_" + associated;
+    }
+
+    if (!properties.empty())
+    {
+        command += " | Select-Object -Property ";
+        for (int a = 0; a < properties.size(); a++)
+            command += properties[a] + (a < properties.size() - 1 ? "," : "");
+    }
+
+    command += " | ConvertTo-Csv -NoTypeInformation";
+
+    auto [exit_code, std_out, std_err] = run_command(command);
+    
+    auto lines = split(std_out, "\"\r\n");
+    lines.erase(lines.begin());
+    if (!lines.empty())
+        lines.erase(lines.end()-1);
+
+    std::vector<std::vector<std::string>> data;
+    for (auto& line : lines)
+    {
+        auto& elements = data.emplace_back();
+        for (auto& column : split(line, "\","))
+        {
+            if (column.size() > 0)
+                elements.push_back(column.substr(1));
+            else
+                elements.push_back(column);
+        }
+    }
+
+    return data;
+}

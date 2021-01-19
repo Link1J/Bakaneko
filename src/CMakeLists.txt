@@ -42,11 +42,21 @@ set_target_properties(bakaneko PROPERTIES
     WIN32_EXECUTABLE TRUE
     MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
-target_compile_options(bakaneko PRIVATE
+target_compile_options(bakaneko PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
+#    /fsanitize=address
 )
+#target_link_options(bakaneko PUBLIC
+#    /fsanitize=address
+#    /debug 
+#    -incremental:no 
+#    "/wholearchive:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x64\\clang_rt.asan_dynamic-x86_64.lib"
+#    "/wholearchive:C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Tools\\MSVC\\14.28.29333\\lib\\x64\\clang_rt.asan_dynamic_runtime_thunk-x86_64.lib"
+#)
+
+# /debug -incremental:no /wholearchive:C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.28.29333\lib\x64\clang_rt.asan_dynamic-x86_64.lib /wholearchive:C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.28.29333\lib\x64\clang_rt.asan_dynamic_runtime_thunk-x86_64.lib
 
 target_include_directories(bakaneko PUBLIC
     ${CMAKE_BINARY_DIR}
@@ -60,6 +70,7 @@ target_link_libraries(bakaneko PUBLIC
     Qt5::Quick
     Qt5::QuickControls2
     Qt5::Svg
+    Qt5::Concurrent
     
     KF5::I18n
     KF5::Crash

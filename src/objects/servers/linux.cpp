@@ -4,21 +4,10 @@
 #include "linux.h"
 #include <managers/servermanager.h>
 
-static std::vector<std::string> split(const std::string& s, char seperator)
-{
-    std::vector<std::string> output;
-    std::string::size_type prev_pos = 0, pos = 0;
-
-    while((pos = s.find(seperator, pos)) != std::string::npos)
-    {
-        std::string substring(s.substr(prev_pos, pos - prev_pos));
-        output.push_back(substring);
-        prev_pos = ++pos;
-    }
-
-    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
-    return output;
-}
+#include <set>
+#include <string>
+#include <array>
+#include <algorithm>
 
 LinuxComputer::LinuxComputer(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent)
     : Server(hostname, mac_address, ip_address, username, password, parent)
@@ -70,8 +59,8 @@ void LinuxComputer::check_for_updates()
                         continue;
 
                     Update* update = new Update;
-                    decode(update, package);
-                    data.append(update);
+                    if (decode(update, package))
+                        data.append(update);
                 }
             }
         }
@@ -157,4 +146,150 @@ void LinuxComputer::collect_info()
 
     if (ServerManager::Instance().GetModel())
         ServerManager::Instance().GetModel()->update(ServerManager::Instance().GetIndex(this));
+}
+
+void LinuxComputer::collect_drives()
+{
+    auto [exit_code, std_out, std_err] = run_command("lsblk -brn --output NAME,MOUNTPOINT,MODEL,SIZE,FSTYPE,FSSIZE,FSUSE%");
+    if (exit_code != 0)
+        std::tie(exit_code, std_out, std_err) = run_command("lsblk -brn --output NAME,MOUNTPOINT,MODEL,SIZE,FSTYPE");
+
+    std::set<std::string> drives_seen;
+
+    for (auto& drive : drives)
+    {
+        delete drive;
+        drive = nullptr;
+    }
+    drives.clear();
+
+    auto drive_strings = split(std_out, '\n');
+    for (auto drive_line : drive_strings)
+    {
+        if (drive_line.empty())
+            continue;
+
+        auto info = split(drive_line, ' ');
+
+        if (drives_seen.find(info[0]) != drives_seen.end())
+            continue;
+
+        auto number = info[0].find_first_of("1234567890");
+        bool contains_base_drive = drives_seen.find(info[0].substr(0, number)) != drives_seen.end();
+
+        if (!contains_base_drive)
+        {
+            auto drive = new Drive;
+
+            for (int a = 0; a < info[2].size(); a++)
+            {
+                if (info[2][a] == '\\' && info[2][a + 1] == 'x')
+                {
+                    size_t idx = 0;
+                    auto number = info[2].substr(a + 2, 2);
+                    char charar = std::stoi(number, &idx, 16);
+                    info[2][a] = charar;
+
+                    auto top = info[2].substr(0, a + 1);
+                    auto bot = info[2].substr(a + 2 + idx);
+                    info[2] = top + bot;
+                }
+            }
+            
+            drive->m_dev_node = QString::fromStdString(info[0]);
+            drive->m_model    = QString::fromStdString(info[2]);
+
+            drive->m_size = QString::fromStdString(bytes_to_string(std::stoull(info[3])));
+
+            drives.push_front(drive);
+        }
+
+        if (number != std::string::npos)
+        {
+            auto parition = new Parition;
+
+            for (int a = 0; a < info[1].size(); a++)
+            {
+                if (info[1][a] == '\\' && info[1][a + 1] == 'x')
+                {
+                    size_t idx = 0;
+                    auto number = info[1].substr(a + 2, 2);
+                    char charar = std::stoi(number, &idx, 16);
+                    info[1][a] = charar;
+
+                    auto top = info[1].substr(0, a + 1);
+                    auto bot = info[1].substr(a + 2 + idx);
+                    info[1] = top + bot;
+                }
+            }
+
+            parition->m_dev_node   = QString::fromStdString(info[0]);
+            parition->m_mountpoint = QString::fromStdString(info[1]);
+            parition->m_filesystem = QString::fromStdString(info[4]);
+
+            if (info.size() <= 5)
+            {
+                auto df = split(split(std::get<1>(run_command("df -aB1 /dev/" + info[0])), '\n')[1], ' ');
+                for (auto s = df.begin(); s != df.end(); s++)
+                {
+                    if (s->empty())
+                    {
+                        s = --df.erase(s);
+                    }
+                }
+                if (df[0] == "/dev/" + info[0])
+                {
+                    info.push_back(df[1]);
+                    info.push_back(df[4]);
+                }
+                else
+                {
+                    info.push_back("");
+                    info.push_back("");
+                }
+            }
+
+            if (!info[5].empty())
+            {
+                parition->m_size = QString::fromStdString(bytes_to_string(std::stoull(info[5])));
+                parition->m_used = QString::fromStdString(info[6]);
+            }
+            else
+            {
+                parition->m_size = QString::fromStdString(bytes_to_string(std::stoull(info[3])));
+                parition->m_used = "100%";
+            }
+
+            auto from = QString::fromStdString(
+                contains_base_drive
+                ? info[0].substr(0, number)
+                : info[0]
+            );
+
+            for (auto& drive : drives)
+            {
+                if (drive->m_dev_node == from)
+                {
+                    drive->m_paritions.append(parition);
+                    break;
+                }
+            }
+        }
+
+        drives_seen.emplace(info[0]);
+    }
+
+    std::sort(drives.begin(), drives.end(), [](Drive* a, Drive* b) {
+        auto a2 = a->m_dev_node.left(2), b2 = b->m_dev_node.left(2);
+        if (a2 == b2)
+            return a->m_dev_node < b->m_dev_node;
+        return a2 > b2;
+    });
+    for (auto& drive : drives)
+    {
+        std::sort(drive->m_paritions.begin(), drive->m_paritions.end(), [](Parition* a, Parition* b) { return a->m_dev_node < b->m_dev_node; });
+    }
+    
+
+    Q_EMIT changed_drives();
 }

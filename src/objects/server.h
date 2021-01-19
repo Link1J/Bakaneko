@@ -8,6 +8,9 @@
 
 #include <memory>
 #include <mutex>
+#include <array>
+#include <vector>
+#include <string>
 
 #include <libssh/libssh.h>
 
@@ -74,6 +77,7 @@ public Q_SLOTS:
     virtual void  check_for_updates() = 0;
     virtual void  collect_info     () = 0;
             State ping_computer    ();
+    virtual void  collect_drives   () = 0;
 
             void wake_up ();
     virtual void shutdown() = 0;
@@ -120,3 +124,45 @@ protected:
 
 using ServerPointer = Server*;
 Q_DECLARE_METATYPE(ServerPointer);
+
+inline std::vector<std::string> split(const std::string& s, char seperator)
+{
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+
+    while((pos = s.find(seperator, pos)) != std::string::npos)
+    {
+        std::string substring(s.substr(prev_pos, pos - prev_pos));
+        output.push_back(substring);
+        prev_pos = ++pos;
+    }
+
+    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+    return output;
+}
+
+template<size_t C>
+std::vector<std::string> split(const std::string& s, const char (&seperator)[C])
+{
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+
+    while((pos = s.find(seperator, pos, C - 1)) != std::string::npos)
+    {
+        std::string substring(s.substr(prev_pos, pos - prev_pos));
+        output.push_back(substring);
+        prev_pos = pos += C - 1;
+    }
+
+    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
+    return output;
+}
+
+inline std::string bytes_to_string(uint64_t size)
+{
+    using namespace std::string_literals;
+    int count;
+    const std::array size_end = { " B"s, "KB"s, "MB"s, "GB"s, "TB"s };
+    for (count = 0; size > 1024 && count < size_end.size(); count++, size /= 1024);
+    return std::to_string(size) + size_end[count];
+}

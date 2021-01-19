@@ -81,12 +81,13 @@ Kirigami.Page {
 
 				Components.ColumnBlock {
 					title: "Drives"
+					Components.Drives {}
 				}
 				
 				Components.ColumnBlock {
-                    visible: currentServer.get_kernal_type() === "Linux"
-                    title: "Updates (" + info.updates.count + ")"
-                    Components.UpdateList { id: info }
+					visible: currentServer.get_kernal_type() === "Linux"
+					title: "Updates (" + info.updates.count + ")"
+					Components.UpdateList { id: info }
 				}
 			}
 		}

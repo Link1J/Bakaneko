@@ -61,12 +61,12 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     KCrash::initialize();
 
-    ServerManager::Instance().update_server_info();
-
 #ifdef Q_OS_WINDOWS
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2,2), &wsaData);
 #endif
+
+    ServerManager::Instance().update_server_info(true);
 
     QQmlApplicationEngine engine;
 
@@ -94,6 +94,8 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
 
     if (engine.rootObjects().isEmpty())
         return -1;
+        
+    ServerManager::Instance().start();
 
     auto exit_code = app.exec();
 

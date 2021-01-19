@@ -32,7 +32,7 @@ ecm_setup_version(0.0.1
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
 
-find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg)
+find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg Concurrent)
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Notifications CoreAddons IconThemes Config)
 find_package(libssh REQUIRED)
 

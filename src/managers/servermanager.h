@@ -31,9 +31,9 @@ class ServerManager : public QObject
 
 public:
     static ServerManager& Instance();
-    
-    void update_server_info();
 
+    void start();
+    
     size_t size() const;
     Server& operator[](size_t index);
 
@@ -48,6 +48,8 @@ public Q_SLOTS:
 
     Q_INVOKABLE void server_offline(Server* server);
     Q_INVOKABLE void server_online (Server* server);
+    
+    void update_server_info(bool wait = false);
 };
 
 using ServerManagerPointer = ServerManager*;

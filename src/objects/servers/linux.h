@@ -21,6 +21,7 @@ public Q_SLOTS:
 
     void check_for_updates() override;
     void collect_info     () override;
+    void collect_drives   () override;
 
     void shutdown() override;
     void reboot  () override;

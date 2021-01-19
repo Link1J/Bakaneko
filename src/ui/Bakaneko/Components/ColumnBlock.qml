@@ -26,6 +26,7 @@ ColumnLayout {
 
 		Item {
 			id: place
+			
 			implicitHeight: {
 				var temp_height = 0
 				for (var i = 0; i < data.length; i++) {

@@ -22,7 +22,7 @@ craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-
 ```
 Then clone the repo,
 ```powershell
-git clone https://github.com/link1j/bakaneko && cd bakaneko
+git clone --recursive https://github.com/link1j/bakaneko && cd bakaneko
 ```
 And finally build
 ```powershell
@@ -53,7 +53,7 @@ cmake ..
 
 #### Instructions
 ```bash
-git clone https://github.com/link1j/bakaneko && cd bakaneko
+git clone --recursive https://github.com/link1j/bakaneko && cd bakaneko
 mkdir build && cd build
 cmake ..
 ```
@@ -66,7 +66,7 @@ cmake ..
 #### Instructions
 First clone the repo
 ```bash
-git clone https://github.com/link1j/bakaneko && cd bakaneko
+git clone --recursive https://github.com/link1j/bakaneko && cd bakaneko
 ```
 Build the docker image
 ```bash

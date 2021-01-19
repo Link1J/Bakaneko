@@ -26,8 +26,4 @@ Grid {
 		id: _updates
 		server: currentServer
 	}
-	
-	FontMetrics {
-		id: fontMetrics
-	}
 }
