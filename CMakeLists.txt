@@ -10,6 +10,14 @@ find_package(ECM 5.75 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)
+include(ECMSetupVersion)
+
+ecm_setup_version(0.1.0
+    VARIABLE_PREFIX BAKANEKO
+    VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
+)
+
+find_package(Protobuf REQUIRED)
 
 add_subdirectory(externals)
 

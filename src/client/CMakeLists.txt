@@ -4,7 +4,6 @@
 set(QT5_MIN_VERSION 5.14)
 set(KF5_MIN_VERSION 5.75)
 
-include(ECMSetupVersion)
 include(ECMInstallIcons)
 include(ECMAddAppIcon)
 include(ECMEnableSanitizers)
@@ -12,11 +11,6 @@ include(ECMEnableSanitizers)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-
-ecm_setup_version(0.0.2
-    VARIABLE_PREFIX BAKANEKO
-    VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
-)
 
 find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg Concurrent)
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Notifications CoreAddons IconThemes Config)
@@ -74,7 +68,6 @@ target_compile_options(client PUBLIC
 
 target_include_directories(client PUBLIC
     ${CMAKE_BINARY_DIR}
-    ${Qt5Quick_PRIVATE_INCLUDE_DIRS}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
