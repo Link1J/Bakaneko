@@ -27,7 +27,7 @@ include(ECMInstallIcons)
 include(ECMAddAppIcon)
 include(ECMEnableSanitizers)
 
-ecm_setup_version(0.0.1
+ecm_setup_version(0.0.2
     VARIABLE_PREFIX BAKANEKO
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
