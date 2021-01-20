@@ -1,5 +1,5 @@
 
-//          Copyright Jared Irwin 2020
+//          Copyright Jared Irwin 2020-2021
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
@@ -55,18 +55,18 @@ namespace ljh
 #define POINTERS_INTERALS(CC, Noexcept)\
 	template<typename R, typename... Args>\
 	class function_pointer<\
-		R LJH_CALLING_CONVENTION_##CC (Args...) noexcept(Noexcept),\
+		R LJH_CALLING_CONVENTION_##CC (Args...) LJH_NOEXCEPT_FUNCTION_TYPE(Noexcept),\
 		std::is_same<calling_conventions::cdecl_::type, calling_conventions::CC##_::type>::value\
 			? calling_conventions::CC##_::id \
 			: 0 \
 	>\
 	{\
 	public:\
-		using traits = function_traits<R LJH_CALLING_CONVENTION_##CC (Args...) noexcept(Noexcept)>;\
+		using traits = function_traits<R LJH_CALLING_CONVENTION_##CC (Args...) LJH_NOEXCEPT_FUNCTION_TYPE(Noexcept)>;\
 		using type = typename traits::as::function_pointer;\
 \
 	private:\
-		using noexcept_t = function_traits<R LJH_CALLING_CONVENTION_##CC (Args...) noexcept(!Noexcept)>;\
+		using noexcept_t = function_traits<R LJH_CALLING_CONVENTION_##CC (Args...) LJH_NOEXCEPT_FUNCTION_TYPE(!Noexcept)>;\
 		type function = nullptr;\
 \
 		template<typename T, int = sizeof(function_traits<T>)>\
@@ -104,7 +104,7 @@ namespace ljh
 		template<typename T> typename enable_function_pointer<T>::boo \
 		     operator!=(T         other) const noexcept { return !(*this == other); }\
 \
-		R operator()(Args... args) const noexcept(traits::is::no_exceptions) { return function(args...); }\
+		R operator()(Args... args) const LJH_NOEXCEPT_FUNCTION_TYPE(traits::is::no_exceptions) { return function(args...); }\
 		type get() const noexcept { return function; }\
 		bool empty() const noexcept { return function == nullptr; }\
 \
@@ -151,7 +151,7 @@ namespace ljh
 	function_pointer<function_type> load_function(_string_type dll_name, u16 ordinal)
 	{
 		void* function; u32 error;
-		_load_dll(dll_name.data(), (const char*)(ordinal), &function, &error);
+		_load_dll(dll_name.data(), (const char*)(uintptr_t)(ordinal), &function, &error);
 		return function_pointer<function_type>{function};
 	}
 #else
@@ -167,7 +167,7 @@ namespace ljh
 	expected<function_pointer<function_type>,u32> load_function(_string_type dll_name, u16 ordinal)
 	{
 		void* function; u32 error;
-		if (!_load_dll(dll_name.data(), (const char*)(ordinal), &function, &error))
+		if (!_load_dll(dll_name.data(), (const char*)(uintptr_t)(ordinal), &function, &error))
 			return unexpected{error};
 		return function_pointer<function_type>{function};
 	}

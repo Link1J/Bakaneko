@@ -1,9 +1,10 @@
-//          Copyright Jared Irwin 2020
+
+//          Copyright Jared Irwin 2020-2021
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-// compile_time_string.hpp - v1.1
+// compile_time_string.hpp - v1.2
 // SPDX-License-Identifier: BSL-1.0
 //
 // Requires C++20
@@ -17,6 +18,8 @@
 //
 // Version History
 //     1.0 Inital Version
+//     1.2 Null terminate compile_time_string, add User defined literals,
+//         and change the hash function to support all char types
 
 #pragma once
 #include "cpp_version.hpp"
@@ -26,29 +29,29 @@
 
 #include <string_view>
 #include <stdexcept>
+#include <cstddef>
 
 namespace ljh
 {
-	template <typename Char, std::size_t Size, typename Traits = std::char_traits<Char>>
+	template <typename Char, std::size_t Size>
 	struct compile_time_string
 	{
 		using char_type = Char;
 
-		char_type content[Size] = {};
+		char_type content[Size + 1] = {};
 
-		constexpr compile_time_string(const char_type (&input)[Size + 1]) noexcept
+		[[nodiscard]] constexpr compile_time_string(const char_type (&input)[Size + 1]) noexcept
 		{
 			if constexpr (Size != 0)
 			{
-				for (std::size_t i{0}; i < Size; ++i)
+				for (std::size_t i{0}; i < Size + 1; ++i)
 				{
 					content[i] = input[i];
 				}
 			}
 		}
 		
-		template <typename Traits2>
-		constexpr compile_time_string(const compile_time_string<Char, Size, Traits2> &other) noexcept
+		[[nodiscard]] constexpr compile_time_string(const compile_time_string<Char, Size> &other) noexcept
 		{
 			for (std::size_t i{0}; i < Size; ++i)
 			{
@@ -61,54 +64,52 @@ namespace ljh
 			return Size;
 		}
 
-		constexpr const char_type* begin() const noexcept
+		[[nodiscard]] constexpr const char_type* data() const noexcept
 		{
 			return content;
 		}
 
-		constexpr const char_type* end() const noexcept
+		[[nodiscard]] constexpr const char_type* begin() const noexcept
+		{
+			return content;
+		}
+
+		[[nodiscard]] constexpr const char_type* end() const noexcept
 		{
 			return content + Size;
 		}
 
-		constexpr char_type operator[](std::size_t i) const noexcept
+		[[nodiscard]] constexpr char_type operator[](std::size_t i) const noexcept
 		{
 			return i < Size ? content[i] : throw std::out_of_range("");
 		}
 
-		constexpr operator std::basic_string_view<char_type>() const noexcept
+		[[nodiscard]] constexpr operator std::basic_string_view<char_type>() const noexcept
 		{
 			return std::basic_string_view<char_type>{content, Size};
 		}
 
-		static constexpr std::size_t FNV_offset_basis = 
-			sizeof(std::size_t) == 4 ?         0x811C9DC5 :
-			sizeof(std::size_t) == 8 ? 0xCBF29CE484222325 :
-			0;
-		static_assert(FNV_offset_basis != 0, "Unknown value for FNV_offset_basis with the current size of std::size_t");
-
-		static constexpr std::size_t FNV_prime = 
-			sizeof(std::size_t) == 4 ?         0x01000193 :
-			sizeof(std::size_t) == 8 ? 0x00000100000001B3 :
-			0;
-		static_assert(FNV_prime != 0, "Unknown value for FNV_prime with the current size of std::size_t");
-
-		constexpr std::enable_if_t<sizeof(char_type) == 1, std::size_t> hash() const noexcept
+		// djb2 hash function
+		[[nodiscard]] constexpr std::size_t hash() const noexcept
 		{
-			std::size_t hash_data = FNV_offset_basis;
-			for (auto &byte_of_data : *this)
-			{
-				hash_data = hash_data ^ byte_of_data;
-				hash_data = hash_data * FNV_prime;
-			}
-			return hash_data;
+			std::size_t hash = 5381;
+			for (auto& c : *this)
+				// hash * 33 + c
+				hash = ((hash << 5) + hash) + c;
+			return hash;
 		}
 	};
 
-	template<typename Char, std::size_t Size, typename Traits = std::char_traits<Char>>
-	compile_time_string(const Char (&)[Size]) -> compile_time_string<Char, Size - 1, Traits>;
-	template<typename Char, std::size_t Size, typename Traits = std::char_traits<Char>>
-	compile_time_string(compile_time_string<Char, Size>) -> compile_time_string<Char, Size, Traits>;
+	template<typename Char, std::size_t Size>
+	compile_time_string(const Char (&)[Size]) -> compile_time_string<Char, Size - 1>;
+	template<typename Char, std::size_t Size>
+	compile_time_string(const compile_time_string<Char, Size>& ) -> compile_time_string<Char, Size>;
+
+	//inline namespace compile_time_string_literals
+	//{
+	//	template<ljh::compile_time_string text> [[nodiscard]] constexpr auto operator ""_cts () { return text       ; }
+	//	template<ljh::compile_time_string text> [[nodiscard]] constexpr auto operator ""_hash() { return text.hash(); }
+	//}
 }
 
 namespace std

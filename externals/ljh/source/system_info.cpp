@@ -1,5 +1,5 @@
 
-//          Copyright Jared Irwin 2020
+//          Copyright Jared Irwin 2020-2021
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
@@ -419,7 +419,7 @@ bool operator> (const ljh::u32                  & lhs, const ljh::system_info::i
 bool operator>=(const ljh::u32                  & lhs, const ljh::system_info::info_data& rhs) { return rhs <= lhs; }
 bool operator<=(const ljh::u32                  & lhs, const ljh::system_info::info_data& rhs) { return rhs >= lhs; }
 
-namespace ljh::system_info::versions
+namespace ljh::system_info::inline versions
 {
 	const info_data Windows_1_01                { platform::WindowsDOS, { 1,  1,     0            },      0};
 	const info_data Windows_1_02                { platform::WindowsDOS, { 1,  2,     0            },      0};

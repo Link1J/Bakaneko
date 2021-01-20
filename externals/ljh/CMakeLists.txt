@@ -1,5 +1,12 @@
+
+#          Copyright Jared Irwin 2020-2021
+# Distributed under the Boost Software License, Version 1.0.
+#    (See accompanying file LICENSE_1_0.txt or copy at
+#          https://www.boost.org/LICENSE_1_0.txt)
+
 cmake_minimum_required(VERSION 3.11.0)
 option(ljh_BUILD_TESTS "Build the Self Tests" OFF)
+option(ljh_INSTALL "Build the Self Tests" ON)
 project(ljh)
 
 add_library(ljh STATIC
@@ -43,12 +50,14 @@ if (ljh_BUILD_TESTS)
 	add_subdirectory(tests)
 endif()
 
-install(TARGETS ljh EXPORT ljh
-	LIBRARY       DESTINATION lib
-	ARCHIVE       DESTINATION lib
-	RUNTIME       DESTINATION bin
-	PUBLIC_HEADER DESTINATION include
-	BUNDLE        DESTINATION bin
-)
-install(EXPORT ljh NAMESPACE ljh:: DESTINATION lib/cmake/ljh FILE ljh-config.cmake)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
+if (ljh_INSTALL)
+	install(TARGETS ljh EXPORT ljh
+		LIBRARY       DESTINATION lib
+		ARCHIVE       DESTINATION lib
+		RUNTIME       DESTINATION bin
+		PUBLIC_HEADER DESTINATION include
+		BUNDLE        DESTINATION bin
+	)
+	install(EXPORT ljh NAMESPACE ljh:: DESTINATION lib/cmake/ljh FILE ljh-config.cmake)
+	install(DIRECTORY ${PROJECT_SOURCE_DIR}/include/ DESTINATION include)
+endif()

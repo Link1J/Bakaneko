@@ -1,5 +1,5 @@
 
-//          Copyright Jared Irwin 2020
+//          Copyright Jared Irwin 2020-2021
 // Distributed under the Boost Software License, Version 1.0.
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
@@ -46,4 +46,7 @@ namespace ljh
 
 	template<typename T>
 	concept scoped_enum = is_scoped_enum_v<T>;
+
+	template<typename T>
+	concept function_type = std::is_function_v<T>;
 }
