@@ -14,6 +14,7 @@ set(SRCS
     drives.cpp
     http.cpp
     rest.cpp
+    updates.cpp
 )
 
 add_executable(server ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})

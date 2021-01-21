@@ -116,7 +116,7 @@ Http::Response Http::output_message(google::protobuf::Message& message, const Ht
     }
     else
     {
-        response.set_content("application/x-protobuf", message.SerializeAsString());
+        response = Http::Response{415};
     }
 
     return response;

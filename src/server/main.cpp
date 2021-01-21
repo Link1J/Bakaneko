@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 #include "rest.hpp"
-#include "drives.hpp"
+#include "info.hpp"
 
 #include <ljh/system_info.hpp>
 
@@ -21,9 +21,38 @@ int main(int argc, const char* argv[])
     asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 8080};
     Rest::Server server{io_service, endpoint};
 
-    server.add_handler("/drives", &Info::Drives);
+    server.add_handler("/drives" , &Info::Drives );
+    server.add_handler("/updates", &Info::Updates);
 
     server.start_listening();
     io_service.run();
     return 0;
+}
+
+// Don't know a better place for the code below
+
+#include <cstdio>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+
+#if defined(LJH_TARGET_Windows)
+#define popen _popen
+#define pclose _pclose
+#endif
+
+std::tuple<int, std::string> exec(const std::string& cmd)
+{
+    auto pipe = popen(cmd.c_str(), "r");
+    if (!pipe)
+        throw std::runtime_error("popen() failed!");
+
+    std::array<char, 128> buffer;
+    std::string result;
+    while (fgets(buffer.data(), buffer.size(), pipe) != nullptr)
+        result += buffer.data();
+
+    return {pclose(pipe), result};
 }

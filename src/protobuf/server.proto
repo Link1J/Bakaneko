@@ -44,7 +44,8 @@ message Updates {
 };
 
 message Update {
-	string name        = 1;
-	string old_version = 2;
-	string new_version = 3;
+	string source      = 1;
+	string name        = 2;
+	string old_version = 3;
+	string new_version = 4;
 };
