@@ -11,6 +11,9 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS
 
 set(SRCS
     main.cpp
+    drives.cpp
+    http.cpp
+    rest.cpp
 )
 
 add_executable(server ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
