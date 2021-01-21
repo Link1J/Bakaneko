@@ -26,7 +26,7 @@
 #include <winrt/base.h>
 #include <string>
 #include <string_view>
-#include <cassert>
+#include <ostream>
 
 namespace ljh::windows
 {
@@ -36,6 +36,8 @@ namespace ljh::windows
 		using size_type = uint32_t;
 		using const_reference = value_type const&;
 		using pointer = value_type*;
+		using iterator = pointer;
+		using reverse_iterator = std::reverse_iterator<iterator>;
 		using const_pointer = value_type const*;
 		using const_iterator = const_pointer;
 		using const_reverse_iterator = std::reverse_iterator<const_iterator>;
@@ -43,6 +45,16 @@ namespace ljh::windows
 		using bstr = value_type*;
 
 		com_bstr() noexcept = default;
+
+		com_bstr(const wchar_t* string) noexcept
+		{
+			this->string = SysAllocString(string);
+		}
+
+		explicit com_bstr(const std::wstring_view& string) noexcept
+		{
+			this->string = SysAllocStringLen(string.data(), string.size());
+		}
 
 		~com_bstr() noexcept
 		{
@@ -71,13 +83,13 @@ namespace ljh::windows
 
 		const_reference operator[](size_type pos) const noexcept
 		{
-			assert(pos < size());
+			WINRT_ASSERT(pos < size());
 			return *(begin() + pos);
 		}
 
 		const_reference front() const noexcept
 		{
-			assert(!empty());
+			WINRT_ASSERT(!empty());
 			return *begin();
 		}
 
@@ -87,7 +99,7 @@ namespace ljh::windows
 			return *(end() - 1);
 		}
 
-		const_pointer data() const noexcept
+		pointer data() noexcept
 		{
 			return begin();
 		}
@@ -95,6 +107,11 @@ namespace ljh::windows
 		const_pointer c_str() const noexcept
 		{
 			return begin();
+		}
+
+		iterator begin() noexcept
+		{
+			return string;
 		}
 
 		const_iterator begin() const noexcept
@@ -107,6 +124,11 @@ namespace ljh::windows
 			return begin();
 		}
 
+		iterator end() noexcept
+		{
+			return string + size();
+		}
+
 		const_iterator end() const noexcept
 		{
 			return string + size();
@@ -117,6 +139,11 @@ namespace ljh::windows
 			return end();
 		}
 
+		reverse_iterator rbegin() noexcept
+		{
+			return reverse_iterator(end());
+		}
+
 		const_reverse_iterator rbegin() const noexcept
 		{
 			return const_reverse_iterator(end());
@@ -125,6 +152,11 @@ namespace ljh::windows
 		const_reverse_iterator crbegin() const noexcept
 		{
 			return rbegin();
+		}
+
+		reverse_iterator rend() noexcept
+		{
+			return reverse_iterator(begin());
 		}
 
 		const_reverse_iterator rend() const noexcept
@@ -149,11 +181,34 @@ namespace ljh::windows
 		
 		bstr* put() noexcept
 		{
-			assert(string != nullptr);
+			WINRT_ASSERT(string != nullptr);
 			return &string;
+		}
+
+		operator BSTR() noexcept
+		{
+			return string;
+		}
+
+		operator const BSTR() const noexcept
+		{
+			return string;
 		}
 
 	private:
 		bstr string;
 	};
+
+	inline namespace com_bstr_literals
+	{
+		inline auto operator "" _bstr(const wchar_t* string, std::size_t size)
+		{
+			return com_bstr{std::wstring_view{string, size}};
+		}
+	}
+}
+
+inline std::wostream& operator<<(std::wostream& os, const ljh::windows::com_bstr& string)
+{
+	return os << string.c_str();
 }

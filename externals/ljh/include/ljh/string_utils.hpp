@@ -24,6 +24,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <locale>
+#include <codecvt>
 
 #if __cpp_lib_string_view >= 201606L
 #include <string_view>
@@ -94,6 +96,34 @@ namespace ljh
 		return output;
 	}
 
+	template<size_t S, class C, class T = std::char_traits<C>, class A = std::allocator<C>>
+	std::vector<std::basic_string<C,T,A>> split(const std::basic_string<C,T,A>& s, const C (&seperator)[S])
+	{
+		using size_type = typename std::basic_string<C,T,A>::size_type;
+
+		std::vector<std::basic_string<C,T,A>> output;
+		size_type prev_pos = 0, pos = 0;
+
+		while((pos = s.find(seperator, pos)) != std::basic_string<C,T,A>::npos)
+		{
+			output.push_back(s.substr(prev_pos, pos - prev_pos));
+			prev_pos = pos += S - 1;
+		}
+
+		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		return output;
+	}
+
+	inline std::wstring convert_string(const std::string& str)
+	{
+		return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.from_bytes(str);
+	}
+	
+	inline std::string convert_string(const std::wstring& wstr)
+	{
+		return std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>{}.to_bytes(wstr);
+	}
+
 #if __cpp_lib_string_view >= 201606L
 	template<class C, class T = std::char_traits<C>>
 	void ltrim(std::basic_string_view<C,T> &s)
@@ -145,12 +175,30 @@ namespace ljh
 		using size_type = typename std::basic_string_view<C,T>::size_type;
 		
 		std::vector<std::basic_string_view<C,T>> output;
-		size_type::size_type prev_pos = 0, pos = 0;
+		size_type prev_pos = 0, pos = 0;
 
 		while((pos = s.find(seperator, pos)) != std::basic_string_view<C,T>::npos)
 		{
 			output.push_back(s.substr(prev_pos, pos - prev_pos));
 			prev_pos = ++pos;
+		}
+
+		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		return output;
+	}
+	
+	template<size_t S, class C, class T = std::char_traits<C>>
+	std::vector<std::basic_string_view<C,T>> split(const std::basic_string_view<C,T>& s, const C (&seperator)[S])
+	{
+		using size_type = typename std::basic_string_view<C,T>::size_type;
+		
+		std::vector<std::basic_string_view<C,T>> output;
+		size_type prev_pos = 0, pos = 0;
+
+		while((pos = s.find(seperator, pos)) != std::basic_string_view<C,T>::npos)
+		{
+			output.push_back(s.substr(prev_pos, pos - prev_pos));
+			prev_pos = pos += S - 1;
 		}
 
 		output.push_back(s.substr(prev_pos, pos-prev_pos));

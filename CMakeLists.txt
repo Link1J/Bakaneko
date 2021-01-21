@@ -17,8 +17,6 @@ ecm_setup_version(0.1.0
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
 
-find_package(Protobuf REQUIRED)
-
 add_subdirectory(externals)
 
 if (NOT BAKANEKO_DONT_BUILD_CLIENT)

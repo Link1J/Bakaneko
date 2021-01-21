@@ -46,10 +46,15 @@ namespace ljh::windows
 			if (array)
 				winrt::check_hresult(SafeArrayDestroy(array));
 		}
-		
+
 		com_safe_array(const com_safe_array& other)
 		{
 			winrt::check_hresult(SafeArrayCopy(other.array, &array));
+		}
+		
+		explicit com_safe_array(SAFEARRAY* other)
+		{
+			winrt::check_hresult(SafeArrayCopy(array, &array));
 		}
 
 		com_safe_array& operator=(const com_safe_array& other)
