@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
-#pragma once
-
 #include "rest.hpp"
 
 Rest::Server::Connection::Connection(asio::io_service& io_service)
@@ -20,7 +18,7 @@ void Rest::Server::Connection::handle(std::shared_ptr<Rest::Server::Connection> 
         Http::Request request(data);
         
         Http::Response response(404);
-        response.set_content("text/html", "<html><head><title>404</title></head><body><h1>404 Not Found</h1><pre>" + data + "</pre></body></html>");
+        response.set_content("text/plain", "404 Not Found");
 
         if (server->handlers.find(request.url()) != server->handlers.end())
             response = server->handlers.at(request.url())(request);

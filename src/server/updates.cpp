@@ -16,10 +16,7 @@ Http::Response Info::Updates(const Http::Request& request)
 
 #if defined(LJH_TARGET_Windows)
     return {501};
-
-// #elif defined(LJH_TARGET_Linux)
-#endif
-
+#elif defined(LJH_TARGET_Linux)
     auto run = [&updates](const std::string& command, const std::string& flags, bool(*decode)(Bakaneko::Update&, std::string)) -> bool {
         auto [exit_code, std_out] = exec(command + ' ' + flags);
         if (exit_code == 0)
@@ -65,9 +62,10 @@ Http::Response Info::Updates(const Http::Request& request)
         return true;
     };
 
-    run("yay"   , "-Qu"              , pacman_decode);
-    run("pacman", "-Qu"              , pacman_decode);
-    run("apt"   , "list --upgradable", apt_decode   );
+    if (!run("yay", "-Qu", pacman_decode))
+        run("pacman", "-Qu", pacman_decode);
+    run("apt", "list --upgradable", apt_decode);
+#endif
 
     return Http::output_message(updates, request);
 }

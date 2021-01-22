@@ -4,18 +4,15 @@ syntax = "proto3";
 
 package Bakaneko;
 
-message Network {
-	string hostname    = 1;
-	string mac_address = 2;
-	string ip_address  = 3;
-};
-
 message System {
-	string operating_system = 1;
-	string kernel           = 2;
-	string architecture     = 3;
-	string vm_platform      = 4;
-	string icon             = 5;
+	string hostname         = 1;
+	string mac_address      = 2;
+	string ip_address       = 3;
+	string operating_system = 4;
+	string kernel           = 5;
+	string architecture     = 6;
+	string vm_platform      = 7;
+	string icon             = 8;
 };
 
 message Drives {

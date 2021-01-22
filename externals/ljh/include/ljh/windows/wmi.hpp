@@ -60,7 +60,7 @@ namespace ljh::windows::wmi
 
     public:
         service(const com_bstr& location);
-
+        static service& root();
         std::vector<clazz> get_class(const std::wstring& class_name);
     };
 

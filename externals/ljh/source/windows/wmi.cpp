@@ -111,3 +111,10 @@ void ljh::windows::wmi::setup()
     winrt::check_hresult(CoInitializeSecurity(NULL, -1, NULL, NULL, RPC_C_AUTHN_LEVEL_DEFAULT, RPC_C_IMP_LEVEL_IMPERSONATE, NULL, EOAC_NONE, NULL));
     locator = winrt::create_instance<IWbemLocator>(CLSID_WbemLocator);
 }
+
+ljh::windows::wmi::service& ljh::windows::wmi::service::root()
+{
+    using namespace ljh::windows::com_bstr_literals;
+    static ljh::windows::wmi::service service{L"ROOT\\CIMV2"_bstr};
+    return service;
+}

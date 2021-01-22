@@ -6,7 +6,7 @@ project(bakaneko)
 
 include(FeatureSummary)
 
-find_package(ECM 5.75 REQUIRED NO_MODULE)
+find_package(ECM 5.68 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 
 include(KDEInstallDirs)

@@ -237,6 +237,10 @@ namespace ljh::windows
 					else if (contains<com_bstr    >()) return (T)std::stoi(get<com_bstr    >());
 				}
 			}
+			else if constexpr (is_instance_v<T, com_safe_array>)
+			{
+				return get<T>();
+			}
 			else
 			{
 				static_assert(std::is_same_v<std::void_t<T>, int>, "Invalid Type");

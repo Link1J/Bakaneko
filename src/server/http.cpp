@@ -10,7 +10,7 @@
 
 static std::map<int, std::string> http_codes_strings {
     { 200, "OK" }, { 404, "Not Found" }, { 403, "Forbidden" }, { 418, "I'm a teapot" }, { 400, "Bad Request" },
-    { 500, "Internal Server Error" }, { 501, "Not Implemented" }, { 415, "Unsupported Media Type" },
+    { 500, "Internal Server Error" }, { 501, "Not Implemented" }, { 415, "Unsupported Media Type" }, { 302, "Found" },
 };
 
 Http::Response::Response(int http_code)
@@ -68,7 +68,10 @@ Http::Request::Request(std::string data)
         auto items = ljh::split(list[a], ": ");
         for (int a = 2; a < items.size(); a++)
             items[1] += ": " + items[a];
-        _i_fields[items[0]] = items[1];
+        if (items.size() > 1)
+            _i_fields[items[0]] = items[1];
+        else
+            _i_fields[items[0]] = "";
     }
 }
 

@@ -220,14 +220,24 @@ ljh::expected<std::string, ljh::system_info::error> ljh::system_info::get_string
 	if (!string.empty()) { string += " mimicking "; }
 
 	auto key = windows::registry::key::LOCAL_MACHINE[L"SOFTWARE"][L"Microsoft"][L"Windows NT"][L"CurrentVersion"];
-	string += to_utf8((std::wstring)key(L"ProductName"));
-
-	if (key.get_value(L"DisplayVersion").has_value())
-		string += " Version " + to_utf8((std::wstring)key(L"DisplayVersion"));
-	else if (key.get_value(L"ReleaseId").has_value())
-		string += " Version " + to_utf8((std::wstring)key(L"ReleaseId"));
-	else if (key.get_value(L"CSDVersion").has_value())
-		string += " " + to_utf8((std::wstring)key(L"CSDVersion"));
+	auto os_name = to_utf8((std::wstring)key(L"ProductName"));
+	if (os_name.find("Microsoft ") == 0)
+		os_name = os_name.substr(10);
+	if (auto line = os_name.find("Windows 10"); line != std::string::npos)
+	{
+		line += 10;
+		if (auto version_display = key.get_value(L"DisplayVersion"); version_display.has_value())
+			os_name = os_name.substr(0, line + 1) + to_utf8(version_display->get<std::wstring>()) + os_name.substr(line);
+		else if (version_display = key.get_value(L"ReleaseId"); version_display.has_value())
+			os_name = os_name.substr(0, line + 1) + to_utf8(version_display->get<std::wstring>()) + os_name.substr(line);
+	}
+	else
+	{
+		line += os_name.find_first_of(' ', line + 11);
+		if (auto version_display = key.get_value(L"CSDVersion"); version_display.has_value())
+			os_name = os_name.substr(0, line + 1) + to_utf8(version_display->get<std::wstring>()) + os_name.substr(line);
+	}
+	string += os_name;
 
 	return string;
 #elif defined(LJH_TARGET_MacOS)

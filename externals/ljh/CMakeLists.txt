@@ -50,7 +50,9 @@ target_link_libraries(ljh
 )
 target_compile_options(ljh
 	PRIVATE
-		/await
+		$<$<PLATFORM_ID:Windows>:
+			/await
+		>
 )
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

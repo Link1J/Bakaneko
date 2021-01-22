@@ -15,6 +15,7 @@ set(SRCS
     http.cpp
     rest.cpp
     updates.cpp
+    system.cpp
 )
 
 add_executable(server ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
