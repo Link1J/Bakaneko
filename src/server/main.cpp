@@ -27,9 +27,9 @@ int main(int argc, const char* argv[])
         return response;
     });
 
-    server.add_handler("/drives" , &Info::Drives );
-    server.add_handler("/updates", &Info::Updates);
-    server.add_handler("/system" , &Info::System );
+    server.add_handler("/drives", &Info::Drives );
+    server.add_handler("/update", &Info::Updates);
+    server.add_handler("/system", &Info::System );
 
     server.start_listening();
     io_service.run();

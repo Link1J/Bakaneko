@@ -69,7 +69,7 @@ Http::Response Info::System(const Http::Request& request)
     memset(ip_address, 0, sizeof(ip_address));
 
     char mac_address[6 * 3 + 1];
-    memset(mac_address, 0, sizeof(ip_address));
+    memset(mac_address, 0, sizeof(mac_address));
 
 
 #if defined(LJH_TARGET_Windows)

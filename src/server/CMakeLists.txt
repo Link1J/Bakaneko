@@ -7,6 +7,8 @@ find_package(OpenSSL REQUIRED)
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS 
     ../protobuf/server.proto
+    ../protobuf/updates.proto
+    ../protobuf/drives.proto
 )
 
 set(SRCS

@@ -11,7 +11,7 @@
 #endif
 
 #undef interface
-#include "server.pb.h"
+#include "drives.pb.h"
 
 extern std::string read_file(std::filesystem::path file_path);
 extern std::tuple<int, std::string> exec(const std::string& cmd);

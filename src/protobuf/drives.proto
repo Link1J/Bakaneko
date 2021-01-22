@@ -1,0 +1,26 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
+syntax = "proto3";
+
+package Bakaneko;
+
+message Drives {
+	repeated Drive drive = 1;
+};
+
+message Drive {
+	string dev_node     = 1;
+	uint64 size         = 2;
+	string model        = 3;
+	string manufacturer = 4;
+	string interface    = 5;
+	repeated Partition partition = 16;
+};
+
+message Partition {
+	string dev_node   = 1;
+	uint64 size       = 2;
+	uint64 used       = 3;
+	string mountpoint = 4;
+	string filesystem = 5;
+};

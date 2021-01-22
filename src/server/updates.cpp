@@ -6,7 +6,7 @@
 #include <ljh/string_utils.hpp>
 
 #undef interface
-#include "server.pb.h"
+#include "updates.pb.h"
 
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
