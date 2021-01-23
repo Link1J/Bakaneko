@@ -115,25 +115,25 @@ std::string chassis_type_as_system_icon(int a)
 WindowsComputer::WindowsComputer(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent)
     : Server(hostname, mac_address, ip_address, username, password, parent)
 {
-    if (this->hostname.isEmpty() || this->mac_address.isEmpty())
-    {
-        auto [exit_code, std_out, std_err] = run_command("ipconfig /all");
-
-        auto get_value = [](std::string& std_out, std::string key) -> std::string {
-            auto text_pos = std_out.find(key) + key.length();
-            if (text_pos == std::string::npos + key.length())
-                return "";
-            text_pos = std_out.find(':', text_pos) + 2;
-            auto newline_pos = std_out.find('\n', text_pos);
-            return std_out.substr(text_pos, newline_pos - text_pos);
-        };
-
-        this->hostname = QString::fromStdString(get_value(std_out, "Host Name"));
-
-        auto temp = get_value(std_out, "Physical Address");
-        std::replace(temp.begin(), temp.end(), '-', ':');
-        this->mac_address = QString::fromStdString(temp);
-    }
+    // if (this->hostname.isEmpty() || this->mac_address.isEmpty())
+    // {
+    //     auto [exit_code, std_out, std_err] = run_command("ipconfig /all");
+    // 
+    //     auto get_value = [](std::string& std_out, std::string key) -> std::string {
+    //         auto text_pos = std_out.find(key) + key.length();
+    //         if (text_pos == std::string::npos + key.length())
+    //             return "";
+    //         text_pos = std_out.find(':', text_pos) + 2;
+    //         auto newline_pos = std_out.find('\n', text_pos);
+    //         return std_out.substr(text_pos, newline_pos - text_pos);
+    //     };
+    // 
+    //     this->hostname = QString::fromStdString(get_value(std_out, "Host Name"));
+    // 
+    //     auto temp = get_value(std_out, "Physical Address");
+    //     std::replace(temp.begin(), temp.end(), '-', ':');
+    //     this->mac_address = QString::fromStdString(temp);
+    // }
 }
 
 void WindowsComputer::shutdown()

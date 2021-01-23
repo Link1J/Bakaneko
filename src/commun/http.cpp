@@ -14,37 +14,82 @@ static std::map<int, std::string> http_codes_strings {
 };
 
 Http::Response::Response(int http_code)
-    : http_code(http_code)
+    : _http_code(http_code)
 {}
+
+Http::Response::Response(std::string incoming_data)
+{
+    if (incoming_data.empty())
+        return;
+
+    auto data_split = ljh::split(incoming_data, "\r\n\r\n");
+
+    if (data_split.size() > 1)
+        _data = data_split[1];
+
+    auto list = ljh::split(data_split[0], "\r\n");
+
+    auto request = ljh::split(list[0], ' ');
+    _http_code = std::stoi(request[1]);
+
+    for (int a = 1; a < list.size(); a++)
+    {
+        auto items = ljh::split(list[a], ": ");
+        for (int a = 2; a < items.size(); a++)
+            items[1] += ": " + items[a];
+        if (items.size() > 1)
+            _headers[items[0]] = items[1];
+        else
+            _headers[items[0]] = "";
+    }
+
+    if (auto type = _headers.find("Content-Type"); type != _headers.end())
+    {
+        _content_type = type->second;
+        _headers.erase(type);
+    }
+    if (auto type = _headers.find("Content-Length"); type != _headers.end())
+    {
+        if (_data.length() != std::stoull(type->second))
+            throw type;
+        _headers.erase(type);
+    }
+}
 
 Http::Response& Http::Response::set_content(const std::string& content_type, const std::string& data)
 {
-    this->content_type = content_type;
-    this->data = data;
+    this->_content_type = content_type;
+    this->_data = data;
     return *this;
 }
 
 Http::Response& Http::Response::add_header(const std::string& key, const std::string& value)
 {
-    headers.push_back(key + ": " + value);
+    _headers.emplace(key, value);
     return *this;
 }
+
+
+const std::string                       & Http::Response::data        () const { return _data        ; }
+int                                       Http::Response::http_code   () const { return _http_code   ; }
+const std::map<std::string, std::string>& Http::Response::headers     () const { return _headers     ; }
+const std::string                       & Http::Response::content_type() const { return _content_type; }
 
 void Http::Response::get(asio::streambuf& buffer) const
 {
     std::ostream output(&buffer);
-    output << "HTTP/1.1 " << http_code << " " << http_codes_strings[http_code] << std::endl;
-    output << "Server: " << "Bakaneko/" << BAKANEKO_VERSION_STRING << std::endl;
-    output << "Content-Type: " << content_type << std::endl;
-    output << "Content-Length: " << data.length() << std::endl;
-    for (auto& header : headers) output << header << std::endl;
+    output << "HTTP/1.1 " << _http_code << " " << http_codes_strings[_http_code] << std::endl;
+    output << "User-Agent: " << "Bakaneko/" << BAKANEKO_VERSION_STRING << std::endl;
+    output << "Content-Type: " << _content_type << std::endl;
+    output << "Content-Length: " << _data.length() << std::endl;
+    for (auto& [key, value] : _headers) output << key << ": " << value << std::endl;
     output << std::endl;
-    output << data;
+    output << _data;
 }
 
 bool Http::Response::has_content() const
 {
-    return !data.empty();
+    return !_data.empty();
 }
 
 Http::Request::Request(std::string data)

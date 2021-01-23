@@ -8,6 +8,7 @@ include(FeatureSummary)
 
 find_package(ECM 5.68 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
+#set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBUGINFO Release Debug)
 
 include(KDEInstallDirs)
 include(ECMSetupVersion)
@@ -18,6 +19,7 @@ ecm_setup_version(0.1.0
 )
 
 add_subdirectory(externals)
+add_subdirectory(src/commun)
 
 if (NOT BAKANEKO_DONT_BUILD_CLIENT)
     add_subdirectory(src/client)

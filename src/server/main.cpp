@@ -17,22 +17,17 @@ int main(int argc, const char* argv[])
     ljh::windows::wmi::setup();
 #endif
 
-    asio::io_service io_service;
-    asio::ip::tcp::endpoint endpoint{asio::ip::tcp::v4(), 8080};
-    Rest::Server server{io_service, endpoint};
+    int const thread_count = 1; //std::thread::hardware_concurrency();
+    asio::io_context io_service{thread_count};
 
-    server.add_handler("/", [](const Http::Request&) -> Http::Response {
-        Http::Response response(302);
-        response.set_content("text/plain", "Available");
-        return response;
-    });
+    std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{asio::ip::tcp::v4(), 8080})->run();
 
-    server.add_handler("/drives", &Info::Drives );
-    server.add_handler("/update", &Info::Updates);
-    server.add_handler("/system", &Info::System );
-
-    server.start_listening();
+    // std::vector<std::thread> thread;
+    // thread.reserve(thread_count - 1);
+    // for(auto i = thread_count - 1; i > 0; --i)
+    //     thread.emplace_back([&io_service]{ io_service.run(); });
     io_service.run();
+
     return 0;
 }
 

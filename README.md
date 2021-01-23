@@ -18,7 +18,7 @@
 #### Instructions
 From a Craft prompt, run the command bellow to install the needed libaries.
 ```powershell
-craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-style libssh
+craft kirigami ki18n kcrash knotifications kcoreaddons kiconthemes qqc2-desktop-style libssh boost-system protobuf
 ```
 Then clone the repo,
 ```powershell

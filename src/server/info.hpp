@@ -2,11 +2,20 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 #pragma once
-#include "REST.hpp"
+#include <ljh/expected.hpp>
+
+#include "server.pb.h"
+#include "updates.pb.h"
+#include "drives.pb.h"
+
+enum class Errors
+{
+    None, NotImplemented,
+};
 
 namespace Info
 {
-    Http::Response Drives (const Http::Request& request);
-    Http::Response Updates(const Http::Request& request);
-    Http::Response System (const Http::Request& request);
+    ljh::expected<Bakaneko::Drives , Errors> Drives ();
+    ljh::expected<Bakaneko::Updates, Errors> Updates();
+    ljh::expected<Bakaneko::System , Errors> System ();
 };

@@ -6,16 +6,15 @@
 #include <ljh/string_utils.hpp>
 
 #undef interface
-#include "updates.pb.h"
 
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
-Http::Response Info::Updates(const Http::Request& request)
+ljh::expected<Bakaneko::Updates, Errors> Info::Updates()
 {
-    Bakaneko::Updates updates;
+    decltype(Info::Updates())::value_type updates;
 
 #if defined(LJH_TARGET_Windows)
-    return {501};
+    return ljh::unexpected{Errors::NotImplemented};
 #elif defined(LJH_TARGET_Linux)
     auto run = [&updates](const std::string& command, const std::string& flags, bool(*decode)(Bakaneko::Update&, std::string)) -> bool {
         auto [exit_code, std_out] = exec(command + ' ' + flags);
@@ -67,5 +66,5 @@ Http::Response Info::Updates(const Http::Request& request)
     run("apt", "list --upgradable", apt_decode);
 #endif
 
-    return Http::output_message(updates, request);
+    return std::move(updates);
 }

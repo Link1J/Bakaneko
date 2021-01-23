@@ -11,14 +11,13 @@
 #endif
 
 #undef interface
-#include "drives.pb.h"
 
 extern std::string read_file(std::filesystem::path file_path);
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
-Http::Response Info::Drives(const Http::Request& request)
+ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
 {
-    Bakaneko::Drives drives;
+    decltype(Info::Drives())::value_type drives;
 
 #if defined(LJH_TARGET_Windows)
     using namespace std::string_literals;
@@ -107,11 +106,13 @@ Http::Response Info::Drives(const Http::Request& request)
             drive->set_dev_node(            info[0] );
             drive->set_model   (            info[2] );
             drive->set_size    (std::stoull(info[3]));
+
+            drives_.emplace(info[0], drive);
         }
 
         if (number != std::string::npos)
         {
-            auto parition = drives_.at(info[0].substr(0, number))->add_partition();
+            auto parition = drives_.at(contains_base_drive ? info[0].substr(0, number) : info[0])->add_partition();
 
             for (int a = 0; a < info[1].size(); a++)
             {
@@ -186,5 +187,5 @@ Http::Response Info::Drives(const Http::Request& request)
     }
 #endif
 
-    return Http::output_message(drives, request);
+    return std::move(drives);
 }

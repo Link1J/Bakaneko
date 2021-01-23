@@ -26,7 +26,6 @@ set_target_properties(ljh PROPERTIES
 	CXX_STANDARD 20
 	CXX_STANDARD_REQUIRED YES
 	CXX_EXTENSIONS NO
-	MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
 target_include_directories(ljh
 	PUBLIC

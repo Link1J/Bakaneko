@@ -6,13 +6,14 @@
 #include <cstdlib>
 #include <fstream>
 #include <filesystem>
+#include <string>
 
 #include <ljh/system_info.hpp>
 #include <ljh/string_utils.hpp>
 #include <ljh/casting.hpp>
+#include <ljh/function_traits.hpp>
 
 #if defined(LJH_TARGET_Windows)
-#include <windows.h>
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
@@ -27,43 +28,53 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <linux/if_packet.h>
 #include <unistd.h>
 #include <ifaddrs.h>
 #endif
 
 #undef interface
-#include "server.pb.h"
 
-std::string chassis_type_as_system_icon(int a);
+inline std::string chassis_type_as_system_icon(int a);
 extern std::string read_file(std::filesystem::path file_path);
 
 #if defined(LJH_TARGET_Windows)
-template<typename T, typename F, typename... A>
-auto Win32Run(F&& function, A&&... args) -> T
-{
-    DWORD size = 0;
-    function(std::forward<A>(args)..., nullptr, &size);
 
-    if constexpr (std::is_same_v<T, std::string>)
-    {
-        std::string data(size, '\0');
-        function(std::forward<A>(args)..., data.data(), &size);
-        data.resize(size - 1);
-        return data;
-    }
-    else if constexpr (std::is_pointer_v<T>)
-    {
-        T data = (T)malloc(size * sizeof(std::remove_pointer_t<T>));
-        function(std::forward<A>(args)..., data, &size);
-        return data;
-    }
+template<typename T>
+std::remove_pointer_t<T>* array_malloc(std::size_t size)
+{
+    return (decltype(array_malloc<T>(0)))malloc(size * sizeof(std::remove_pointer_t<T>));
+}
+
+template<typename T>
+std::shared_ptr<std::remove_pointer_t<T>[]> shared_ptr_array(std::size_t size)
+{
+    return decltype(shared_ptr_array<T>(0)){array_malloc<T>(size)};
+}
+
+template<typename F, typename... A, typename = std::enable_if_t<std::is_invocable_v<F, A..., std::nullptr_t, std::nullptr_t>>>
+auto Win32Run(F&& function, A&&... args)
+{
+    using N = ljh::function_traits<std::remove_reference_t<F>>;
+    std::remove_pointer_t<N::argument_type<N::argument_count - 1>> size = 0;
+    function(std::forward<A>(args)..., nullptr, &size);
+    auto data = [&size] {
+        if constexpr (std::is_same_v<N::argument_type<N::argument_count - 2>, char*>)
+            return std::string(size, '\0');
+        else if constexpr (std::is_same_v<N::argument_type<N::argument_count - 2>, wchar_t*>)
+            return std::wstring(size, '\0');
+        else
+            return shared_ptr_array<N::argument_type<N::argument_count - 2>>(size);
+    }();
+    function(std::forward<A>(args)..., &data[0], &size);
+    return data;
 }
 #endif
 
-Http::Response Info::System(const Http::Request& request)
+ljh::expected<Bakaneko::System, Errors> Info::System()
 {
-    Bakaneko::System system;
+    decltype(Info::System())::value_type system;
 
     char ip_address[47];
     memset(ip_address, 0, sizeof(ip_address));
@@ -71,15 +82,15 @@ Http::Response Info::System(const Http::Request& request)
     char mac_address[6 * 3 + 1];
     memset(mac_address, 0, sizeof(mac_address));
 
-
 #if defined(LJH_TARGET_Windows)
+
     using namespace std::string_literals;
 
     static auto enclosure = ljh::windows::wmi::service::root().get_class(L"Win32_SystemEnclosure")[0];
     int chassis_type = enclosure.get<ljh::windows::com_safe_array<int32_t>>(L"ChassisTypes")[0];
-
-    auto ip_addresses = Win32Run<IP_ADAPTER_ADDRESSES*>(GetAdaptersAddresses, AF_UNSPEC, 0, nullptr);
-    for (auto adapter = ip_addresses; adapter != nullptr; adapter = adapter->Next)
+    
+    auto ip_addresses = Win32Run(GetAdaptersAddresses, AF_UNSPEC, 0, nullptr);
+    for (auto adapter = &ip_addresses[0]; adapter != nullptr; adapter = adapter->Next)
     {
         for (auto address = adapter->FirstUnicastAddress; address != nullptr; address = address->Next)
         {
@@ -105,10 +116,8 @@ GOT_ADDRESS:
         );
         break;
     }
-    delete ip_addresses;
 
-    system.set_hostname(Win32Run<std::string>(GetComputerNameExA, ComputerNamePhysicalDnsHostname));
-
+    system.set_hostname(Win32Run(GetComputerNameExA, ComputerNamePhysicalDnsHostname));
     system.set_operating_system(*ljh::system_info::get_string());
     system.set_kernel("NT "s + std::string{*ljh::system_info::get_version()});
     system.set_architecture(std::getenv("PROCESSOR_ARCHITECTURE"));
@@ -192,10 +201,10 @@ GOT_ADDRESS:
     system.set_mac_address(mac_address);
     system.set_ip_address (ip_address );
 
-    return Http::output_message(system, request);
+    return std::move(system);
 }
 
-std::string chassis_type_as_system_icon(int a)
+inline std::string chassis_type_as_system_icon(int a)
 {
     switch(a)
     {

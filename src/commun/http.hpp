@@ -21,18 +21,25 @@ namespace Http
 {
     class Response
     {
-        int http_code;
-        std::string data;
-        std::string content_type;
-        std::vector<std::string> headers;
+        int _http_code;
+        std::string _data;
+        std::string _content_type;
+        std::map<std::string, std::string> _headers;
 
     public:
-        Response(int http_code);
+        explicit Response(int http_code);
+        explicit Response(std::string data);
+
         Response& set_content(const std::string& content_type, const std::string& data);
         Response& add_header(const std::string& key, const std::string& value);
         void get(asio::streambuf& buffer) const;
 
         bool has_content() const;
+
+        const std::string                       & data        () const;
+        int                                       http_code   () const;
+        const std::map<std::string, std::string>& headers     () const;
+        const std::string                       & content_type() const;
     };
 
     class Request
@@ -43,7 +50,8 @@ namespace Http
         std::string _i_body;
 
     public:
-        Request(std::string data);
+        explicit Request(std::string data);
+        Request() = default;
 
         void get(asio::streambuf& buffer) const;
 

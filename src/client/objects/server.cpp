@@ -29,7 +29,20 @@
 #include <netinet/ip.h>
 #endif
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+
+
+namespace asio = boost::asio;
+namespace beast = boost::beast;
+
 using namespace std::string_view_literals;
+
+static asio::io_context io_context;
+// static asio::io_service io_service;
 
 QString Server::get_hostname()
 {
@@ -68,62 +81,77 @@ void Server::update_info()
     
     auto new_state = ping_computer();
 
-    if (new_state == state)
-    {
-        if (state == State::Online)
-        {
-            check_for_updates();
-        }
-        return;
-    }
-    else if (state != State::Unknown)
-    {
-        if (new_state == State::Offline)
-        {
-            Q_EMIT this_offline(this);
-        }
-        else
-        {
-            Q_EMIT this_online(this);
-        }
-    }
+    // if (new_state == state)
+    // {
+    //     if (state == State::Online)
+    //     {
+    //         check_for_updates();
+    //     }
+    //     return;
+    // }
+    // else if (state != State::Unknown)
+    // {
+    //     if (new_state == State::Offline)
+    //     {
+    //         Q_EMIT this_offline(this);
+    //     }
+    //     else
+    //     {
+    //         Q_EMIT this_online(this);
+    //     }
+    // }
 
     state = new_state;
     Q_EMIT changed_state();
 
-    if (new_state == State::Offline)
-    {
-        system_icon = "";
-        Q_EMIT changed_system_icon();
-        return;
-    }
-
-    collect_info();
-    collect_drives();
-    check_for_updates();
+    // if (new_state == State::Offline)
+    // {
+    //     system_icon = "";
+    //     Q_EMIT changed_system_icon();
+    //     return;
+    // }
+    // 
+    // collect_info();
+    // collect_drives();
+    // check_for_updates();
 }
 
-// Note: pings to Windows computers fail if "File and Printer Sharing" is not enabled
-// Fix here, https://superuser.com/a/1137913
 Server::State Server::ping_computer()
 {
-#if defined(_WIN32)
-    static char SendData[32] = "Data Buffer";
-    static auto hIcmpFile = IcmpCreateFile();
+    try
+    {
+        beast::http::request<beast::http::string_body> req{ beast::http::verb::post, "/", 11 };
+        std::string ip = ip_address.toUtf8().data();
 
-    IPAddr ipaddr;
-    inet_pton(AF_INET, ip_address.toLocal8Bit().data(), &ipaddr);
+        req.set(beast::http::field::host, ip);
+        req.version(11);
+        req.set(beast::http::field::connection, "close");
+
+        asio::ip::tcp::resolver resolver(io_context);
+        // beast::tcp_stream stream(io_context);
+        // stream.connect(resolver.resolve(ip, "8080"));
+
+        asio::ip::tcp::socket socket{io_context};
+        auto const results = resolver.resolve(ip, "8080");
+        asio::connect(socket, results.begin(), results.end());
+
+        beast::http::write(socket, req);
+        beast::flat_buffer buffer;
+        beast::http::response<beast::http::string_body> res;
+        beast::http::read(socket, buffer, res);
+
+        boost::system::error_code ec;
+        socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+
+        if (res.result_int() == 302)
+            return Server::State::Online;
+    }
+    catch(const boost::wrapexcept<boost::system::system_error>& e)
+    {
+        std::cerr << e.what() << '\n';
+    }
     
-    DWORD ReplySize = sizeof(ICMP_ECHO_REPLY) + sizeof(SendData);
-    auto ReplyBuffer = (void*)malloc(ReplySize);
-    auto dwRetVal = IcmpSendEcho(hIcmpFile, ipaddr, SendData, sizeof(SendData), NULL, ReplyBuffer, ReplySize, 1000);
-    free(ReplyBuffer);
-
-    return dwRetVal != 0 ? State::Online : State::Offline;
-#else
-    std::string command = "ping -c 1 " + std::string{ip_address.toLocal8Bit().data()} + " 1>/dev/null 2>&1";
-    return system(command.c_str()) == 0 ? State::Online : State::Offline;
-#endif
+    return Server::State::Offline;
 }
 
 Server::Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent)
@@ -267,6 +295,8 @@ public:
 
 Server* Server::create(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QString kernal_type)
 {
+    return new WindowsComputer(hostname, mac_address, ip_address, username, password);
+    
     if (kernal_type.isEmpty())
     {
         auto temp = new Temp(ip_address, username, password);

@@ -54,8 +54,8 @@ set_target_properties(client PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
-    WIN32_EXECUTABLE TRUE
-    MSVC_RUNTIME_LIBRARY MultiThreadedDLL
+    # WIN32_EXECUTABLE TRUE
+    # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
 target_compile_options(client PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:
@@ -89,6 +89,7 @@ target_link_libraries(client PUBLIC
     KF5::ConfigCore
     KF5::ConfigGui
 
+    commun
     ssh
     ljh
 )

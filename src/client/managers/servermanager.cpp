@@ -193,15 +193,16 @@ void ServerManager::update_server_info(bool wait)
         // auto thread = QThread::create([this, a](){
         //     servers[a]->update_info();
         //     QThread::currentThread()->quit();
+        //     return 0;
         // });
         // connect(thread, &QThread::started , [](){ active_threads++; });
         // connect(thread, &QThread::finished, [](){ active_threads--; });
         // thread->start();
-        QtConcurrent::run([this, a](){
-            active_threads++;
-            servers[a]->update_info();
-            active_threads--;
-        });
+        // QtConcurrent::run([this, a](){
+        //     active_threads++;
+             servers[a]->update_info();
+        //     active_threads--;
+        // });
     }
     if (wait)
     {
