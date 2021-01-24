@@ -46,6 +46,7 @@ Kirigami.ScrollablePage {
                  Kirigami.Action {
                      icon.name: "settings-configure"
                      onTriggered: {
+                        serverSettingsDialog.createObject(overlay, {index: index}).open();
                      }
                      tooltip: i18n("Change server settings")
                  },
@@ -75,5 +76,9 @@ Kirigami.ScrollablePage {
     Component {
         id: addServerDialog
         Dialogs.AddServer {}
+    }
+    Component {
+        id: serverSettingsDialog
+        Dialogs.ServerSettings {}
     }
 }

@@ -3,3 +3,5 @@
 
 module Bakaneko.Dialogs
 AddServer 1.0 AddServerDialog.qml
+Login 1.0 Login.qml
+ServerSettings 1.0 ServerSettings.qml

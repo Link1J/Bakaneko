@@ -23,5 +23,6 @@
         <file>ui/Bakaneko/Dialogs/qmldir</file>
         <file>ui/Bakaneko/Dialogs/AddServerDialog.qml</file>
         <file>ui/Bakaneko/Dialogs/Login.qml</file>
+        <file>ui/Bakaneko/Dialogs/ServerSettings.qml</file>
     </qresource>
 </RCC>
