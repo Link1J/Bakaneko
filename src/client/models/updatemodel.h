@@ -5,7 +5,7 @@
 
 #include <QAbstractListModel>
 
-#include <objects/update.h>
+#include "updates.pb.h"
 
 class Server;
 
@@ -13,7 +13,6 @@ class UpdateModel : public QAbstractListModel
 {
     Q_OBJECT
 
-    Q_PROPERTY(QObject* server MEMBER m_server WRITE set_server NOTIFY changed_updates);
     Q_PROPERTY(int count READ rowCount NOTIFY changed_count);
 
 public:
@@ -27,21 +26,25 @@ public:
     explicit UpdateModel(QObject* parent = nullptr);
     ~UpdateModel() override;
 
+public Q_SLOT:
+    std::string data(int index, int role = Qt::DisplayRole) const;
+    bool setData(int index, std::string value, int role = Qt::EditRole);
+
     [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 
-public Q_SLOT:
-    void set_server (QObject* updates);
-    void set_updates(QList<Update*> updates);
+    bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
+    bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
+    bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
 Q_SIGNALS:
-    void changed_updates();
-    void changed_count  ();
+    void changed_count();
 
 private:
-    Server* m_server;
-    QMetaObject::Connection connection;
-    int pre_size;
+    std::vector<Bakaneko::Update> updates;
 };
+
+using UpdateModelPointer = UpdateModel*;
+Q_DECLARE_METATYPE(UpdateModelPointer);

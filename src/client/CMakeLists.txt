@@ -32,10 +32,9 @@ set(SRCS
     term/terms/null.cpp
     models/termlist.cpp
     models/updatemodel.cpp
-    objects/servers/windows.cpp
-    objects/servers/linux.cpp
     objects/update.cpp
     objects/drives.cpp
+    models/drivesmodel.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -61,14 +60,18 @@ target_compile_options(client PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
+    $<$<PLATFORM_ID:Windows>:
+        -DNOMINMAX
+    >
     -DQT_NO_FOREACH
     -DQT_NO_KEYWORDS
-    -DNOMINMAX
 )
 
 target_include_directories(client PUBLIC
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
 )
 
 target_link_libraries(client PUBLIC

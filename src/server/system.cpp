@@ -11,7 +11,8 @@
 #include <ljh/system_info.hpp>
 #include <ljh/string_utils.hpp>
 #include <ljh/casting.hpp>
-#include <ljh/function_traits.hpp>
+
+#include "windows.hpp"
 
 #if defined(LJH_TARGET_Windows)
 #include <winsock2.h>
@@ -38,39 +39,6 @@
 
 inline std::string chassis_type_as_system_icon(int a);
 extern std::string read_file(std::filesystem::path file_path);
-
-#if defined(LJH_TARGET_Windows)
-
-template<typename T>
-std::remove_pointer_t<T>* array_malloc(std::size_t size)
-{
-    return (decltype(array_malloc<T>(0)))malloc(size * sizeof(std::remove_pointer_t<T>));
-}
-
-template<typename T>
-std::shared_ptr<std::remove_pointer_t<T>[]> shared_ptr_array(std::size_t size)
-{
-    return decltype(shared_ptr_array<T>(0)){array_malloc<T>(size)};
-}
-
-template<typename F, typename... A, typename = std::enable_if_t<std::is_invocable_v<F, A..., std::nullptr_t, std::nullptr_t>>>
-auto Win32Run(F&& function, A&&... args)
-{
-    using N = ljh::function_traits<std::remove_reference_t<F>>;
-    std::remove_pointer_t<N::argument_type<N::argument_count - 1>> size = 0;
-    function(std::forward<A>(args)..., nullptr, &size);
-    auto data = [&size] {
-        if constexpr (std::is_same_v<N::argument_type<N::argument_count - 2>, char*>)
-            return std::string(size, '\0');
-        else if constexpr (std::is_same_v<N::argument_type<N::argument_count - 2>, wchar_t*>)
-            return std::wstring(size, '\0');
-        else
-            return shared_ptr_array<N::argument_type<N::argument_count - 2>>(size);
-    }();
-    function(std::forward<A>(args)..., &data[0], &size);
-    return data;
-}
-#endif
 
 ljh::expected<Bakaneko::System, Errors> Info::System()
 {

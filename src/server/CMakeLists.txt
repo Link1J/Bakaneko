@@ -25,6 +25,7 @@ target_compile_options(server PUBLIC
 
 target_include_directories(server PUBLIC
     ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
 )

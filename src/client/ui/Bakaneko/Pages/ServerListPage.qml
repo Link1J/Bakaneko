@@ -39,10 +39,16 @@ Kirigami.ScrollablePage {
             helpfulAction: serverAddAction
         }
         delegate: Kirigami.SwipeListItem {
-            highlighted: currentServer && currentServer.hostname === hostname
+            highlighted: currentServer && currentServer.ip === ip
             focus: false
             Components.ServerListItem {}
             actions: [
+                 Kirigami.Action {
+                     icon.name: "settings-configure"
+                     onTriggered: {
+                     }
+                     tooltip: i18n("Change server settings")
+                 },
                  Kirigami.Action {
                      icon.name: "list-remove"
                      onTriggered: {

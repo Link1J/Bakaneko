@@ -14,7 +14,7 @@ RowLayout {
 	Layout.maximumHeight: icon.max_height
 
 	Kirigami.Icon {
-		readonly property var max_height: 6 * (temp.height + Kirigami.Units.smallSpacing) + Kirigami.Units.smallSpacing - 1
+		readonly property var max_height: 5 * (temp.height + Kirigami.Units.smallSpacing) + Kirigami.Units.smallSpacing - 1
 		readonly property var icon_width: icon.width + Kirigami.Units.smallSpacing * 2 + icon.x
 		readonly property var info_width: info.width + Kirigami.Units.largeSpacing * 4
 		readonly property var page_width: page.width - page.leftPadding - page.rightPadding * 2
@@ -25,13 +25,16 @@ RowLayout {
 		Layout.rightMargin: Kirigami.Units.smallSpacing
 		Layout.leftMargin : Kirigami.Units.smallSpacing
 
-		source        : currentServer.system_icon
+		source        : currentServer.icon
 		implicitHeight: implicitWidth
-		implicitWidth : page_width - info.x < info_width
-			? page_width - info_width < max_height
-				? page_width - info_width
+		implicitWidth : 
+			page_width - info_width > 0
+			? page_width - info.x < info_width
+				? page_width - info_width < max_height
+					? page_width - info_width
+					: max_height
 				: max_height
-			: max_height
+			: 0
 	}
 
 	Kirigami.FormLayout {
@@ -56,11 +59,6 @@ RowLayout {
 		Controls.Label {
 			Kirigami.FormData.label: "Architecture:"
 			text: currentServer.arch
-		}
-		Controls.Label {
-			Kirigami.FormData.label: "VM Platform:"
-			text: currentServer.vm_platform
-			visible: currentServer.vm_platform != ""
 		}
 		Controls.Label {
 			Kirigami.FormData.label: "IP:"

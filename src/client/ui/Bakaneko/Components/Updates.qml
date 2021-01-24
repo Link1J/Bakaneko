@@ -12,7 +12,7 @@ Grid {
 	columnSpacing: Kirigami.Units.gridUnit
 
 	Repeater {
-		model: _updates
+		model: currentServer.updates
 		Repeater {
 			model: [name, old_version, new_version]
 
@@ -20,10 +20,5 @@ Grid {
 				text: modelData
 			}
 		}
-	}
-
-	property Models.Updates updates : Models.Updates {
-		id: _updates
-		server: currentServer
 	}
 }

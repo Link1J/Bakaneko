@@ -66,6 +66,10 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     WSAStartup(MAKEWORD(2,2), &wsaData);
 #endif
 
+    qRegisterMetaType<Bakaneko::System >("Bakaneko::System" );
+    qRegisterMetaType<Bakaneko::Drives >("Bakaneko::Drives" );
+    qRegisterMetaType<Bakaneko::Updates>("Bakaneko::Updates");
+
     ServerManager::Instance().update_server_info(true);
 
     QQmlApplicationEngine engine;

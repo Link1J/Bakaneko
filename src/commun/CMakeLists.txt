@@ -2,7 +2,7 @@
 # SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 find_package(Protobuf REQUIRED)
-find_package(Boost REQUIRED)
+find_package(Boost 1.66.0 REQUIRED)
 find_package(OpenSSL REQUIRED)
 
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS

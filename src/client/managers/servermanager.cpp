@@ -8,6 +8,7 @@
 #include <QThread>
 #include <QIcon>
 #include <QtConcurrent>
+#include <QApplication>
 
 #include <KLocalizedString>
 #include <KNotification>
@@ -18,46 +19,115 @@
 #include <thread>
 #include <atomic>
 
-void ServerManager::AddServer(QString ip, QString username, QString password)
+static asio::io_context io_context;
+
+Bakaneko::System get_system_info(asio::ip::tcp::socket& socket, const std::string& ip_address)
+{
+    Bakaneko::System info;
+    boost::system::error_code ec;
+
+    beast::http::request<beast::http::string_body> req{beast::http::verb::get, "/system", 11};
+
+    req.set(beast::http::field::host, ip_address);
+    req.set(beast::http::field::content_type, "application/x-protobuf");
+    req.version(11);
+
+    beast::http::write(socket, req, ec);
+    
+    if (ec) return info;
+
+    beast::flat_buffer buffer;
+    beast::http::response<beast::http::string_body> res;
+
+    beast::http::read(socket, buffer, res, ec);
+
+    if (ec) return info;
+    if (res.result_int() != 200) return info;
+
+    info.ParseFromString(res.body());
+    return info;
+}
+
+void ServerManager::AddServer(QString ip)
 {
     std::lock_guard __lock_guard{server_list_lock};
+
+    std::string ip_address = ip.toUtf8().data();
+
+    boost::system::error_code ec;
+    asio::ip::tcp::socket socket(io_context);
+    asio::ip::tcp::resolver resolver(io_context);
+    auto const results = resolver.resolve(ip_address, "8080");
+    asio::connect(socket, results.begin(), results.end(), ec);
+    if (ec)
+    {
+        std::cerr << ec.message() << std::endl;
+        return;
+    }
+
+    beast::http::request<beast::http::string_body> req{beast::http::verb::head, "/", 11};
+
+    req.set(beast::http::field::host, ip_address);
+    req.version(11);
+
+    beast::http::write(socket, req, ec);
+    if (ec)
+    {
+        std::cerr << ec.message() << std::endl;
+        return;
+    }
+
+    beast::flat_buffer buffer;
+    beast::http::response<beast::http::empty_body> res;
+
+    beast::http::read(socket, buffer, res, ec);
+    if (ec)
+    {
+        std::cerr << ec.message() << std::endl;
+        return;
+    }
+
+    if (res.result_int() != 302) return;
+
+    auto system_info = get_system_info(socket, ip_address);
+
+    if (system_info.hostname().empty() || system_info.mac_address().empty() || system_info.ip_address().empty())
+        return;
     
     if (model != nullptr)
     {
         model->beginRowAppend();
     }
 
-    auto temp = Server::create("", "", ip, username, password, "");
+    auto temp = std::make_shared<Server>(system_info.hostname(), system_info.mac_address(), ip_address, this);
 
+    connect(temp.get(), &Server::this_online , this, &ServerManager::server_online );
+    connect(temp.get(), &Server::this_offline, this, &ServerManager::server_offline);
+    
     QSettings settings;
 
     int size = settings.beginReadArray("servers");
     settings.endArray();
 
+    if (model != nullptr)
+    {
+        connect(temp.get(), &Server::changed_state, model, [=]() { model->update(size); });
+        model->endRowAppend();
+    }
+
     settings.beginWriteArray("servers");
     settings.setArrayIndex(size);
-    
-    settings.setValue("username", username);
-    settings.setValue("password", password);
 
-    settings.setValue("hostname"   , temp->get_hostname   ());
-    settings.setValue("mac"        , temp->get_mac        ());
-    settings.setValue("ip"         , temp->get_ip         ());
-    settings.setValue("kernal_type", temp->get_kernal_type());
+    settings.setValue("hostname", temp->get_hostname());
+    settings.setValue("mac"     , temp->get_mac     ());
+    settings.setValue("ip"      , temp->get_ip      ());
 
     settings.endArray();
     
-    servers.push_back(std::unique_ptr<Server>(temp));
-
-    connect(servers[size].get(), &Server::this_online , this, &ServerManager::server_online );
-    connect(servers[size].get(), &Server::this_offline, this, &ServerManager::server_offline);
-    
-    if (model != nullptr)
-    {
-        connect(servers[size].get(), &Server::changed_state, model, [=]() { model->update(size); });
-        model->endRowAppend();
-    }
+    servers.push_back(temp);
 }
+
+static QThread server_thread;
 
 ServerManager::ServerManager()
 {
@@ -66,6 +136,7 @@ ServerManager::ServerManager()
 
 void ServerManager::start()
 {
+    // this->moveToThread(&server_thread);
     timer = std::make_shared<QTimer>(this);
     connect(timer.get(), SIGNAL(timeout()), this, SLOT(update_server_info()));
     connect(&Settings::Instance(), &Settings::changed_server_refresh_rate, this, [this](){
@@ -91,14 +162,12 @@ void ServerManager::Reload()
     for (int a = 0; a < size; a++)
     {
         settings.setArrayIndex(a);
-        servers.push_back(std::unique_ptr<Server>(Server::create(
-            settings.value("hostname"   ).toString(),
-            settings.value("mac"        ).toString(),
-            settings.value("ip"         ).toString(),
-            settings.value("username"   ).toString(),
-            settings.value("password"   ).toString(),
-            settings.value("kernal_type").toString()
-        )));
+        servers.push_back(std::make_shared<Server>(
+            settings.value("hostname").toString().toUtf8().data(),
+            settings.value("mac"     ).toString().toUtf8().data(),
+            settings.value("ip"      ).toString().toUtf8().data(),
+            this
+        ));
 
         connect(servers[a].get(), &Server::this_online , this, &ServerManager::server_online );
         connect(servers[a].get(), &Server::this_offline, this, &ServerManager::server_offline);
@@ -149,13 +218,9 @@ void ServerManager::RemoveServer(int index)
     {
         settings.setArrayIndex(a);
 
-        settings.setValue("username", servers[a]->username);
-        settings.setValue("password", servers[a]->password);
-
-        settings.setValue("hostname"   , servers[a]->get_hostname   ());
-        settings.setValue("mac"        , servers[a]->get_mac        ());
-        settings.setValue("ip"         , servers[a]->get_ip         ());
-        settings.setValue("kernal_type", servers[a]->get_kernal_type());
+        settings.setValue("hostname", servers[a]->get_hostname());
+        settings.setValue("mac"     , servers[a]->get_mac     ());
+        settings.setValue("ip"      , servers[a]->get_ip      ());
     }
     settings.endArray();
 
@@ -186,36 +251,26 @@ void ServerManager::update_server_info(bool wait)
 {
     using namespace std::chrono_literals;
     std::lock_guard __lock_guard{server_list_lock};
-    // This spawns a thread for each server. It could slow down a computer because of too many server.
-    // If a problem arises, we can solve it then.
-    for (int a = 0; a < size(); a++) {
-        // Does this leak memory?
-        // auto thread = QThread::create([this, a](){
-        //     servers[a]->update_info();
-        //     QThread::currentThread()->quit();
-        //     return 0;
-        // });
-        // connect(thread, &QThread::started , [](){ active_threads++; });
-        // connect(thread, &QThread::finished, [](){ active_threads--; });
-        // thread->start();
-        // QtConcurrent::run([this, a](){
-        //     active_threads++;
-             servers[a]->update_info();
-        //     active_threads--;
-        // });
+
+    for (int a = 0; a < size(); a++)
+    {
+        QtConcurrent::run([this, a]{
+            servers[a]->update_info();
+        });
     }
+
     if (wait)
     {
-        std::this_thread::sleep_for(10ms);
-        while (active_threads > 0)
-            std::this_thread::sleep_for(1ms);
+        for (int a = 0; a < size(); a++)
+        {
+            while (servers[a]->steps_done != Server::max_steps)
+                qApp->processEvents();
+        }
     }
 }
 
 ServerManager::~ServerManager()
 {
-    std::lock_guard __lock_guard{server_list_lock};
-    while (active_threads > 0);
 }
 
 void ServerManager::server_offline(Server* server)

@@ -16,72 +16,70 @@ UpdateModel::UpdateModel(QObject* parent)
 
 UpdateModel::~UpdateModel() = default;
 
+bool UpdateModel::setData(int index, std::string value, int role)
+{
+    auto& temp = updates[index];
+         if (role == NameRole      ) temp.set_name       (value);
+    else if (role == OldVersionRole) temp.set_old_version(value);
+    else if (role == NewVersionRole) temp.set_new_version(value);
+    Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0), {role});
+    return true;
+}
+
+bool UpdateModel::setData(const QModelIndex& index, const QVariant& value, int role)
+{
+    if (!index.isValid())
+        return false;
+    
+    return setData(index.row(), value.toString().toUtf8().data(), role);
+}
+
+std::string UpdateModel::data(int index, int role) const
+{
+    auto& temp = updates[index];
+    if (role == NameRole      ) return temp.name       ();
+    if (role == OldVersionRole) return temp.old_version();
+    if (role == NewVersionRole) return temp.new_version();
+    return "";
+}
+
 QVariant UpdateModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
 
-    auto temp = m_server->get_updates()[index.row()];
-    if (temp != nullptr)
-    {
-        if (role == NameRole)
-            return QVariant::fromValue(temp->m_name);
-        else if (role == OldVersionRole)
-            return QVariant::fromValue(temp->m_old_version);
-        else if (role == NewVersionRole)
-            return QVariant::fromValue(temp->m_new_version);
-    }
-    return QVariant::fromValue(temp);
+    return QVariant::fromValue(QString::fromStdString(data(index.row(), role)));
 }
 
 int UpdateModel::rowCount(const QModelIndex& parent) const
 {
-    return (int)m_server->get_updates().size();
+    return (int)updates.size();
 }
 
 QHash<int, QByteArray> UpdateModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[NameRole] = "name";
+    roles[NameRole      ] = "name";
     roles[OldVersionRole] = "old_version";
     roles[NewVersionRole] = "new_version";
     return roles;
 }
 
-void UpdateModel::set_server(QObject* updates)
+bool UpdateModel::insertRows(int row, int count, const QModelIndex& parent)
 {
-    if (m_server)
-        disconnect(connection);
-
-    m_server = dynamic_cast<Server*>(updates);
-
-    if (m_server)
-    {
-        connection = connect(m_server, &Server::new_updates, this, &UpdateModel::set_updates, Qt::UniqueConnection);
-        set_updates(m_server->get_updates());
-    }
+    Q_EMIT beginInsertRows(parent, row, row + count);
+    Bakaneko::Update temp;
+    updates.insert(updates.begin() + row, count, temp);
+    Q_EMIT endInsertRows();
+    Q_EMIT changed_count();
+    return true;
 }
 
-void UpdateModel::set_updates(UpdateList updates)
+bool UpdateModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    QModelIndex index1 = createIndex(0, 0, nullptr);
-    QModelIndex index2 = createIndex(std::min(updates.size(), pre_size), 0, nullptr);
-    QVector<int> roles = { NameRole, OldVersionRole, NewVersionRole, };
-    
-    if (updates.size() > pre_size)
-    {
-        beginInsertRows(QModelIndex(), pre_size, updates.size());
-        endInsertRows();
-        Q_EMIT changed_count();
-    }
-    else if (updates.size() < pre_size)
-    {
-        beginRemoveRows(QModelIndex(), updates.size(), pre_size);
-        endRemoveRows();
-        Q_EMIT changed_count();
-    }
-    
-    Q_EMIT dataChanged(index1, index2, roles);
-
-    pre_size = updates.size();
+    Q_EMIT beginRemoveRows(parent, row, row + count);
+    updates.erase(updates.begin() + row, updates.begin() + row + count);
+    Q_EMIT endRemoveRows();
+    Q_EMIT changed_count();
+    return true;
 }

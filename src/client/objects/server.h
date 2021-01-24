@@ -18,151 +18,147 @@
 #include "update.h"
 #include "drives.h"
 
+#include <models/updatemodel.h>
+#include <models/drivesmodel.h>
+
+#undef interface
+#include "server.pb.h"
+#include "drives.pb.h"
+#include "updates.pb.h"
+
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/connect.hpp>
+
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+#include <boost/beast/version.hpp>
+
+namespace asio  = boost::asio ;
+namespace beast = boost::beast;
+
 class Server : public QObject
 {
     friend class ServerManager;
     Q_OBJECT;
 
 protected:
-    Server(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QObject* parent = nullptr);
 
 public:
-    static Server* create(QString hostname, QString mac_address, QString ip_address, QString username, QString password, QString kernal_type);
+    Server(std::string hostname, std::string mac_address, std::string ip_address, QObject* parent = nullptr);
     virtual ~Server();
 
     enum class State
     {
+        Unknown,
         Online,
         Offline,
-        Unknown,
     };
     Q_ENUM(State);
 
-    Q_PROPERTY(QString        hostname    READ get_hostname    NOTIFY changed_hostname   );
-    Q_PROPERTY(State          state       READ get_state       NOTIFY changed_state      );
-    Q_PROPERTY(QString        ip          READ get_ip          NOTIFY changed_ip         );
-    Q_PROPERTY(QString        mac         READ get_mac         NOTIFY changed_mac        );
-    Q_PROPERTY(QString        system_icon READ get_system_icon NOTIFY changed_system_icon);
-    Q_PROPERTY(QString        system_type READ get_system_type NOTIFY changed_system_type);
-    Q_PROPERTY(QString        os          READ get_os          NOTIFY changed_os         );
-    Q_PROPERTY(QString        kernel      READ get_kernel      NOTIFY changed_kernel     );
-    Q_PROPERTY(QString        arch        READ get_arch        NOTIFY changed_arch       );
-    Q_PROPERTY(QString        vm_platform READ get_vm_platform NOTIFY changed_vm_platform);
-    Q_PROPERTY(QList<Update*> updates     READ get_updates     NOTIFY changed_updates    );
-    Q_PROPERTY(QList<Drive*>  drives      READ get_drives      NOTIFY changed_drives     );
+    Q_PROPERTY(QString      hostname READ get_hostname CONSTANT);
+    Q_PROPERTY(QString      ip       READ get_ip       CONSTANT);
+    Q_PROPERTY(QString      mac      READ get_mac      CONSTANT);
+    Q_PROPERTY(State        state    READ get_state    NOTIFY changed_state   );
+    Q_PROPERTY(QString      icon     READ get_icon     NOTIFY changed_icon    );
+    Q_PROPERTY(QString      os       READ get_os       NOTIFY changed_os      );
+    Q_PROPERTY(QString      kernel   READ get_kernel   NOTIFY changed_kernel  );
+    Q_PROPERTY(QString      arch     READ get_arch     NOTIFY changed_arch    );
+    Q_PROPERTY(UpdateModel* updates  READ get_updates  CONSTANT);
+    Q_PROPERTY(DrivesModel* drives   READ get_drives   CONSTANT);
 
 protected:
     std::tuple<int, std::string, std::string> run_command(std::string command);
+    
+    template<typename T>
+    void network_get(std::string path, void(Server::*signal)(T));
 
 public:
     ssh_connection get_ssh_connection();
 
+    asio::ip::tcp::socket& connection();
+
+    std::atomic<int> steps_done = 3;
+    static constexpr auto max_steps = 3;
+
 public Q_SLOTS:
-    Q_INVOKABLE QString       get_hostname   ();
-    Q_INVOKABLE State         get_state      ();
-    Q_INVOKABLE QString       get_os         ();
-    Q_INVOKABLE QString       get_ip         ();
-    Q_INVOKABLE QString       get_mac        ();
-    Q_INVOKABLE QString       get_system_icon();
-    Q_INVOKABLE QString       get_system_type();
-    Q_INVOKABLE QString       get_kernel     ();
-    Q_INVOKABLE QString       get_arch       ();
-    Q_INVOKABLE QString       get_vm_platform();
-    Q_INVOKABLE UpdateList    get_updates    ();
-    Q_INVOKABLE QList<Drive*> get_drives     ();
+    State        get_state   ();
 
-    virtual QString get_kernal_type() = 0;
+    QString      get_hostname();
+    QString      get_ip      ();
+    QString      get_mac     ();
+    
+    QString      get_os      ();
+    QString      get_icon    ();
+    QString      get_kernel  ();
+    QString      get_arch    ();
 
-            void  update_info      ();
-    virtual void  check_for_updates() = 0;
-    virtual void  collect_info     () = 0;
-            State ping_computer    ();
-    virtual void  collect_drives   () = 0;
+    UpdateModel* get_updates ();
+    DrivesModel* get_drives  ();
 
-            void wake_up ();
-    virtual void shutdown() = 0;
-    virtual void reboot  () = 0;
+    void  update_info    ();
+    State ping_computer  ();
+
+    void handle_info   (Bakaneko::System );
+    void handle_drives (Bakaneko::Drives );
+    void handle_updates(Bakaneko::Updates);
+
+    void wake_up ();
+    void shutdown();
+    void reboot  ();
 
 Q_SIGNALS:
-    void changed_hostname   ();
-    void changed_state      ();
-    void changed_ip         ();
-    void changed_mac        ();
-    void changed_system_icon();
-    void changed_system_type();
-    void changed_os         ();
-    void changed_kernel     ();
-    void changed_arch       ();
-    void changed_vm_platform();
-    void changed_updates    ();
-    void changed_drives     ();
+    void changed_state   ();
 
-    void new_updates(QList<Update*>);
+    void changed_hostname();
+    void changed_ip      ();
+    void changed_mac     ();
+
+    void changed_os      ();
+    void changed_icon    ();
+    void changed_kernel  ();
+    void changed_arch    ();
+
+    void changed_updates ();
+    void changed_drives  ();
+    
+    void got_info   (Bakaneko::System );
+    void got_drives (Bakaneko::Drives );
+    void got_updates(Bakaneko::Updates);
 
     void this_online (Server*);
     void this_offline(Server*);
 
 protected:
-    QString       hostname;
-    QString       ip_address;
-    QString       mac_address;
-    QString       username;
-    QString       password;
-    State         state = State::Unknown;
-    QString       system_icon;
-    QString       system_type;
-    QString       operating_system;
-    QString       kernel;
-    QString       architecture;
-    QString       vm_platform = "";
-    QString       pretty_hostname = "";
-    UpdateList    updates;
-    QList<Drive*> drives;
+    asio::ip::tcp::socket socket;
+
+    State state;
+
+    std::string hostname;
+    std::string ip_address;
+    std::string mac_address;
+
+    Bakaneko::System system_info;
+
+    UpdateModel updates;
+    DrivesModel drives ;
 
     std::mutex update_lock;
+    std::mutex socket_lock;
 };
 
 using ServerPointer = Server*;
 Q_DECLARE_METATYPE(ServerPointer);
 
-inline std::vector<std::string> split(const std::string& s, char seperator)
-{
-    std::vector<std::string> output;
-    std::string::size_type prev_pos = 0, pos = 0;
+Q_DECLARE_METATYPE(Bakaneko::System );
+Q_DECLARE_METATYPE(Bakaneko::Drives );
+Q_DECLARE_METATYPE(Bakaneko::Updates);
 
-    while((pos = s.find(seperator, pos)) != std::string::npos)
-    {
-        std::string substring(s.substr(prev_pos, pos - prev_pos));
-        output.push_back(substring);
-        prev_pos = ++pos;
-    }
-
-    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
-    return output;
-}
-
-template<size_t C>
-std::vector<std::string> split(const std::string& s, const char (&seperator)[C])
-{
-    std::vector<std::string> output;
-    std::string::size_type prev_pos = 0, pos = 0;
-
-    while((pos = s.find(seperator, pos, C - 1)) != std::string::npos)
-    {
-        std::string substring(s.substr(prev_pos, pos - prev_pos));
-        output.push_back(substring);
-        prev_pos = pos += C - 1;
-    }
-
-    output.push_back(s.substr(prev_pos, pos-prev_pos)); // Last word
-    return output;
-}
-
+template<size_t factor = 1024>
 inline std::string bytes_to_string(uint64_t size)
 {
     using namespace std::string_literals;
     int count;
     const std::array size_end = { " B"s, "KB"s, "MB"s, "GB"s, "TB"s };
-    for (count = 0; size > 1024 && count < size_end.size(); count++, size /= 1024);
+    for (count = 0; size >= factor && count < size_end.size(); count++, size /= factor);
     return std::to_string(size) + size_end[count];
 }

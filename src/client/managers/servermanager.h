@@ -18,7 +18,7 @@ class ServerManager : public QObject
 {
     Q_OBJECT
 
-    std::vector<std::unique_ptr<Server>> servers;
+    std::vector<std::shared_ptr<Server>> servers;
     std::shared_ptr<QTimer> timer;
     std::mutex server_list_lock;
 
@@ -43,11 +43,11 @@ public:
     ServerListModel* GetModel();
 
 public Q_SLOTS:
-    Q_INVOKABLE void AddServer(QString ip, QString username, QString password);
-    Q_INVOKABLE void RemoveServer(int index);
+    void AddServer(QString ip);
+    void RemoveServer(int index);
 
-    Q_INVOKABLE void server_offline(Server* server);
-    Q_INVOKABLE void server_online (Server* server);
+    void server_offline(Server* server);
+    void server_online (Server* server);
     
     void update_server_info(bool wait = false);
 };

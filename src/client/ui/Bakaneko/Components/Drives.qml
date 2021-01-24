@@ -22,7 +22,7 @@ Column {
 				height: group.height
 			}
 
-			title: modelData.dev_node
+			title: dev_node
 			leftPadding: Kirigami.Units.largeSpacing
 
 			Column {
@@ -31,15 +31,15 @@ Column {
 					spacing: Kirigami.Units.largeSpacing
 
 					Controls.Label {
-						visible: modelData.model != ""
-						text: "Model: " + modelData.model
+						visible: model != ""
+						text: "Model: " + model
 					}
 					Controls.Label {
-						text: "Size: " + modelData.size
+						text: "Size: " + size
 					}
 				}
 				Controls.Label {
-					visible: modelData.paritions.length != 0
+					visible: partitions.count != 0
 					topPadding: Kirigami.Units.smallSpacing
 					leftPadding: Kirigami.Units.largeSpacing
 					text: "Partitions: "
@@ -47,7 +47,7 @@ Column {
 				Row {
 					leftPadding: Kirigami.Units.largeSpacing * 2
 					GridLayout {
-						visible: modelData.paritions.length != 0
+						visible: partitions.count != 0
 						columnSpacing: Kirigami.Units.largeSpacing
 						rowSpacing: 0
 
@@ -59,7 +59,7 @@ Column {
 						Kirigami.Separator {
 							Layout.row: 0
 							Layout.column: 1
-							Layout.rowSpan: modelData.paritions.length * 2 + 2
+							Layout.rowSpan: partitions.count * 2 + 2
 							Layout.fillHeight: true
 						}
 						Controls.Label {
@@ -70,7 +70,7 @@ Column {
 						Kirigami.Separator {
 							Layout.row: 0
 							Layout.column: 3
-							Layout.rowSpan: modelData.paritions.length * 2 + 2
+							Layout.rowSpan: partitions.count * 2 + 2
 							Layout.fillHeight: true
 						}
 						Controls.Label {
@@ -81,7 +81,7 @@ Column {
 						Kirigami.Separator {
 							Layout.row: 0
 							Layout.column: 5
-							Layout.rowSpan: modelData.paritions.length * 2 + 2
+							Layout.rowSpan: partitions.count * 2 + 2
 							Layout.fillHeight: true
 						}
 						Controls.Label {
@@ -92,7 +92,7 @@ Column {
 						Kirigami.Separator {
 							Layout.row: 0
 							Layout.column: 7
-							Layout.rowSpan: modelData.paritions.length * 2 + 2
+							Layout.rowSpan: partitions.count * 2 + 2
 							Layout.fillHeight: true
 						}
 						Controls.Label {
@@ -103,7 +103,7 @@ Column {
 
 						
 						Repeater {
-							model: modelData.paritions.length
+							model: partitions.count
 							Kirigami.Separator {
 								Layout.row: index * 2 + 1
 								Layout.column: 0
@@ -112,50 +112,50 @@ Column {
 							}
 						}
 						Repeater {
-							model: modelData.paritions
+							model: partitions
 							Controls.Label {
 								Layout.fillWidth: true
 								Layout.column: 0
 								Layout.row: index * 2 + 2
-								text: modelData.dev_node
+								text: dev_node
 							}
 						}
 						Repeater {
-							model: modelData.paritions
+							model: partitions
 							Controls.Label {
 								Layout.fillWidth: true
 								Layout.column: 2
 								Layout.row: index * 2 + 2
-								text: modelData.filesystem
+								text: filesystem
 							}
 						}
 						Repeater {
-							model: modelData.paritions
+							model: partitions
 							Controls.Label {
 								Layout.fillWidth: true
 								Layout.column: 4
 								Layout.row: index * 2 + 2
-								text: modelData.mountpoint
+								text: mountpoint
 							}
 						}
 						Repeater {
-							model: modelData.paritions
+							model: partitions
 							Controls.Label {
 								Layout.fillWidth: true
 								Layout.column: 6
 								Layout.row: index * 2 + 2
 								horizontalAlignment: Text.AlignRight
-								text: modelData.size
+								text: size
 							}
 						}
 						Repeater {
-							model: modelData.paritions
+							model: partitions
 							Controls.Label {
 								Layout.fillWidth: true
 								Layout.column: 8
 								Layout.row: index * 2 + 2
 								horizontalAlignment: Text.AlignRight
-								text: modelData.used
+								text: used
 							}
 						}
 					}

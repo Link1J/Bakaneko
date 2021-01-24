@@ -62,6 +62,11 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
             }
         }
     }
+    std::sort(drives.mutable_drive()->begin(), drives.mutable_drive()->end(),
+        [](Bakaneko::Drive& a, Bakaneko::Drive& b) {
+            return a.dev_node() < b.dev_node();
+        }
+    );
 #elif defined(LJH_TARGET_Linux)
     auto [exit_code, std_out] = exec("lsblk -brn --output NAME,MOUNTPOINT,MODEL,SIZE,FSTYPE,FSSIZE,FSUSED");
     if (exit_code != 0)
@@ -175,8 +180,8 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
         [](Bakaneko::Drive& a, Bakaneko::Drive& b) {
             auto a2 = a.dev_node().substr(2), b2 = b.dev_node().substr(2);
             if (a2 == b2)
-                return a.dev_node() < b.dev_node();
-            return a2 > b2;
+                return a.dev_node() > b.dev_node();
+            return a2 < b2;
         }
     );
     for (auto& drive : *drives.mutable_drive())
