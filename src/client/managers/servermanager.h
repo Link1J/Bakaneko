@@ -46,6 +46,8 @@ public Q_SLOTS:
     void AddServer(QString ip);
     void RemoveServer(int index);
 
+    void change_server_options(int index, QString ip);
+
     void server_offline(Server* server);
     void server_online (Server* server);
     

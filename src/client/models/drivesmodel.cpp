@@ -29,7 +29,7 @@ PartitionModel& DrivesModel::partition(int a)
 
 void DrivesModel::flag(int a, std::vector<int> roles)
 {
-    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>::fromStdVector(roles));
+    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>(roles.begin(), roles.end()));
 }
 
 QVariant DrivesModel::data(const QModelIndex& index, int role) const
@@ -102,7 +102,7 @@ Bakaneko::Partition& PartitionModel::data(int a)
 
 void PartitionModel::flag(int a, std::vector<int> roles)
 {
-    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>::fromStdVector(roles));
+    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>(roles.begin(), roles.end()));
 }
 
 QVariant PartitionModel::data(const QModelIndex& index, int role) const

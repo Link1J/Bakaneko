@@ -17,7 +17,11 @@ RowLayout {
     TapHandler {
         onTapped: {
             currentServer = model.data
-            pageStack.push(serverPage)
+            currentServerIndex = model.index
+            if (pageStack.depth < 2)
+                pageStack.push(serverPage)
+            else
+                pageStack.replace(serverPage)
         }
     }
 

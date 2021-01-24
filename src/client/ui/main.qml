@@ -11,6 +11,7 @@ Kirigami.ApplicationWindow {
     id: root
 
     property var currentServer: null
+    property int currentServerIndex: -1
 
     title: i18n("Server Manager")
 

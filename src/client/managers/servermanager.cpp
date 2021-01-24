@@ -48,22 +48,13 @@ Bakaneko::System get_system_info(asio::ip::tcp::socket& socket, const std::strin
     return info;
 }
 
-void ServerManager::AddServer(QString ip)
+boost::system::error_code check_if_server(asio::ip::tcp::socket& socket, const std::string& ip_address)
 {
-    std::lock_guard __lock_guard{server_list_lock};
-
-    std::string ip_address = ip.toUtf8().data();
-
     boost::system::error_code ec;
-    asio::ip::tcp::socket socket(io_context);
     asio::ip::tcp::resolver resolver(io_context);
     auto const results = resolver.resolve(ip_address, "8080");
     asio::connect(socket, results.begin(), results.end(), ec);
-    if (ec)
-    {
-        std::cerr << ec.message() << std::endl;
-        return;
-    }
+    if (ec) return ec;
 
     beast::http::request<beast::http::string_body> req{beast::http::verb::head, "/", 11};
 
@@ -71,60 +62,22 @@ void ServerManager::AddServer(QString ip)
     req.version(11);
 
     beast::http::write(socket, req, ec);
-    if (ec)
-    {
-        std::cerr << ec.message() << std::endl;
-        return;
-    }
+    if (ec) return ec;
 
     beast::flat_buffer buffer;
     beast::http::response<beast::http::empty_body> res;
 
     beast::http::read(socket, buffer, res, ec);
-    if (ec)
-    {
-        std::cerr << ec.message() << std::endl;
-        return;
-    }
+    if (ec) return ec;
 
-    if (res.result_int() != 302) return;
+    if (res.result_int() != 302)
+        ec = make_error_code(boost::system::errc::not_supported);
+    return ec;
+}
 
-    auto system_info = get_system_info(socket, ip_address);
-
-    if (system_info.hostname().empty() || system_info.mac_address().empty() || system_info.ip_address().empty())
-        return;
-    
-    if (model != nullptr)
-    {
-        model->beginRowAppend();
-    }
-
-    auto temp = std::make_shared<Server>(system_info.hostname(), system_info.mac_address(), ip_address, this);
-
-    connect(temp.get(), &Server::this_online , this, &ServerManager::server_online );
-    connect(temp.get(), &Server::this_offline, this, &ServerManager::server_offline);
-    
-    QSettings settings;
-
-    int size = settings.beginReadArray("servers");
-    settings.endArray();
-
-    if (model != nullptr)
-    {
-        connect(temp.get(), &Server::changed_state, model, [=]() { model->update(size); });
-        model->endRowAppend();
-    }
-
-    settings.beginWriteArray("servers");
-    settings.setArrayIndex(size);
-
-    settings.setValue("hostname", temp->get_hostname());
-    settings.setValue("mac"     , temp->get_mac     ());
-    settings.setValue("ip"      , temp->get_ip      ());
-
-    settings.endArray();
-    
-    servers.push_back(temp);
+void ServerManager::AddServer(QString ip)
+{
+    change_server_options(servers.size(), ip);
 }
 
 static QThread server_thread;
@@ -271,6 +224,60 @@ void ServerManager::update_server_info(bool wait)
 
 ServerManager::~ServerManager()
 {
+}
+
+void ServerManager::change_server_options(int index, QString ip)
+{
+    std::lock_guard __lock_guard{server_list_lock};
+
+    std::string ip_address = ip.toUtf8().data();
+
+    asio::ip::tcp::socket socket(io_context);
+    auto ec = check_if_server(socket, ip_address);
+    if (ec)
+    {
+        std::cerr << ec.message() << std::endl;
+        return;
+    }
+
+    auto system_info = get_system_info(socket, ip_address);
+
+    if (system_info.hostname().empty() || system_info.mac_address().empty() || system_info.ip_address().empty())
+        return;
+    
+    if (model != nullptr && index == servers.size())
+    {
+        model->beginRowAppend();
+    }
+
+    auto temp = std::make_shared<Server>(system_info.hostname(), system_info.mac_address(), ip_address, this);
+
+    connect(temp.get(), &Server::this_online , this, &ServerManager::server_online );
+    connect(temp.get(), &Server::this_offline, this, &ServerManager::server_offline);
+    if (model != nullptr)
+        connect(temp.get(), &Server::changed_state, model, [=]() { model->update(index); });
+    
+
+    if (model != nullptr && index == servers.size())
+    {
+        model->endRowAppend();
+    }
+
+    QSettings settings;
+
+    settings.beginWriteArray("servers");
+    settings.setArrayIndex(index);
+
+    settings.setValue("hostname", temp->get_hostname());
+    settings.setValue("mac"     , temp->get_mac     ());
+    settings.setValue("ip"      , temp->get_ip      ());
+
+    settings.endArray();
+    
+    if (index == servers.size())
+        servers.push_back(temp);
+    else
+        servers[index] = temp;
 }
 
 void ServerManager::server_offline(Server* server)

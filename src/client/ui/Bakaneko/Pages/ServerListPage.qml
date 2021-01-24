@@ -58,7 +58,18 @@ Kirigami.ScrollablePage {
                  }
             ]
         }
-        model: Models.ServerList {}
+        model: Models.ServerList {
+            onRowsRemoved: {
+                console.log("HI", first, last, currentServerIndex, currentServer);
+                if (currentServerIndex >= first && currentServerIndex <= last)
+                {
+                    while (pageStack.depth > 1)
+                        pageStack.pop();
+                    currentServer = null
+                    currentServerIndex = -1;
+                }
+            }
+        }
     }
 
     Component {
