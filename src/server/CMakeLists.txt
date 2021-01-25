@@ -7,6 +7,7 @@ set(SRCS
     drives.cpp
     system.cpp
     updates.cpp
+    windows_service.cpp
 )
 
 add_executable(bakaneko-server ${SRCS})

@@ -23,6 +23,9 @@
 constexpr auto DEFAULT_ADDRESS = "0.0.0.0";
 constexpr auto DEFAULT_PORT    =   "29921"; // Unless a well know service uses this port. Do not change it.
 
+int const thread_count = std::thread::hardware_concurrency();
+asio::io_context io_service{thread_count};
+
 namespace std
 {
     int atoi(const string_view& view) noexcept
@@ -104,9 +107,6 @@ int main(int argc, const char* argv[])
         }
 #endif
 
-        int const thread_count = std::thread::hardware_concurrency();
-        asio::io_context io_service{thread_count};
-
         auto const address = asio::ip::make_address(address_string);
         auto const port    = (unsigned short)std::atoi(port_string);
 
@@ -115,8 +115,11 @@ int main(int argc, const char* argv[])
         std::vector<std::thread> thread;
         thread.reserve(thread_count - 1);
         for(auto i = thread_count - 1; i > 0; --i)
-            thread.emplace_back([&io_service]{ io_service.run(); });
+            thread.emplace_back([]{ io_service.run(); });
         io_service.run();
+        for(auto& thr : thread)
+            if (thr.joinable())
+                thr.join();
     }
     catch(const std::exception& e)
     {
