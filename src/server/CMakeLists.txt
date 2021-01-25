@@ -38,6 +38,6 @@ target_link_libraries(bakaneko-server PUBLIC
 
 install(TARGETS bakaneko-server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
-if (LINUX)
-    file(INSTALL "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.service" DESTINATION "${KDE_INSTALL_FULL_SYSTEMDUNITDIR}/system")
+if (UNIX)
+    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.service" DESTINATION "${KDE_INSTALL_FULL_SYSTEMDUNITDIR}/system")
 endif()

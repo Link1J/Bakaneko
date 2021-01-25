@@ -25,7 +25,7 @@ int main(int argc, const char* argv[])
 #if defined(LJH_TARGET_Windows)
     sinks.push_back(std::make_shared<spdlog::sinks::win_eventlog_sink_st>("bakaneko-server"));
 #elif defined(LJH_TARGET_Linux)
-    sinks.push_back(std::make_shared<spdlog::sinks::syslog_logger_mt>("syslog", "bakaneko-server", LOG_PID));
+    //sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink_mt>("bakaneko-server", LOG_PID, LOG_USER, false));
 #endif
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
     spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
@@ -40,7 +40,6 @@ int main(int argc, const char* argv[])
     int const thread_count = std::thread::hardware_concurrency();
     asio::io_context io_service{thread_count};
 
-    
     auto const address = asio::ip::make_address("0.0.0.0");
     auto const port    = (unsigned short)std::atoi("8080");
 
