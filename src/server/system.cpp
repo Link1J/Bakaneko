@@ -33,6 +33,8 @@
 #include <linux/if_packet.h>
 #include <unistd.h>
 #include <ifaddrs.h>
+#include <linux/reboot.h>
+#include <sys/reboot.h>
 #endif
 
 #undef interface
@@ -51,7 +53,6 @@ ljh::expected<Bakaneko::System, Errors> Info::System()
     memset(mac_address, 0, sizeof(mac_address));
 
 #if defined(LJH_TARGET_Windows)
-
     using namespace std::string_literals;
 
     static auto enclosure = ljh::windows::wmi::service::root().get_class(L"Win32_SystemEnclosure")[0];
@@ -233,3 +234,36 @@ inline std::string chassis_type_as_system_icon(int a)
 
     return "";
 }
+
+extern std::tuple<int, std::string> exec(const std::string& cmd);
+
+namespace Control
+{
+    ljh::expected<void, Errors> Shutdown()
+    {
+#if defined(LJH_TARGET_Windows)
+        if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, false, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)
+            return ljh::unexpected{Errors::Failed};
+        return ljh::expected<void, Errors>{};
+#elif defined(LJH_TARGET_Linux)
+        exec("poweroff");
+        return ljh::expected<void, Errors>{};
+#else
+        return ljh::unexpected{Errors::NotImplemented};
+#endif
+    }
+
+    ljh::expected<void, Errors> Reboot()
+    {
+#if defined(LJH_TARGET_Windows)
+        if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, true, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)
+            return ljh::unexpected{Errors::Failed};
+        return ljh::expected<void, Errors>{};
+#elif defined(LJH_TARGET_Linux)
+        exec("reboot");
+        return ljh::expected<void, Errors>{};
+#else
+        return ljh::unexpected{Errors::NotImplemented};
+#endif
+    }
+};

@@ -15,8 +15,6 @@
 #include <libssh/libssh.h>
 
 #include <term/pty.h>
-#include "update.h"
-#include "drives.h"
 
 #include <models/updatemodel.h>
 #include <models/drivesmodel.h>
@@ -71,6 +69,7 @@ protected:
     
     template<typename T>
     void network_get(std::string path, void(Server::*signal)(T));
+    void network_post(std::string path);
 
 public:
     ssh_connection get_ssh_connection();

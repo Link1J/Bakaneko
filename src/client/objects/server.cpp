@@ -117,7 +117,7 @@ asio::ip::tcp::socket& Server::connection()
     if (!socket.is_open())
     {
         asio::ip::tcp::resolver resolver(ioctx);
-        auto const results = resolver.resolve(ip_address, "8080");
+        auto const results = resolver.resolve(ip_address, "29921");
         asio::connect(socket, results.begin(), results.end());
     }
     return socket;
@@ -311,6 +311,29 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
     });
 }
 
+void Server::network_post(std::string path)
+{
+    QtConcurrent::run([this, path]{
+        try
+        {
+            std::lock_guard _{socket_lock};
+
+            beast::http::request<beast::http::string_body> req{beast::http::verb::post, path, 11};
+
+            req.set(beast::http::field::host, ip_address);
+            req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            req.version(11);
+            req.keep_alive(true);
+
+            beast::http::write(connection(), req);
+        }
+        catch (...)
+        {
+            steps_done++;
+        }
+    });
+}
+
 void Server::handle_info(Bakaneko::System info)
 {
     system_info = info;
@@ -448,8 +471,15 @@ void Server::handle_drives(Bakaneko::Drives info)
     steps_done++;
 }
 
-void Server::shutdown() {}
-void Server::reboot() {}
+void Server::shutdown()
+{
+    network_post("/power/shutdown");
+}
+
+void Server::reboot()
+{
+    network_post("/power/reboot");
+}
 
 Server::~Server()
 {

@@ -32,8 +32,6 @@ set(SRCS
     term/terms/null.cpp
     models/termlist.cpp
     models/updatemodel.cpp
-    objects/update.cpp
-    objects/drives.cpp
     models/drivesmodel.cpp
 )
 qt5_add_resources(RESOURCES

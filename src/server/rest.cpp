@@ -134,33 +134,43 @@ void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)
 
         if (message_res.has_value())
         {
-            if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
+            if constexpr (!std::is_same_v<MessageReply,void>)
             {
-                if (content_type->value() == "application/x-protobuf")
+                if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
                 {
-                    beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
-                    res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                    res.set(beast::http::field::content_type, "application/x-protobuf");
-                    res.set("Protobuf-Type", message_res->GetTypeName());
-                    res.body() = message_res->SerializeAsString();
-                    res.prepare_payload();
-                    return send(std::move(res));
+                    if (content_type->value() == "application/x-protobuf")
+                    {
+                        beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                        res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                        res.set(beast::http::field::content_type, "application/x-protobuf");
+                        res.set("Protobuf-Type", message_res->GetTypeName());
+                        res.body() = message_res->SerializeAsString();
+                        res.prepare_payload();
+                        return send(std::move(res));
+                    }
+                    else if (content_type->value() == "text/plain")
+                    {
+                        beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                        res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                        res.set(beast::http::field::content_type, "text/plain");
+                        res.body() = message_res->Utf8DebugString();
+                        res.prepare_payload();
+                        return send(std::move(res));
+                    }
+                    else
+                    {
+                        std::string_view lpath(content_type->value().data(), content_type->value().size());
+                        std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
+                        spdlog::get("networking")->warn("Unknown Content-Type '{}' requested from {}:{} ({})", lpath, endpoint.address().to_string(), endpoint.port(), lclient);
+                    }
                 }
-                else if (content_type->value() == "text/plain")
-                {
-                    beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
-                    res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                    res.set(beast::http::field::content_type, "text/plain");
-                    res.body() = message_res->Utf8DebugString();
-                    res.prepare_payload();
-                    return send(std::move(res));
-                }
-                else
-                {
-                    std::string_view lpath(content_type->value().data(), content_type->value().size());
-                    std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
-                    spdlog::get("networking")->warn("Unknown Content-Type '{}' requested from {}:{} ({})", lpath, endpoint.address().to_string(), endpoint.port(), lclient);
-                }
+            }
+            else
+            {
+                beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                res.prepare_payload();
+                return send(std::move(res));
             }
 
             beast::http::response<beast::http::empty_body> res{beast::http::status::unsupported_media_type, req.version()};
@@ -172,6 +182,14 @@ void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)
         else if (message_res.error() == Errors::NotImplemented)
         {
             beast::http::response<beast::http::empty_body> res{beast::http::status::not_implemented, req.version()};
+            res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            res.keep_alive(req.keep_alive());
+            res.prepare_payload();
+            return send(std::move(res));
+        }
+        else if (message_res.error() == Errors::Failed)
+        {
+            beast::http::response<beast::http::empty_body> res{beast::http::status::internal_server_error, req.version()};
             res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
             res.keep_alive(req.keep_alive());
             res.prepare_payload();
@@ -215,8 +233,10 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
     }
     if (req.method() == beast::http::verb::post)
     {
-        //if (path == "/update")
-        //    return;
+        if (path == "/power/shutdown")
+            return Run(&Control::Shutdown, std::move(req), std::move(send));
+        if (path == "/power/reboot")
+            return Run(&Control::Reboot  , std::move(req), std::move(send));
     }
 
     std::string_view lpath(path.data(), path.size());

@@ -12,7 +12,6 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS
 )
 
 set(SRCS
-    http.cpp
 )
 
 add_library(commun STATIC ${SRCS} ${PROTO_SRCS} ${PROTO_HDRS})

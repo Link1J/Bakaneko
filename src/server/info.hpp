@@ -10,7 +10,7 @@
 
 enum class Errors
 {
-    None, NotImplemented,
+    None, NotImplemented, Failed
 };
 
 namespace Info
@@ -18,4 +18,10 @@ namespace Info
     ljh::expected<Bakaneko::Drives , Errors> Drives ();
     ljh::expected<Bakaneko::Updates, Errors> Updates();
     ljh::expected<Bakaneko::System , Errors> System ();
+};
+
+namespace Control
+{
+    ljh::expected<void, Errors> Shutdown();
+    ljh::expected<void, Errors> Reboot  ();
 };
