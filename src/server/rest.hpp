@@ -46,14 +46,13 @@ namespace Rest
             beast::flat_buffer buffer;
             beast::http::request<beast::http::string_body> req;
             std::shared_ptr<void> res;
+            asio::ip::tcp::endpoint endpoint;
 
             template<class Body, class Allocator, class Send>
             void handler(beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
             
             template<class MessageReply, class Body, class Allocator, class Send>
             void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
-
-            asio::ip::tcp::endpoint endpoint();
 
         public:
             explicit Connection(asio::ip::tcp::socket socket_);
