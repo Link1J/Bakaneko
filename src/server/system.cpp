@@ -115,6 +115,12 @@ GOT_ADDRESS:
         if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = temp.substr(17, temp.find_last_of('"') - 17);
     }
 
+    if (icon == "unknown")
+    {
+        if (std::filesystem::exists("/sys/class/dmi/id/chassis_type"))
+            icon = chassis_type_as_system_icon(std::stoi(read_file("/sys/class/dmi/id/chassis_type")));
+    }
+
     struct ifaddrs* base;
     std::string_view adapter_name;
     getifaddrs(&base);

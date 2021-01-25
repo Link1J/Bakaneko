@@ -8,7 +8,7 @@
 #include <ljh/function_pointer.hpp>
 
 Rest::Server::Connection::Connection(asio::ip::tcp::socket socket_)
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
     : socket(std::move(socket_))
     , strand(socket.get_executor())
     , endpoint(socket.remote_endpoint())
@@ -27,7 +27,7 @@ Rest::Server::Connection::~Connection()
 
 void Rest::Server::Connection::run()
 {
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
     do_read();
 #else
     asio::dispatch(stream.get_executor(), beast::bind_front_handler(&Connection::do_read, shared_from_this()));
@@ -36,7 +36,7 @@ void Rest::Server::Connection::run()
 
 void Rest::Server::Connection::do_read()
 {
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
     beast::http::async_read(socket, buffer, req, asio::bind_executor(strand, std::bind(&Connection::on_read, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
 #else
     req = {};
@@ -58,7 +58,7 @@ void Rest::Server::Connection::on_read(boost::system::error_code ec, std::size_t
     handler(std::move(req), [this](auto&& msg){
         auto sp = std::make_shared<beast::http::message<false, beast::http::string_body>>(std::move(msg));
         res = sp;
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
         beast::http::async_write(socket, *sp, boost::asio::bind_executor(strand,
             std::bind(&Connection::on_write, shared_from_this(), sp->need_eof(), std::placeholders::_1, std::placeholders::_2)
         ));
@@ -87,7 +87,7 @@ void Rest::Server::Connection::on_write(bool close, boost::system::error_code ec
 void Rest::Server::Connection::do_close()
 {
     boost::system::error_code ec;
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
     socket.shutdown(asio::ip::tcp::socket::shutdown_send, ec);
 #else
     stream.socket().shutdown(asio::ip::tcp::socket::shutdown_send, ec);
@@ -100,6 +100,7 @@ Rest::Server::Server(asio::io_context& io_service, asio::ip::tcp::endpoint endpo
     , socket{io_service}
 {
     acceptor.open(endpoint.protocol());
+    acceptor.set_option(asio::socket_base::reuse_address(true));
     acceptor.bind(endpoint);
     acceptor.listen(asio::socket_base::max_listen_connections);
     spdlog::get("networking")->info("Listening on {}:{}", endpoint.address().to_string(), endpoint.port());
@@ -127,48 +128,61 @@ void Rest::Server::on_accept(boost::system::error_code ec)
 template<class MessageReply, class Body, class Allocator, class Send>
 void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
-    auto message_res = function();
-
-    if (message_res.has_value())
+    try
     {
-        if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
+        auto message_res = function();
+
+        if (message_res.has_value())
         {
-            if (content_type->value() == "application/x-protobuf")
+            if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
             {
-                beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
-                res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                res.set(beast::http::field::content_type, "application/x-protobuf");
-                res.set("Protobuf-Type", message_res->GetTypeName());
-                res.body() = message_res->SerializeAsString();
-                res.prepare_payload();
-                return send(std::move(res));
+                if (content_type->value() == "application/x-protobuf")
+                {
+                    beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                    res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                    res.set(beast::http::field::content_type, "application/x-protobuf");
+                    res.set("Protobuf-Type", message_res->GetTypeName());
+                    res.body() = message_res->SerializeAsString();
+                    res.prepare_payload();
+                    return send(std::move(res));
+                }
+                else if (content_type->value() == "text/plain")
+                {
+                    beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                    res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                    res.set(beast::http::field::content_type, "text/plain");
+                    res.body() = message_res->Utf8DebugString();
+                    res.prepare_payload();
+                    return send(std::move(res));
+                }
+                else
+                {
+                    std::string_view lpath(content_type->value().data(), content_type->value().size());
+                    std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
+                    spdlog::get("networking")->warn("Unknown Content-Type '{}' requested from {}:{} ({})", lpath, endpoint.address().to_string(), endpoint.port(), lclient);
+                }
             }
-            else if (content_type->value() == "text/plain")
-            {
-                beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
-                res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                res.set(beast::http::field::content_type, "text/plain");
-                res.body() = message_res->Utf8DebugString();
-                res.prepare_payload();
-                return send(std::move(res));
-            }
-            else
-            {
-                std::string_view lpath(content_type->value().data(), content_type->value().size());
-                std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
-                spdlog::get("networking")->warn("Unknown Content-Type '{}' requested from {}:{} ({})", lpath, endpoint.address().to_string(), endpoint.port(), lclient);
-            }
-        }
 
-        beast::http::response<beast::http::empty_body> res{beast::http::status::unsupported_media_type, req.version()};
-        res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-        res.keep_alive(req.keep_alive());
-        res.prepare_payload();
-        return send(std::move(res));
+            beast::http::response<beast::http::empty_body> res{beast::http::status::unsupported_media_type, req.version()};
+            res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            res.keep_alive(req.keep_alive());
+            res.prepare_payload();
+            return send(std::move(res));
+        }
+        else if (message_res.error() == Errors::NotImplemented)
+        {
+            beast::http::response<beast::http::empty_body> res{beast::http::status::not_implemented, req.version()};
+            res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            res.keep_alive(req.keep_alive());
+            res.prepare_payload();
+            return send(std::move(res));
+        }
     }
-    else if (message_res.error() == Errors::NotImplemented)
+    catch (const std::exception& e)
     {
-        beast::http::response<beast::http::empty_body> res{beast::http::status::not_implemented, req.version()};
+        spdlog::error(e.what());
+
+        beast::http::response<beast::http::empty_body> res{beast::http::status::internal_server_error, req.version()};
         res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
         res.keep_alive(req.keep_alive());
         res.prepare_payload();

@@ -18,6 +18,21 @@
 #include "spdlog/sinks/syslog_sink.h"
 #endif
 
+#include <charconv>
+
+constexpr auto DEFAULT_ADDRESS = "0.0.0.0";
+constexpr auto DEFAULT_PORT    =   "29921"; // Unless a well know service uses this port. Do not change it.
+
+namespace std
+{
+    int atoi(const string_view& view) noexcept
+    {
+        int i3 = 0;
+        std::from_chars(view.data(), view.data() + view.size(), i3);
+        return i3;
+    }
+}
+
 int main(int argc, const char* argv[])
 {
     std::vector<spdlog::sink_ptr> sinks;
@@ -30,28 +45,63 @@ int main(int argc, const char* argv[])
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
     spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
 
+    std::string_view address_string = DEFAULT_ADDRESS;
+    std::string_view port_string    = DEFAULT_PORT   ;
+
+    for (int a = 0; a < argc; a++)
+    {
+        using namespace std::literals;
+        if (argv[a] == "--help"sv || argv[a] == "-h"sv)
+        {
+            printf("\n Usage: %s [OPTIONS]\n\n", argv[0]);
+            printf("  Options:\n");
+            printf("   -h --help                 Print this help\n");
+            printf("      --address address      Address to listen on\n");
+            printf("      --port    port         Port to listen on\n");
+            printf("\n");
+            exit(0);
+        }
+        else if (argv[a] == "--address"sv)
+        {
+            a++;
+            address_string = argv[a];
+        }
+        else if (argv[a] == "--port"sv)
+        {
+            a++;
+            port_string = argv[a];
+        }
+    }
+
     spdlog::info("Starting Bakaneko Server (Version {})", BAKANEKO_VERSION_STRING);
 
+    try
+    {
 #if defined(LJH_TARGET_Windows)
-    winrt::init_apartment();
-    ljh::windows::wmi::setup();
+        winrt::init_apartment();
+        ljh::windows::wmi::setup();
 #endif
 
-    int const thread_count = std::thread::hardware_concurrency();
-    asio::io_context io_service{thread_count};
+        int const thread_count = std::thread::hardware_concurrency();
+        asio::io_context io_service{thread_count};
 
-    auto const address = asio::ip::make_address("0.0.0.0");
-    auto const port    = (unsigned short)std::atoi("8080");
+        auto const address = asio::ip::make_address(address_string);
+        auto const port    = (unsigned short)std::atoi(port_string);
 
-    std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{address, port})->run();
+        std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{address, port})->run();
 
-    std::vector<std::thread> thread;
-    thread.reserve(thread_count - 1);
-    for(auto i = thread_count - 1; i > 0; --i)
-        thread.emplace_back([&io_service]{ io_service.run(); });
-    io_service.run();
-    
-    spdlog::info("Stoping Bakaneko Server");
+        std::vector<std::thread> thread;
+        thread.reserve(thread_count - 1);
+        for(auto i = thread_count - 1; i > 0; --i)
+            thread.emplace_back([&io_service]{ io_service.run(); });
+        io_service.run();
+    }
+    catch(const std::exception& e)
+    {
+        spdlog::error(e.what());
+    }
+
+    spdlog::info("Stopping Bakaneko Server");
 
     return 0;
 }
