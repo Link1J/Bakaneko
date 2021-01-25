@@ -39,5 +39,3 @@ target_link_libraries(commun PUBLIC
     Boost::boost
     OpenSSL::SSL
 )
-
-install(TARGETS commun ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
