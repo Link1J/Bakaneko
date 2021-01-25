@@ -139,7 +139,6 @@ if(SPDLOG_BUILD_SHARED)
 else()
     add_library(spdlog STATIC ${SPDLOG_SRCS} ${SPDLOG_ALL_HEADERS})
 endif()
-target_compile_options(spdlog PUBLIC /Od)
 
 add_library(spdlog::spdlog ALIAS spdlog)
 

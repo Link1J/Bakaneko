@@ -20,7 +20,6 @@ set_target_properties(bakaneko-server PROPERTIES
 target_compile_options(bakaneko-server PUBLIC
     $<$<PLATFORM_ID:Windows>:
         -D_WIN32_WINNT=0x0601
-        /Od
     >
 )
 
