@@ -6,12 +6,16 @@ import org.kde.kirigami 2.5 as Kirigami
 import Bakaneko.Components 1.0 as Components
 
 Kirigami.ScrollablePage {
+	id: page
+
 	title: i18n("Terminal")
 
 	topPadding   : 0
 	leftPadding  : 0
 	rightPadding : 0
 	bottomPadding: 0
+
+	property var server
 
 	//flickableItem.ScrollBar.vertical.width
 
@@ -21,6 +25,6 @@ Kirigami.ScrollablePage {
 	Components.Screen {
 		id: screen
 		focus: true
-		Component.onCompleted: screen.server = currentServer
+		Component.onCompleted: screen.server = page.server
 	}
 }

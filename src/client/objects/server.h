@@ -106,6 +106,8 @@ public Q_SLOTS:
     void shutdown();
     void reboot  ();
 
+    void open_term(QObject* page, QObject* login, QString username, QString password);
+
 Q_SIGNALS:
     void changed_state   ();
 
@@ -127,6 +129,9 @@ Q_SIGNALS:
 
     void this_online (Server*);
     void this_offline(Server*);
+
+    void open_term      (QVariant pty);
+    void connecting_fail(QVariant msg);
 
 protected:
     asio::ip::tcp::socket socket;

@@ -41,7 +41,7 @@ Screen::~Screen()
     // Memory cleanup
     delete pty_thread;
     delete letter;
-    delete pty; // Make Qt complain about killing timers
+    // delete pty; // Make Qt complain about killing timers
 }
 
 QFontMetricsF Screen::Metrics() const
@@ -107,14 +107,15 @@ void Screen::on_font_change()
     Q_EMIT want_line_recount();
 }
 
-void Screen::set_server(Server* server)
+void Screen::set_server(Pty* server)
 {
+    pty = std::move(server);
+
     auto cols = this->get_columns();
     auto rows = this->get_rows   ();
 
-    // This will leak memory if set_server is called more then once per a Screen.
-    pty = new Pty(server, letter->term_report(), QSize{cols, rows});
     pty->moveToThread(pty_thread);
+    pty->start(letter->term_report(), QSize{cols, rows});
 
     auto size_changed = [this](){
         auto cols = this->get_columns();

@@ -16,7 +16,7 @@ class Screen : public QQuickPaintedItem
 {
     Q_OBJECT
 
-    Q_PROPERTY(Server* server READ get_server WRITE set_server);
+    Q_PROPERTY(Pty* server READ get_server WRITE set_server);
 
 public:
     Screen(QQuickItem* parent = nullptr);
@@ -36,8 +36,8 @@ public Q_SLOTS:
     void on_font_change();
     void update_scroll_height();
 
-    Q_INVOKABLE Server* get_server() { return nullptr; }
-    Q_INVOKABLE void set_server(Server* server);
+    Q_INVOKABLE Pty* get_server() { return nullptr; }
+    Q_INVOKABLE void set_server(Pty* server);
 
 Q_SIGNALS:
     void want_line_recount();

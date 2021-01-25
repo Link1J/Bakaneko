@@ -9,6 +9,7 @@ import Bakaneko.Objects 1.0 as Objects
 import Bakaneko.Pages 1.0 as Pages
 import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
+import Bakaneko.Dialogs 1.0 as Dialogs
 
 Kirigami.Page {
 	id: page
@@ -22,7 +23,7 @@ Kirigami.Page {
 			text: i18n("Terminal")
 			enabled: currentServer.state === Objects.Server.State.Online
 			onTriggered: {
-				root.fullWindowLayer(terminalPage);
+				login_prompt.createObject(overlay, {source_page: page}).open();
 			}
 			tooltip: i18n("Opens a terminal")
 		},
@@ -95,8 +96,16 @@ Kirigami.Page {
 		}
 	}
 
+	function open_term(term) {
+		root.fullWindowLayer(terminalPage, {server: term});
+	}
+
 	Component {
 		id: terminalPage
 		Pages.Term {}
+	}
+	Component {
+		id: login_prompt
+		Dialogs.Login {}
 	}
 }

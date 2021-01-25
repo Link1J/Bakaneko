@@ -40,8 +40,10 @@ class Pty : public QObject
     Q_OBJECT
 
 public:
-    Pty(Server* server, const char* term, QSize size, bool auto_read = true, QObject* parent = nullptr);
+    Pty(ssh_connection&& server, QObject* parent = nullptr);
     ~Pty();
+
+    void start(const char* term, QSize size, bool auto_read = true);
 
     std::string read_stdout(bool blocking = true, unsigned char bytes = 255);
     std::string read_stderr(bool blocking = true, unsigned char bytes = 255);

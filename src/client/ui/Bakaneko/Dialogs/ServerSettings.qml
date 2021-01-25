@@ -14,6 +14,7 @@ Kirigami.OverlaySheet {
 	parent: applicationWindow().overlay
 
 	property int serverIndex: -1;
+	property var server: -1;
 
 	header: Kirigami.Heading {
 		text: i18n("Server Settings")
@@ -22,14 +23,24 @@ Kirigami.OverlaySheet {
 		Controls.TextField {
 			id: ip
 			Kirigami.FormData.label: i18n("Server IP")
+			text: server.ip
 			onAccepted: addButton.forceActiveFocus();
 		}
-		Controls.Button {
-			id: addButton
-			text: i18nc("@action:button", "Add")
-			onClicked: {
-				Managers.Server.AddServer(serverIndex, ip.text);
-				close()
+		Row {
+			Controls.Button {
+				id: addButton
+				text: i18nc("@action:button", "Update")
+				onClicked: {
+					Managers.Server.AddServer(serverIndex, ip.text);
+					close()
+				}
+			}
+			Controls.Button {
+				id: a
+				text: i18nc("@action:button", "Cancel")
+				onClicked: {
+					close()
+				}
 			}
 		}
 	}

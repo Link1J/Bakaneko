@@ -16,6 +16,9 @@
 #include "managers/servermanager.h"
 #include "managers/settings.h"
 
+#include "term/term.h"
+#include "term/pty.h"
+
 #include <ljh/function_traits.hpp>
 
 #include "windows.hpp"
@@ -447,4 +450,62 @@ Server::~Server()
 {
     boost::system::error_code ec;
     socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
+}
+
+void Server::open_term(QObject* page, QObject* login, QString username, QString password)
+{
+    connect(this, SIGNAL(open_term      (QVariant)), page , SLOT(open_term      (QVariant)));
+    connect(this, SIGNAL(connecting_fail(QVariant)), login, SLOT(connecting_fail(QVariant)));
+    connect(this, SIGNAL(open_term      (QVariant)), login, SLOT(done           (        )));
+    
+    QtConcurrent::run([this, username, password]{
+        auto session = ssh_new();
+        if (session == nullptr)
+        {
+            Q_EMIT connecting_fail(QString::fromUtf8("Failed to create session"));
+            return;
+        }
+
+        ssh_options_set(session, SSH_OPTIONS_HOST, ip_address.c_str());
+        ssh_options_set(session, SSH_OPTIONS_USER, username.toUtf8().data());
+
+        if (ssh_connect(session) != SSH_OK)
+        {
+            auto message = ssh_get_error(session);
+            Q_EMIT connecting_fail(QString::fromUtf8("Could not connect to server"));
+            ssh_free(session);
+            return;
+        }
+
+        if (ssh_userauth_password(session, NULL, password.toUtf8().data()) != SSH_OK)
+        {
+            auto message = ssh_get_error(session);
+            Q_EMIT connecting_fail(QString::fromUtf8(message));
+            ssh_disconnect(session);
+            ssh_free(session);
+            return;
+        }
+
+        auto channel = ssh_channel_new(session);
+        if (channel == nullptr)
+        {
+            auto message = ssh_get_error(session);
+            Q_EMIT connecting_fail(QString::fromUtf8(message));
+            ssh_disconnect(session);
+            ssh_free(session);
+            return;
+        }
+
+        if (ssh_channel_open_session(channel) != SSH_OK)
+        {
+            auto message = ssh_get_error(session);
+            Q_EMIT connecting_fail(QString::fromUtf8(message));
+            ssh_channel_free(channel);
+            ssh_disconnect(session);
+            ssh_free(session);
+            return;
+        }
+
+        Q_EMIT open_term(QVariant::fromValue(new Pty({session, channel})));
+    });
 }

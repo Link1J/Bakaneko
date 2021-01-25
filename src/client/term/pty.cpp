@@ -49,12 +49,15 @@ ssh_connection::~ssh_connection()
 ssh_connection::operator ssh_session() { return session; }
 ssh_connection::operator ssh_channel() { return channel; }
 
-Pty::Pty(Server* server, const char* term, QSize size, bool auto_read, QObject* parent)
+Pty::Pty(ssh_connection&& server, QObject* parent)
     : QObject(parent)
     , data_check(new QTimer{this})
+    , connection(std::move(server))
 {
-    connection = std::move(server->get_ssh_connection());
-    
+}
+
+void Pty::start(const char* term, QSize size, bool auto_read)
+{
     ssh_channel_request_pty_size(connection, term, size.width(), size.height());
     ssh_channel_request_shell(connection);
 

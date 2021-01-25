@@ -12,73 +12,73 @@ import Bakaneko.Dialogs 1.0 as Dialogs
 import Bakaneko.Managers 1.0 as Managers
 
 Kirigami.ScrollablePage {
-    title: i18n("Server List")
+	title: i18n("Server List")
 
-    Kirigami.Action {
-        id: serverAddAction
-        icon.name: "list-add"
-        text: i18n("Add Server")
-        visible: listView.count !== 0
-        onTriggered: {
-            addServerDialog.createObject(overlay).open();
-        }
-        tooltip: i18n("Adds server to list")
-    }
+	Kirigami.Action {
+		id: serverAddAction
+		icon.name: "list-add"
+		text: i18n("Add Server")
+		visible: listView.count !== 0
+		onTriggered: {
+			addServerDialog.createObject(overlay).open();
+		}
+		tooltip: i18n("Adds server to list")
+	}
 
-    actions {
-        main: serverAddAction
-    }
+	actions {
+		main: serverAddAction
+	}
 
-    ListView {
-        id: listView
-        Kirigami.PlaceholderMessage {
-            anchors.centerIn: parent
-            width: parent.width - (Kirigami.Units.largeSpacing * 4)
-            visible: listView.count === 0
-            text: i18n("No Servers")
-            helpfulAction: serverAddAction
-        }
-        delegate: Kirigami.SwipeListItem {
-            highlighted: currentServer && currentServer.ip === ip
-            focus: false
-            Components.ServerListItem {}
-            actions: [
-                 Kirigami.Action {
-                     icon.name: "settings-configure"
-                     onTriggered: {
-                        serverSettingsDialog.createObject(overlay, {index: index}).open();
-                     }
-                     tooltip: i18n("Change server settings")
-                 },
-                 Kirigami.Action {
-                     icon.name: "list-remove"
-                     onTriggered: {
-                         Managers.Server.RemoveServer(index)
-                     }
-                     tooltip: i18n("Removes server from list")
-                 }
-            ]
-        }
-        model: Models.ServerList {
-            onRowsRemoved: {
-                console.log("HI", first, last, currentServerIndex, currentServer);
-                if (currentServerIndex >= first && currentServerIndex <= last)
-                {
-                    while (pageStack.depth > 1)
-                        pageStack.pop();
-                    currentServer = null
-                    currentServerIndex = -1;
-                }
-            }
-        }
-    }
+	ListView {
+		id: listView
+		Kirigami.PlaceholderMessage {
+			anchors.centerIn: parent
+			width: parent.width - (Kirigami.Units.largeSpacing * 4)
+			visible: listView.count === 0
+			text: i18n("No Servers")
+			helpfulAction: serverAddAction
+		}
+		delegate: Kirigami.SwipeListItem {
+			highlighted: currentServer && currentServer.ip === ip
+			focus: false
+			Components.ServerListItem {}
+			actions: [
+				 Kirigami.Action {
+					 icon.name: "settings-configure"
+					 onTriggered: {
+						serverSettingsDialog.createObject(overlay, {index: index, server: model.data}).open();
+					 }
+					 tooltip: i18n("Change server settings")
+				 },
+				 Kirigami.Action {
+					 icon.name: "list-remove"
+					 onTriggered: {
+						 Managers.Server.RemoveServer(index)
+					 }
+					 tooltip: i18n("Removes server from list")
+				 }
+			]
+		}
+		model: Models.ServerList {
+			onRowsRemoved: {
+				console.log("HI", first, last, currentServerIndex, currentServer);
+				if (currentServerIndex >= first && currentServerIndex <= last)
+				{
+					while (pageStack.depth > 1)
+						pageStack.pop();
+					currentServer = null
+					currentServerIndex = -1;
+				}
+			}
+		}
+	}
 
-    Component {
-        id: addServerDialog
-        Dialogs.AddServer {}
-    }
-    Component {
-        id: serverSettingsDialog
-        Dialogs.ServerSettings {}
-    }
+	Component {
+		id: addServerDialog
+		Dialogs.AddServer {}
+	}
+	Component {
+		id: serverSettingsDialog
+		Dialogs.ServerSettings {}
+	}
 }
