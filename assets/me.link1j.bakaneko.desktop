@@ -2,7 +2,7 @@
 Name=Bakaneko
 Comment=A server management tool
 Version=1.0
-Exec=bakaneko
+Exec=bakaneko-client
 Icon=me.link1j.bakaneko
 Type=Application
 Terminal=false
