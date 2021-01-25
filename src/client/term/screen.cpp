@@ -41,7 +41,7 @@ Screen::~Screen()
     // Memory cleanup
     delete pty_thread;
     delete letter;
-    // delete pty; // Make Qt complain about killing timers
+    delete pty; // Make Qt complain about killing timers
 }
 
 QFontMetricsF Screen::Metrics() const
@@ -51,6 +51,8 @@ QFontMetricsF Screen::Metrics() const
 
 void Screen::paint(QPainter* painter)
 {
+    this->forceActiveFocus();
+
     painter->setBackgroundMode(Qt::OpaqueMode);
 
     QVector<QPointF> positions;
@@ -109,13 +111,13 @@ void Screen::on_font_change()
 
 void Screen::set_server(Pty* server)
 {
-    pty = std::move(server);
-
     auto cols = this->get_columns();
     auto rows = this->get_rows   ();
 
-    pty->moveToThread(pty_thread);
+    pty = new Pty(std::move(server->move_connection()));
     pty->start(letter->term_report(), QSize{cols, rows});
+
+    pty->moveToThread(pty_thread);
 
     auto size_changed = [this](){
         auto cols = this->get_columns();

@@ -48,6 +48,8 @@ public:
     std::string read_stdout(bool blocking = true, unsigned char bytes = 255);
     std::string read_stderr(bool blocking = true, unsigned char bytes = 255);
 
+    ssh_connection&& move_connection();
+
 public Q_SLOTS:
     Q_INVOKABLE void send_signal(int signal);
     Q_INVOKABLE void send_data(QString data);

@@ -81,6 +81,12 @@ void Pty::set_size(QSize size)
     this->size = size;
 }
 
+
+ssh_connection&& Pty::move_connection()
+{
+    return std::move(connection);
+}
+
 std::array signal_strings {
     "HUP"sv,
     "INT"sv,
@@ -125,9 +131,9 @@ void Pty::check_for_data()
     if (!(ssh_channel_is_open(connection) && !ssh_channel_is_eof(connection)))
         return;
 
-    if (auto text = read_stdout(false); text.size() > 0)
+    if (auto text = read_stdout(false, 1); text.size() > 0)
         Q_EMIT receved_data(QString::fromStdString(text));
-    if (auto text = read_stderr(false); text.size() > 0)
+    if (auto text = read_stderr(false, 1); text.size() > 0)
         Q_EMIT receved_data(QString::fromStdString(text));
 }
 
