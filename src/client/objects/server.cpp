@@ -22,6 +22,7 @@
 #include <ljh/function_traits.hpp>
 
 #include "windows.hpp"
+#include "bakaneko-version.h"
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -131,7 +132,9 @@ Server::State Server::ping_computer()
         beast::http::request<beast::http::string_body> req{beast::http::verb::head, "/", 11};
 
         req.set(beast::http::field::host, ip_address);
+        req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
         req.version(11);
+        req.keep_alive(true);
 
         beast::http::write(connection(), req);
 
@@ -281,8 +284,10 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
             beast::http::request<beast::http::string_body> req{beast::http::verb::get, path, 11};
 
             req.set(beast::http::field::host, ip_address);
+            req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
             req.set(beast::http::field::content_type, "application/x-protobuf");
             req.version(11);
+            req.keep_alive(true);
 
             beast::http::write(connection(), req);
 

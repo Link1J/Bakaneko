@@ -1,0 +1,11 @@
+[Unit]
+Description=Server for Bakaneko
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bakaneko-server
+User=root
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

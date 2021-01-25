@@ -10,8 +10,28 @@
 #include <ljh/windows/wmi.hpp>
 #endif
 
+#include "spdlog/spdlog.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#if defined(LJH_TARGET_Windows)
+#include "spdlog/sinks/win_eventlog_sink.h"
+#elif defined(LJH_TARGET_Linux)
+#include "spdlog/sinks/syslog_sink.h"
+#endif
+
 int main(int argc, const char* argv[])
 {
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+#if defined(LJH_TARGET_Windows)
+    sinks.push_back(std::make_shared<spdlog::sinks::win_eventlog_sink_st>("bakaneko-server"));
+#elif defined(LJH_TARGET_Linux)
+    sinks.push_back(std::make_shared<spdlog::sinks::syslog_logger_mt>("syslog", "bakaneko-server", LOG_PID));
+#endif
+    spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
+    spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
+
+    spdlog::info("Starting Bakaneko Server (Version {})", BAKANEKO_VERSION_STRING);
+
 #if defined(LJH_TARGET_Windows)
     winrt::init_apartment();
     ljh::windows::wmi::setup();
@@ -20,13 +40,19 @@ int main(int argc, const char* argv[])
     int const thread_count = std::thread::hardware_concurrency();
     asio::io_context io_service{thread_count};
 
-    std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{asio::ip::tcp::v4(), 8080})->run();
+    
+    auto const address = asio::ip::make_address("0.0.0.0");
+    auto const port    = (unsigned short)std::atoi("8080");
+
+    std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{address, port})->run();
 
     std::vector<std::thread> thread;
     thread.reserve(thread_count - 1);
     for(auto i = thread_count - 1; i > 0; --i)
         thread.emplace_back([&io_service]{ io_service.run(); });
     io_service.run();
+    
+    spdlog::info("Stoping Bakaneko Server");
 
     return 0;
 }

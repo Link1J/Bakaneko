@@ -2,7 +2,8 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 #include "rest.hpp"
-#include "info.hpp"
+
+#include <spdlog/spdlog.h>
 
 #include <ljh/function_pointer.hpp>
 
@@ -13,7 +14,23 @@ Rest::Server::Connection::Connection(asio::ip::tcp::socket socket_)
 #else
     : stream(std::move(socket_))
 #endif
-{}
+{
+    spdlog::get("networking")->info("Got connection from {}:{}", endpoint().address().to_string(), endpoint().port());
+}
+
+Rest::Server::Connection::~Connection()
+{
+    spdlog::get("networking")->info("{}:{} disconnected", endpoint().address().to_string(), endpoint().port());
+}
+
+asio::ip::tcp::endpoint Rest::Server::Connection::endpoint()
+{
+#if BOOST_VERSION < 017000
+    return socket.remote_endpoint();
+#else
+    return stream.socket().remote_endpoint();
+#endif
+}
 
 void Rest::Server::Connection::run()
 {
@@ -89,10 +106,10 @@ Rest::Server::Server(asio::io_context& io_service, asio::ip::tcp::endpoint endpo
     , acceptor{io_service}
     , socket{io_service}
 {
-    boost::system::error_code ec;
     acceptor.open(endpoint.protocol());
     acceptor.bind(endpoint);
     acceptor.listen(asio::socket_base::max_listen_connections);
+    spdlog::get("networking")->info("Listening on {}:{}", endpoint.address().to_string(), endpoint.port());
 }
 
 void Rest::Server::run()
@@ -115,7 +132,7 @@ void Rest::Server::on_accept(boost::system::error_code ec)
 }
 
 template<class MessageReply, class Body, class Allocator, class Send>
-void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
     auto message_res = function();
 
@@ -123,7 +140,7 @@ void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<B
     {
         if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
         {
-            if (content_type->value().find("application/x-protobuf") != std::string::npos)
+            if (content_type->value() == "application/x-protobuf")
             {
                 beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
                 res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
@@ -133,7 +150,7 @@ void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<B
                 res.prepare_payload();
                 return send(std::move(res));
             }
-            else if (content_type->value().find("text/plain") != std::string::npos)
+            else if (content_type->value() == "text/plain")
             {
                 beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
                 res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
@@ -141,6 +158,12 @@ void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<B
                 res.body() = message_res->Utf8DebugString();
                 res.prepare_payload();
                 return send(std::move(res));
+            }
+            else
+            {
+                std::string_view lpath(content_type->value().data(), content_type->value().size());
+                std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
+                spdlog::get("networking")->warn("Unknown Content-Type '{}' requested from {}:{} ({})", lpath, endpoint().address().to_string(), endpoint().port(), lclient);
             }
         }
 
@@ -188,6 +211,11 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
         //if (path == "/update")
         //    return;
     }
+
+    std::string_view lpath(path.data(), path.size());
+    std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
+
+    spdlog::get("networking")->warn("Unknown Path '{}' requested from {}:{} ({})", lpath, endpoint().address().to_string(), endpoint().port(), lclient);
 
     beast::http::response<beast::http::empty_body> res{beast::http::status::not_found, req.version()};
     res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);

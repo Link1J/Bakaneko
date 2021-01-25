@@ -47,16 +47,16 @@ ecm_add_app_icon(APP_ICONS
         ../../assets/256-me.link1j.bakaneko.png
 )
 
-add_executable(client ${SRCS} ${RESOURCES} ${APP_ICONS})
+add_executable(bakaneko-client ${SRCS} ${RESOURCES} ${APP_ICONS})
 
-set_target_properties(client PROPERTIES
+set_target_properties(bakaneko-client PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
     # WIN32_EXECUTABLE TRUE
     # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
-target_compile_options(client PUBLIC
+target_compile_options(bakaneko-client PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:
         -fexceptions
     >
@@ -67,14 +67,14 @@ target_compile_options(client PUBLIC
     -DQT_NO_KEYWORDS
 )
 
-target_include_directories(client PUBLIC
+target_include_directories(bakaneko-client PUBLIC
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-target_link_libraries(client PUBLIC
+target_link_libraries(bakaneko-client PUBLIC
     Qt5::Core
     Qt5::Gui
     Qt5::Qml
@@ -97,14 +97,14 @@ target_link_libraries(client PUBLIC
     ljh
 )
 if(WIN32)
-    target_link_libraries(client PRIVATE
+    target_link_libraries(bakaneko-client PRIVATE
         Iphlpapi
         ws2_32
         KF5::IconThemes
     )
 endif()
 if(APPLE)
-    target_link_libraries(client PRIVATE
+    target_link_libraries(bakaneko-client PRIVATE
         KF5::IconThemes
     )
 endif()
@@ -127,7 +127,7 @@ if (ANDROID)
     )
 endif()
 
-install(TARGETS client ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(TARGETS bakaneko-client ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 install(PROGRAMS ../../assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 install(FILES ../../assets/me.link1j.bakaneko.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
 install(FILES ../../assets/me.link1j.bakaneko.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)

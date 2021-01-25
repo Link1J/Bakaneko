@@ -7,6 +7,8 @@
 #include <functional>
 #include <type_traits>
 
+#include <ljh/expected.hpp>
+
 #include <boost/version.hpp>
 
 #include <boost/asio.hpp>
@@ -19,6 +21,7 @@
 #include <boost/beast/version.hpp>
 
 #include "bakaneko-version.h"
+#include "info.hpp"
 
 namespace asio  = boost::asio ;
 namespace beast = boost::beast;
@@ -46,9 +49,15 @@ namespace Rest
 
             template<class Body, class Allocator, class Send>
             void handler(beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
+            
+            template<class MessageReply, class Body, class Allocator, class Send>
+            void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
+
+            asio::ip::tcp::endpoint endpoint();
 
         public:
             explicit Connection(asio::ip::tcp::socket socket_);
+            ~Connection();
 
             void run();
             void do_read();

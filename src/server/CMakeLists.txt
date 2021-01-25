@@ -9,30 +9,36 @@ set(SRCS
     updates.cpp
 )
 
-add_executable(server ${SRCS})
+add_executable(bakaneko-server ${SRCS})
 
-set_target_properties(server PROPERTIES
+set_target_properties(bakaneko-server PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
     # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
-target_compile_options(server PUBLIC
+target_compile_options(bakaneko-server PUBLIC
     $<$<PLATFORM_ID:Windows>:
         -D_WIN32_WINNT=0x0601
+        /Od
     >
 )
 
-target_include_directories(server PUBLIC
+target_include_directories(bakaneko-server PUBLIC
     ${CMAKE_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/src/common
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
 )
 
-target_link_libraries(server PUBLIC
+target_link_libraries(bakaneko-server PUBLIC
     ljh
     commun
+    spdlog::spdlog
 )
 
-install(TARGETS server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+install(TARGETS bakaneko-server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
+
+if (LINUX)
+    file(INSTALL "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.service" DESTINATION "${KDE_INSTALL_FULL_SYSTEMDUNITDIR}/system")
+endif()

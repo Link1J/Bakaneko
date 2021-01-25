@@ -2,3 +2,5 @@
 # SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 add_subdirectory(ljh)
+
+add_subdirectory(spdlog)
