@@ -9,6 +9,7 @@ protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS
     ../protobuf/server.proto
     ../protobuf/updates.proto
     ../protobuf/drives.proto
+    ../protobuf/network.proto
 )
 
 set(SRCS
@@ -20,7 +21,7 @@ set_target_properties(commun PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
-    # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
+    MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
 target_compile_options(commun PUBLIC
     -D_WIN32_WINNT=0x0601

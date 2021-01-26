@@ -51,8 +51,7 @@ set_target_properties(bakaneko-client PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
-    # WIN32_EXECUTABLE TRUE
-    # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
+    WIN32_EXECUTABLE TRUE
 )
 target_compile_options(bakaneko-client PUBLIC
     $<$<PLATFORM_ID:Linux,Android>:

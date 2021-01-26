@@ -7,6 +7,7 @@
 #include "server.pb.h"
 #include "updates.pb.h"
 #include "drives.pb.h"
+#include "network.pb.h"
 
 enum class Errors
 {
@@ -15,9 +16,10 @@ enum class Errors
 
 namespace Info
 {
-    ljh::expected<Bakaneko::Drives , Errors> Drives ();
-    ljh::expected<Bakaneko::Updates, Errors> Updates();
-    ljh::expected<Bakaneko::System , Errors> System ();
+    ljh::expected<Bakaneko::Drives  , Errors> Drives  ();
+    ljh::expected<Bakaneko::Updates , Errors> Updates ();
+    ljh::expected<Bakaneko::System  , Errors> System  ();
+    ljh::expected<Bakaneko::Adapters, Errors> Adapters();
 };
 
 namespace Control

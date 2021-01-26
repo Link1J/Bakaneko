@@ -27,14 +27,14 @@
 #include <sys/utsname.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/reboot.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
 #include <linux/if_packet.h>
+#include <linux/reboot.h>
 #include <unistd.h>
 #include <ifaddrs.h>
-#include <linux/reboot.h>
-#include <sys/reboot.h>
 #endif
 
 #undef interface
@@ -59,7 +59,7 @@ ljh::expected<Bakaneko::System, Errors> Info::System()
     int chassis_type = enclosure.get<ljh::windows::com_safe_array<int32_t>>(L"ChassisTypes")[0];
     
     auto ip_addresses = Win32Run(GetAdaptersAddresses, AF_UNSPEC, 0, nullptr);
-    for (auto adapter = &ip_addresses[0]; adapter != nullptr; adapter = adapter->Next)
+    for (auto adapter = ip_addresses.get(); adapter != nullptr; adapter = adapter->Next)
     {
         for (auto address = adapter->FirstUnicastAddress; address != nullptr; address = address->Next)
         {

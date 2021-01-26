@@ -225,11 +225,13 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
     if (req.method() == beast::http::verb::get)
     {
         if (path == "/drives")
-            return Run(&Info::Drives , std::move(req), std::move(send));
+            return Run(&Info::Drives  , std::move(req), std::move(send));
         if (path == "/system")
-            return Run(&Info::System , std::move(req), std::move(send));
+            return Run(&Info::System  , std::move(req), std::move(send));
         if (path == "/updates")
-            return Run(&Info::Updates, std::move(req), std::move(send));
+            return Run(&Info::Updates , std::move(req), std::move(send));
+        if (path == "/network/adapters")
+            return Run(&Info::Adapters, std::move(req), std::move(send));
     }
     if (req.method() == beast::http::verb::post)
     {

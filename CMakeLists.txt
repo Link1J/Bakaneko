@@ -18,6 +18,8 @@ ecm_setup_version(0.1.0
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+
 add_subdirectory(externals)
 add_subdirectory(src/commun)
 

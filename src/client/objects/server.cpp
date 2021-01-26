@@ -180,11 +180,10 @@ void Server::wake_up()
     auto packet = ::socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 
 #if defined(_WIN32)
-
     auto ip_address = Win32Run(GetAdaptersAddresses, AF_UNSPEC, 0, nullptr);
     sockaddr name = {0};
     int name_length = 0;
-    for (auto adapter = &ip_address[0]; adapter != nullptr; adapter = adapter->Next)
+    for (auto adapter = ip_address.get(); adapter != nullptr; adapter = adapter->Next)
     {
         for (auto address = adapter->FirstUnicastAddress; address != nullptr; address = address->Next)
         {

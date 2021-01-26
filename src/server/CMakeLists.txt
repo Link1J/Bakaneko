@@ -8,6 +8,7 @@ set(SRCS
     system.cpp
     updates.cpp
     windows_service.cpp
+    network.cpp
 )
 
 add_executable(bakaneko-server ${SRCS})
@@ -16,7 +17,6 @@ set_target_properties(bakaneko-server PROPERTIES
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     CXX_EXTENSIONS OFF
-    # MSVC_RUNTIME_LIBRARY MultiThreadedDLL
 )
 target_compile_options(bakaneko-server PUBLIC
     $<$<PLATFORM_ID:Windows>:
@@ -36,6 +36,11 @@ target_link_libraries(bakaneko-server PUBLIC
     commun
     spdlog::spdlog
 )
+if (WIN32)
+    target_link_libraries(bakaneko-server PUBLIC
+        IPHLPAPI.lib
+    )
+endif()
 
 install(TARGETS bakaneko-server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 

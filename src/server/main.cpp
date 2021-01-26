@@ -10,6 +10,8 @@
 #include <ljh/windows/wmi.hpp>
 #endif
 
+#include "windows.hpp"
+
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #if defined(LJH_TARGET_Windows)
@@ -140,6 +142,8 @@ int main(int argc, const char* argv[])
 #include <string>
 #include <array>
 #include <filesystem>
+#include <fstream>
+
 #include <ljh/memory_mapped_file.hpp>
 
 #if defined(LJH_TARGET_Windows)
@@ -167,6 +171,29 @@ std::tuple<int, std::string> exec(const std::string& cmd)
 std::string read_file(std::filesystem::path file_path)
 {
     ljh::memory_mapped::file file(std::forward<decltype(file_path)>(file_path), ljh::memory_mapped::permissions::read);
-    ljh::memory_mapped::view view{file, ljh::memory_mapped::permissions::read, 0, file.size()};
-    return std::string{view.as<const char>(), file.size()};
+    try
+    {
+        ljh::memory_mapped::view view{file, ljh::memory_mapped::permissions::read, 0, file.size()};
+        return std::string{view.as<const char>(), file.size()};
+    }
+    catch (const ljh::memory_mapped::invalid_file& e)
+    {
+        std::ifstream in(file_path, std::ios::in | std::ios::binary);
+        if (in)
+        {
+            std::string contents;
+            in.seekg(0, std::ios::end);
+            contents.resize(in.tellg());
+            in.seekg(0, std::ios::beg);
+            in.read(std::data(contents), contents.size());
+            in.close();
+            
+            if (auto null_term = contents.find('\0'); null_term == 0)
+                return "";
+            else if (null_term != std::string::npos)
+                return contents.substr(null_term - 1);
+            return contents;
+        }
+        throw e;
+    }
 }
