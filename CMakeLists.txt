@@ -13,7 +13,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 include(KDEInstallDirs)
 include(ECMSetupVersion)
 
-ecm_setup_version(0.1.0
+ecm_setup_version(0.1.1
     VARIABLE_PREFIX BAKANEKO
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
