@@ -7,3 +7,4 @@ UpdateList 1.0 Updates.qml
 ColumnBlock 1.0 ColumnBlock.qml
 ServerInfo 1.0 ServerInfo.qml
 Drives 1.0 Drives.qml
+Adapters 1.0 Adapters.qml

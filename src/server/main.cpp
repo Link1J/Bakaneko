@@ -191,7 +191,7 @@ std::string read_file(std::filesystem::path file_path)
             if (auto null_term = contents.find('\0'); null_term == 0)
                 return "";
             else if (null_term != std::string::npos)
-                return contents.substr(null_term - 1);
+                return contents.substr(0, null_term - 1);
             return contents;
         }
         throw e;

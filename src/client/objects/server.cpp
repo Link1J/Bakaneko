@@ -61,8 +61,9 @@ QString Server::get_os    () { return QString::fromStdString(system_info.operati
 QString Server::get_arch  () { return QString::fromStdString(system_info.architecture    ()); }
 QString Server::get_kernel() { return QString::fromStdString(system_info.kernel          ()); }
 
-UpdateModel* Server::get_updates() { return &updates; }
-DrivesModel* Server::get_drives () { return &drives ; }
+UpdateModel * Server::get_updates () { return &updates ; }
+DrivesModel * Server::get_drives  () { return &drives  ; }
+AdapterModel* Server::get_adapters() { return &adapters; }
 
 void Server::update_info()
 {
@@ -77,8 +78,9 @@ void Server::update_info()
         if (state == State::Online)
         {
             steps_done++;
-            network_get("/drives" , &Server::got_drives );
-            network_get("/updates", &Server::got_updates);
+            network_get("/drives"          , &Server::got_drives  );
+            network_get("/updates"         , &Server::got_updates );
+            network_get("/network/adapters", &Server::got_adapters);
         }
         else
         {
@@ -107,9 +109,10 @@ void Server::update_info()
         return;
     }
 
-    network_get("/system" , &Server::got_info   );
-    network_get("/drives" , &Server::got_drives );
-    network_get("/updates", &Server::got_updates);
+    network_get("/system"          , &Server::got_info    );
+    network_get("/drives"          , &Server::got_drives  );
+    network_get("/updates"         , &Server::got_updates );
+    network_get("/network/adapters", &Server::got_adapters);
 }
 
 asio::ip::tcp::socket& Server::connection()
@@ -162,9 +165,10 @@ Server::Server(std::string hostname, std::string mac_address, std::string ip_add
     , updates    {this       }
 {
     state = State::Unknown;
-    connect(this, &Server::got_info   , this, &Server::handle_info   );
-    connect(this, &Server::got_drives , this, &Server::handle_drives );
-    connect(this, &Server::got_updates, this, &Server::handle_updates);
+    connect(this, &Server::got_info    , this, &Server::handle_info    );
+    connect(this, &Server::got_drives  , this, &Server::handle_drives  );
+    connect(this, &Server::got_updates , this, &Server::handle_updates );
+    connect(this, &Server::got_adapters, this, &Server::handle_adapters);
 }
 
 void Server::wake_up()
@@ -464,6 +468,71 @@ void Server::handle_drives(Bakaneko::Drives info)
                 DrivesModel::ROLE_interface,
             });
             update_partitions(drives.rowCount() - 1, dinfo);
+        }
+    }
+
+    steps_done++;
+}
+
+void Server::handle_adapters(Bakaneko::Adapters info)
+{
+    for (int a = 0; a < adapters.rowCount(); a++)
+    {
+        bool found = false;
+        for (auto& dinfo : info.adapter())
+            if (adapters.data(a).name() == dinfo.name())
+                found = true;
+        if (!found)
+        {
+            adapters.removeRow(a);
+            a--;
+        }
+    }
+
+    for (auto& din : info.adapter())
+    {
+        bool done = false;
+        for (int a = 0; a < adapters.rowCount(); a++)
+        {
+            auto& cur = adapters.data(a);
+            if (cur.name() == din.name())
+            {
+                auto& pre = adapters.prev(a);
+                pre.set_bytes_rx  (cur.bytes_rx  ());
+                pre.set_bytes_tx  (cur.bytes_tx  ());
+                pre.set_time      (cur.time      ());
+                cur.set_bytes_rx  (din.bytes_rx  ());
+                cur.set_bytes_tx  (din.bytes_tx  ());
+                cur.set_time      (din.time      ());
+                cur.set_state     (din.state     ());
+                cur.set_link_speed(din.link_speed());
+                adapters.flag(a,{
+                    AdapterModel::ROLE_link_speed,
+                    AdapterModel::ROLE_state,
+                    AdapterModel::ROLE_rx_rate,
+                    AdapterModel::ROLE_tx_rate,
+                });
+                done = true;
+            }
+        }
+        if (!done)
+        {
+            adapters.insertRow(adapters.rowCount());
+            adapters.data(adapters.rowCount() - 1) = din;
+            auto& pre = adapters.prev(adapters.rowCount() - 1);
+            pre.set_bytes_rx(din.bytes_rx());
+            pre.set_bytes_tx(din.bytes_tx());
+            pre.set_time    (din.time    ());
+            drives.flag(drives.rowCount() - 1, {
+                AdapterModel::ROLE_name,
+                AdapterModel::ROLE_link_speed,
+                AdapterModel::ROLE_state,
+                AdapterModel::ROLE_mtu,
+                AdapterModel::ROLE_mac_address,
+                AdapterModel::ROLE_ip_address,
+                AdapterModel::ROLE_rx_rate,
+                AdapterModel::ROLE_tx_rate,
+            });
         }
     }
 

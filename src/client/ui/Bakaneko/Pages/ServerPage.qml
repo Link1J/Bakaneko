@@ -84,6 +84,11 @@ Kirigami.Page {
 				width: page.width
 
 				Components.ColumnBlock {
+					title: "Adapters"
+					Components.Adapters {}
+				}
+
+				Components.ColumnBlock {
 					title: "Drives"
 					Components.Drives {}
 				}

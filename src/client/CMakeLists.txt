@@ -33,6 +33,7 @@ set(SRCS
     models/termlist.cpp
     models/updatemodel.cpp
     models/drivesmodel.cpp
+    models/adaptermodel.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc

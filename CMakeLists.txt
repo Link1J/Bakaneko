@@ -6,6 +6,8 @@ project(bakaneko)
 
 include(FeatureSummary)
 
+set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+
 find_package(ECM 5.68 REQUIRED NO_MODULE)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${ECM_MODULE_PATH})
 #set(CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBUGINFO Release Debug)
@@ -17,8 +19,6 @@ ecm_setup_version(0.1.1
     VARIABLE_PREFIX BAKANEKO
     VERSION_HEADER ${CMAKE_CURRENT_BINARY_DIR}/bakaneko-version.h
 )
-
-set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 
 add_subdirectory(externals)
 add_subdirectory(src/commun)

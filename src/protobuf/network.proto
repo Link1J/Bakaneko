@@ -20,7 +20,7 @@ message Adapter {
 	uint64 mtu          = 4;
 	string mac_address  = 5;
 	string ip_address   = 8;
-	uint64 bytes_rx     = 6;  // Total Bytes receved
+	uint64 bytes_rx     = 6;  // Total Bytes received
 	uint64 bytes_tx     = 7;  // Total Bytes sent
 	uint64 time         = 64; // Time the data bytes_rx and bytes_tx were gotten
 };
