@@ -5,6 +5,8 @@
 
 #include <boost/asio.hpp>
 
+#include "rest.hpp"
+
 #include <windows.h>
 #include <tchar.h>
 #include <strsafe.h>
@@ -89,14 +91,19 @@ VOID SvcInstall()
     }
 
     schService = CreateService(schSCManager, SVCNAME, SVCNAME, SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS, SERVICE_DEMAND_START, SERVICE_ERROR_NORMAL, szPath, NULL, NULL, NULL, NULL, NULL);
- 
+
     if (schService == NULL)
     {
         printf("CreateService failed (%d)\n", GetLastError());
         CloseServiceHandle(schSCManager);
         return;
     }
-    else printf("Service installed successfully\n"); 
+    else
+    {
+        std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{asio::ip::make_address("0.0.0.0"), 29921});
+
+        printf("Service installed successfully\n");
+    }
 
     CloseServiceHandle(schService); 
     CloseServiceHandle(schSCManager);
