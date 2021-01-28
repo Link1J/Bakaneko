@@ -37,7 +37,7 @@ namespace Rest
     public:
         class Connection : public std::enable_shared_from_this<Connection>
         {
-#if BOOST_VERSION < 017000
+#if BOOST_VERSION < 107000
             asio::ip::tcp::socket socket;
             asio::strand<asio::io_context::executor_type> strand;
 #else

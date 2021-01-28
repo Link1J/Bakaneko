@@ -47,7 +47,7 @@ int main(int argc, const char* argv[])
     std::vector<spdlog::sink_ptr> sinks;
     sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
 #if defined(LJH_TARGET_Windows)
-    sinks.push_back(std::make_shared<spdlog::sinks::win_eventlog_sink_st>("bakaneko-server"));
+    sinks.push_back(std::make_shared<spdlog::sinks::win_eventlog_sink_st>("Bakaneko Server"));
 #elif defined(LJH_TARGET_Linux)
     //sinks.push_back(std::make_shared<spdlog::sinks::syslog_sink_mt>("bakaneko-server", LOG_PID, LOG_USER, false));
 #endif
@@ -67,6 +67,7 @@ int main(int argc, const char* argv[])
             printf("   -h --help                 Print this help\n");
             printf("      --address address      Address to listen on\n");
             printf("      --port    port         Port to listen on\n");
+            printf("      --install              Installs the Windows Service (needs Admin)\n");
             printf("\n");
             exit(0);
         }

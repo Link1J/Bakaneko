@@ -15,7 +15,7 @@
 extern "C" int real_main(int argc, const char* argv[]);
 extern boost::asio::io_context io_service;
 
-#define SVCNAME TEXT("Bakaneko Server")
+#define SVCNAME TEXT("bakaneko-server")
 
 SERVICE_STATUS          gSvcStatus;
 SERVICE_STATUS_HANDLE   gSvcStatusHandle;
@@ -45,7 +45,7 @@ bool IsUserInteractive()
 
 int __cdecl _tmain(int argc, TCHAR* argv[]) 
 {
-    if(lstrcmpi(argv[1], TEXT("install")) == 0)
+    if(lstrcmpi(argv[1], TEXT("--install")) == 0)
     {
         SvcInstall();
         return 0;
