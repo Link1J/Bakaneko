@@ -14,7 +14,7 @@ Kirigami.OverlaySheet {
 	parent: applicationWindow().overlay
 
 	property int serverIndex: -1;
-	property var server: -1;
+	property var server;
 
 	header: Kirigami.Heading {
 		text: i18n("Server Settings")
@@ -31,7 +31,7 @@ Kirigami.OverlaySheet {
 				id: addButton
 				text: i18nc("@action:button", "Update")
 				onClicked: {
-					Managers.Server.AddServer(serverIndex, ip.text);
+					Managers.Server.change_server_options(serverIndex, ip.text);
 					close()
 				}
 			}

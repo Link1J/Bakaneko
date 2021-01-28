@@ -2,6 +2,7 @@
 # SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 cmake_minimum_required(VERSION 3.16)
+cmake_policy(SET CMP0091 NEW)
 project(bakaneko)
 
 include(FeatureSummary)
@@ -23,11 +24,15 @@ ecm_setup_version(0.1.1
 add_subdirectory(externals)
 add_subdirectory(src/commun)
 
+set_target_properties(ljh spdlog commun PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+
 if (NOT BAKANEKO_DONT_BUILD_CLIENT)
     add_subdirectory(src/client)
+    set_target_properties(bakaneko-client PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
 if (NOT BAKANEKO_DONT_BUILD_SERVER)
     add_subdirectory(src/server)
+    set_target_properties(bakaneko-server PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
 
 feature_summary(WHAT ALL INCLUDE_QUIET_PACKAGES FATAL_ON_MISSING_REQUIRED_PACKAGES)
