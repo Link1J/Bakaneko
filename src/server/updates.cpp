@@ -7,6 +7,11 @@
 
 #undef interface
 
+#if defined(LJH_TARGET_Windows)
+#include <ljh/windows/com_bstr.hpp>
+#include <wuapi.h>
+#endif
+
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
 ljh::expected<Bakaneko::Updates, Errors> Info::Updates()
@@ -14,7 +19,27 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates()
     decltype(Info::Updates())::value_type updates;
 
 #if defined(LJH_TARGET_Windows)
-    return ljh::unexpected{Errors::NotImplemented};
+    using namespace ljh::windows::com_bstr_literals;
+    winrt::com_ptr updates_session = winrt::create_instance<IUpdateSession>(CLSID_UpdateSession);
+    winrt::com_ptr<IUpdateSearcher> searcher;
+    winrt::check_hresult(updates_session->CreateUpdateSearcher(searcher.put()));
+    winrt::com_ptr<ISearchResult> results;
+    winrt::check_hresult(searcher->Search(L"( IsInstalled = 0 and IsHidden = 0 )"_bstr, results.put()));
+    winrt::com_ptr<IUpdateCollection> update_list;
+    winrt::check_hresult(results->get_Updates(update_list.put()));
+    LONG update_size;
+    winrt::check_hresult(update_list->get_Count(&update_size));
+    for (LONG i = 0; i < update_size; i++)
+    {
+        winrt::com_ptr<IUpdate> update_item;
+        winrt::check_hresult(update_list->get_Item(i, update_item.put()));
+
+        auto update = updates.add_update();
+
+        ljh::windows::com_bstr update_name;
+        winrt::check_hresult(update_item->get_Title(update_name.put()));
+        update->set_name(ljh::convert_string(update_name));
+    }
 #elif defined(LJH_TARGET_Linux)
     auto run = [&updates](const std::string& command, const std::string& flags, bool(*decode)(Bakaneko::Update&, std::string)) -> bool {
         auto [exit_code, std_out] = exec(command + ' ' + flags);

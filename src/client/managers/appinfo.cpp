@@ -16,7 +16,7 @@ AppInfo& AppInfo::Instance()
     return instance;
 }
 
-constexpr auto app_id         = "bakaneko";
+constexpr auto app_id         = "Bakaneko";
 constexpr auto app_name       = "Bakaneko";
 constexpr auto app_desciption = "A server management tool that has nothing to do with cats.";
 constexpr auto app_copyright  = "© 2021 Jared Irwin";
