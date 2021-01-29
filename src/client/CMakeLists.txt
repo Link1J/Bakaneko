@@ -46,6 +46,12 @@ ecm_add_app_icon(APP_ICONS
         ../../assets/256-me.link1j.bakaneko.png
 )
 
+if(ANDORID)
+    qt5_add_resources(RESOURCES
+        notifications.qrc
+    )
+endif()
+
 add_executable(bakaneko-client ${SRCS} ${RESOURCES} ${APP_ICONS})
 
 set_target_properties(bakaneko-client PROPERTIES
@@ -126,7 +132,12 @@ if (ANDROID)
 endif()
 
 install(TARGETS bakaneko-client ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-install(PROGRAMS ../../assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})
-install(FILES ../../assets/me.link1j.bakaneko.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
-install(FILES ../../assets/me.link1j.bakaneko.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
-install(FILES bakaneko.notifyrc DESTINATION ${KNOTIFYRC_INSTALL_DIR})
+
+if("${CMAKE_SYSTEM_NAME}" MATCHES "Linux")
+    install(PROGRAMS ../../assets/me.link1j.bakaneko.desktop DESTINATION ${KDE_INSTALL_APPDIR})
+    install(FILES ../../assets/me.link1j.bakaneko.appdata.xml DESTINATION ${KDE_INSTALL_METAINFODIR})
+endif()
+if(NOT ANDROID)
+    install(FILES ../../assets/me.link1j.bakaneko.svg DESTINATION ${KDE_INSTALL_FULL_ICONDIR}/hicolor/scalable/apps)
+    install(FILES bakaneko.notifyrc DESTINATION ${KNOTIFYRC_INSTALL_DIR})
+endif()
