@@ -1,118 +1,73 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
-import QtQuick 2.4
+import QtQuick 2.14
+import Qt.labs.qmlmodels 1.0
 import QtQuick.Layouts 1.0
 import org.kde.kirigami 2.5 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Models 1.0 as Models
+import Bakaneko.Components 1.0 as Components
 
-GridLayout {
-	columnSpacing: Kirigami.Units.largeSpacing
-	rowSpacing: 0
+Kirigami.Page {
+	Kirigami.Theme.colorSet: Kirigami.Theme.View
 
-	Controls.Label {
-		Layout.fillWidth: true
-		Layout.column: 0
-		text: "Name"
-	}
-	Kirigami.Separator {
-		Layout.row: 0
-		Layout.column: 1
-		Layout.rowSpan: currentServer.adapters.count + 2
-		Layout.fillHeight: true
-	}
-	Controls.Label {
-		Layout.fillWidth: true
-		Layout.column: 2
-		text: "Link Speed"
-	}
-	Kirigami.Separator {
-		Layout.row: 0
-		Layout.column: 3
-		Layout.rowSpan: currentServer.adapters.count + 2
-		Layout.fillHeight: true
-	}
-	Controls.Label {
-		Layout.fillWidth: true
-		Layout.column: 4
-		text: "State"
-	}
-	Kirigami.Separator {
-		Layout.row: 0
-		Layout.column: 5
-		Layout.rowSpan: currentServer.adapters.count + 2
-		Layout.fillHeight: true
-	}
-	Controls.Label {
-		Layout.fillWidth: true
-		Layout.column: 6
-		text: "Send"
-	}
-	Kirigami.Separator {
-		Layout.row: 0
-		Layout.column: 7
-		Layout.rowSpan: currentServer.adapters.count + 2
-		Layout.fillHeight: true
-	}
-	Controls.Label {
-		Layout.fillWidth: true
-		Layout.column: 8
-		text: "Received"
-	}
-	Kirigami.Separator {
-		Layout.row: 1
-		Layout.column: 0
-		Layout.columnSpan: 9
-		Layout.fillWidth: true
-	}
+	id: addServerDialog
+	title: "Network Adapters"
+	padding: 0
 
-	Repeater {
-		model: currentServer.adapters
-		Controls.Label {
-			Layout.fillWidth: true
-			Layout.column: 0
-			Layout.row: index + 2
-			text: name
+	Components.Table {
+		columnWidthProvider: function (column) {
+			if (column >= 2 && column <= 4) {
+				return metrics.boundingRect("10000000 Tbps").width + Kirigami.Units.largeSpacing * 2;
+			}
+			return defaultColumnWidthProvider(column);
 		}
-	}
-	Repeater {
-		model: currentServer.adapters
-		Controls.Label {
-			Layout.fillWidth: true
-			Layout.column: 2
-			Layout.row: index + 2
-			horizontalAlignment: (link_speed != "Unknown") ? Text.AlignRight : Text.AlignLeft
-			text: link_speed
+
+		FontMetrics {
+			id: metrics
+			font: Kirigami.Theme.defaultFont
 		}
-	}
-	Repeater {
+
 		model: currentServer.adapters
-		Controls.Label {
-			Layout.fillWidth: true
-			Layout.column: 4
-			Layout.row: index + 2
-			text: connection_state
-		}
-	}
-	Repeater {
-		model: currentServer.adapters
-		Controls.Label {
-			Layout.fillWidth: true
-			Layout.column: 6
-			Layout.row: index + 2
-			horizontalAlignment: Text.AlignRight
-			text: tx_rate
-		}
-	}
-	Repeater {
-		model: currentServer.adapters
-		Controls.Label {
-			Layout.fillWidth: true
-			Layout.column: 8
-			Layout.row: index + 2
-			horizontalAlignment: Text.AlignRight
-			text: rx_rate
+		anchors.fill: parent
+
+		delegate: DelegateChooser {
+			DelegateChoice {
+				column: 0
+				delegate: Components.Table.Item {
+					text: model.name
+				}
+			}
+			DelegateChoice {
+				column: 1
+				delegate: Components.Table.Item {
+					text: model.connection_state
+				}
+			}
+			DelegateChoice {
+				column: 2
+				delegate: Components.Table.Item {
+					horizontalAlignment: (model.link_speed != "Unknown")
+						? Text.AlignRight
+						: Text.AlignLeft
+					text: model.link_speed
+				}
+			}
+			DelegateChoice {
+				column: 3
+				delegate: Components.Table.Item {
+					horizontalAlignment: Text.AlignRight
+					text: model.tx_rate
+				}
+			}
+			DelegateChoice {
+				column: 4
+				delegate: Components.Table.Item {
+					horizontalAlignment: Text.AlignRight
+					text: model.rx_rate
+				}
+			}
 		}
 	}
 }

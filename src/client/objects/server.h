@@ -33,6 +33,8 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 
+#include <boost/thread/latch.hpp>
+
 namespace asio  = boost::asio ;
 namespace beast = boost::beast;
 
@@ -55,32 +57,28 @@ public:
     };
     Q_ENUM(State);
 
-    Q_PROPERTY(QString       hostname READ get_hostname CONSTANT             );
-    Q_PROPERTY(QString       ip       READ get_ip       CONSTANT             );
-    Q_PROPERTY(QString       mac      READ get_mac      CONSTANT             );
-    Q_PROPERTY(State         state    READ get_state    NOTIFY changed_state );
-    Q_PROPERTY(QString       icon     READ get_icon     NOTIFY changed_icon  );
-    Q_PROPERTY(QString       os       READ get_os       NOTIFY changed_os    );
-    Q_PROPERTY(QString       kernel   READ get_kernel   NOTIFY changed_kernel);
-    Q_PROPERTY(QString       arch     READ get_arch     NOTIFY changed_arch  );
-    Q_PROPERTY(UpdateModel * updates  READ get_updates  CONSTANT             );
-    Q_PROPERTY(DrivesModel * drives   READ get_drives   CONSTANT             );
-    Q_PROPERTY(AdapterModel* adapters READ get_adapters CONSTANT             );
+    Q_PROPERTY(QString       hostname READ get_hostname NOTIFY changed_hostname);
+    Q_PROPERTY(QString       ip       READ get_ip       CONSTANT               );
+    Q_PROPERTY(QString       mac      READ get_mac      CONSTANT               );
+    Q_PROPERTY(State         state    READ get_state    NOTIFY changed_state   );
+    Q_PROPERTY(QString       icon     READ get_icon     NOTIFY changed_icon    );
+    Q_PROPERTY(QString       os       READ get_os       NOTIFY changed_os      );
+    Q_PROPERTY(QString       kernel   READ get_kernel   NOTIFY changed_kernel  );
+    Q_PROPERTY(QString       arch     READ get_arch     NOTIFY changed_arch    );
+    Q_PROPERTY(UpdateModel * updates  READ get_updates  CONSTANT               );
+    Q_PROPERTY(DrivesModel * drives   READ get_drives   CONSTANT               );
+    Q_PROPERTY(AdapterModel* adapters READ get_adapters CONSTANT               );
 
 protected:
-    std::tuple<int, std::string, std::string> run_command(std::string command);
-    
     template<typename T>
     void network_get(std::string path, void(Server::*signal)(T));
     void network_post(std::string path);
 
 public:
-    ssh_connection get_ssh_connection();
+    asio::ip::tcp::socket connection();
 
-    asio::ip::tcp::socket& connection();
-
-    static constexpr auto max_steps = 4;
-    std::atomic<int> steps_done = max_steps;
+    static constexpr std::size_t max_steps = 4;
+    boost::latch steps_done;
 
 public Q_SLOTS:
     State        get_state   ();
@@ -140,6 +138,7 @@ protected:
 
     State state;
 
+    std::string defualt_hostname;
     std::string hostname;
     std::string ip_address;
     std::string mac_address;

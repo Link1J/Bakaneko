@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include <QAbstractListModel>
+#include <QAbstractTableModel>
 
 #include "updates.pb.h"
 
 class Server;
 
-class UpdateModel : public QAbstractListModel
+class UpdateModel : public QAbstractTableModel
 {
     Q_OBJECT
 
@@ -32,8 +32,10 @@ public Q_SLOT:
 
     [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
     bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;
     bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;

@@ -10,7 +10,7 @@
 #include <objects/server.h>
 
 UpdateModel::UpdateModel(QObject* parent)
-    : QAbstractListModel(parent)
+    : QAbstractTableModel(parent)
 {
 }
 
@@ -47,6 +47,17 @@ QVariant UpdateModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
+        
+    if (role == Qt::DisplayRole)
+    {
+        switch (index.column())
+        {
+        case 0: role = NameRole      ; break;
+        case 1: role = OldVersionRole; break;
+        case 2: role = NewVersionRole; break;
+        }
+        return data(index, role);
+    }
 
     return QVariant::fromValue(QString::fromStdString(data(index.row(), role)));
 }
@@ -54,6 +65,11 @@ QVariant UpdateModel::data(const QModelIndex& index, int role) const
 int UpdateModel::rowCount(const QModelIndex& parent) const
 {
     return (int)updates.size();
+}
+
+int UpdateModel::columnCount(const QModelIndex& parent) const
+{
+    return 3;
 }
 
 QHash<int, QByteArray> UpdateModel::roleNames() const
@@ -82,4 +98,18 @@ bool UpdateModel::removeRows(int row, int count, const QModelIndex& parent)
     Q_EMIT endRemoveRows();
     Q_EMIT changed_count();
     return true;
+}
+
+QVariant UpdateModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (orientation != Qt::Horizontal)
+        return section + 1;
+
+    switch (section)
+    {
+    case 0: return "Name";
+    case 1: return "Installed Version";
+    case 2: return "New Version";
+    }
+    return QVariant{};
 }

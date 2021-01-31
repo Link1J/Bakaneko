@@ -15,12 +15,14 @@ public:
     static AppInfo& Instance();
 
 private:
-    Q_PROPERTY(KAboutData about READ get_about)
+    Q_PROPERTY(KAboutData about READ get_about);
+    Q_PROPERTY(QString icon_theme READ get_icon_theme CONSTANT);
 
 public:
 
 public Q_SLOTS:
-    Q_INVOKABLE KAboutData get_about();
+    KAboutData get_about();
+    QString get_icon_theme();
 
 Q_SIGNALS:
 

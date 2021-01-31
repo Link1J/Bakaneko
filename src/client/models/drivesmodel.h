@@ -4,11 +4,12 @@
 #pragma once
 
 #include <QAbstractListModel>
+#include <QAbstractTableModel>
 
 #undef interface
 #include "drives.pb.h"
 
-class PartitionModel : public QAbstractListModel
+class PartitionModel : public QAbstractTableModel
 {
     Q_OBJECT
 
@@ -34,6 +35,8 @@ public Q_SLOT:
 
     [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+    [[nodiscard]] int columnCount(const QModelIndex& parent = QModelIndex()) const override;
+    [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
     [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
 

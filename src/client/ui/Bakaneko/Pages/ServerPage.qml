@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
-import QtQuick 2.4
+import QtQuick 2.12
 import QtQuick.Layouts 1.0
 import org.kde.kirigami 2.5 as Kirigami
 import QtQuick.Controls 2.9 as Controls
@@ -10,6 +10,7 @@ import Bakaneko.Pages 1.0 as Pages
 import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
 import Bakaneko.Dialogs 1.0 as Dialogs
+import Bakaneko.Managers 1.0 as Managers
 
 Kirigami.Page {
 	id: page
@@ -52,12 +53,18 @@ Kirigami.Page {
 	]
 
 	ColumnLayout {
+		id: info_colunm
 		anchors.fill: parent
+		spacing: 0
 		
 		Components.ServerInfo {}
 
 		Kirigami.Separator {
-			Layout.fillWidth: true
+			Layout.fillWidth   : true
+			Layout.bottomMargin: 0
+			Layout.leftMargin  : 0
+			Layout.rightMargin : 0
+			Layout.topMargin   : 5
 		}
 
 		RowLayout {
@@ -67,36 +74,73 @@ Kirigami.Page {
 			Layout.maximumWidth : 0
 			Layout.maximumHeight: 0
 		}
-	
-		Controls.ScrollView {
-			Controls.ScrollBar.horizontal.policy: Controls.ScrollBar.AlwaysOff
-			Controls.ScrollBar.vertical.policy  : Controls.ScrollBar.AsNeeded
-			
+
+		ListView {
 			Layout.fillWidth : true
 			Layout.fillHeight: true
-	
-			clip: true
-	
-			ColumnLayout {
-				Layout.fillWidth : true
-				Layout.fillHeight: true
 
-				width: page.width
+			clip        : true
+			bottomMargin: 0
+			leftMargin  : 0
+			rightMargin : 0
+			topMargin   : 0
 
-				Components.ColumnBlock {
-					title: "Adapters"
-					Components.Adapters {}
+			model: [
+				{
+					name: "Network",
+					icon: "network-wired",
+					page: adapters_page
+				},
+				{
+					name: "Drives",
+					icon: "drive-harddisk",
+					page: drives_page
+				},
+				{
+					name: "Updates",
+					icon: info_colunm.is_breeze_theme() ? "update-none" : "system-software-update",
+					page: updates_page
 				}
+			]
+			delegate: Kirigami.BasicListItem {
+				highlighted: (pageStack.get(2) ? pageStack.get(2).objectName === modelData.name : false)
+				label: modelData.name
+				icon: {
+					name: modelData.icon
+				}
+				TapHandler {
+					onTapped: {
+						if (pageStack.depth === 3) {
+							pageStack.currentIndex = 2;
+							pageStack.replace(modelData.page);
+						}
+						else {
+							pageStack.push(modelData.page);
+						}
+					}
+				}
+			}
+		}
 
-				Components.ColumnBlock {
-					title: "Drives"
-					Components.Drives {}
-				}
-				
-				Components.ColumnBlock {
-					title: "Updates (" + currentServer.updates.count + ")"
-					Components.UpdateList {}
-				}
+		function is_breeze_theme() {
+			return Managers.AppInfo.icon_theme === "breeze" || Managers.AppInfo.icon_theme === "breeze-dark" || Managers.AppInfo.icon_theme === "kf5_rcc_theme";
+		}
+		Component {
+			id: adapters_page
+			Components.Adapters {
+				objectName: "Network"
+			}
+		}
+		Component {
+			id: drives_page
+			Components.Drives {
+				objectName: "Drives"
+			}
+		}
+		Component {
+			id: updates_page
+			Components.UpdateList {
+				objectName: "Updates"
 			}
 		}
 	}

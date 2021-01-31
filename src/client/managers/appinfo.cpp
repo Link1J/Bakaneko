@@ -6,6 +6,8 @@
 
 #include <KLocalizedString>
 
+#include <QIcon>
+
 AppInfo::AppInfo()
 {
 }
@@ -37,4 +39,10 @@ KAboutData AppInfo::get_about()
         return about;
     }();
     return about;
+}
+
+QString AppInfo::get_icon_theme()
+{
+    auto test = QIcon::themeName();
+    return test;
 }

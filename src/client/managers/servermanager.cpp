@@ -216,7 +216,7 @@ void ServerManager::update_server_info(bool wait)
     {
         for (int a = 0; a < size(); a++)
         {
-            while (servers[a]->steps_done != Server::max_steps)
+            while (servers[a]->steps_done.try_wait())
                 qApp->processEvents();
         }
     }
@@ -265,7 +265,10 @@ void ServerManager::change_server_options(int index, QString ip)
 
     QSettings settings;
 
-    settings.beginWriteArray("servers");
+    int size = settings.beginReadArray("servers");
+    settings.endArray();
+
+    settings.beginWriteArray("servers", size < index ? index : size);
     settings.setArrayIndex(index);
 
     settings.setValue("hostname", temp->get_hostname());

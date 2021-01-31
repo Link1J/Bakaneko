@@ -2,160 +2,138 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 import QtQuick 2.6
+import Qt.labs.qmlmodels 1.0
 import QtQuick.Layouts 1.0
-import org.kde.kirigami 2.5 as Kirigami
+import org.kde.kirigami 2.12 as Kirigami
 import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
 
-Column {
-	id: base
-	spacing: Kirigami.Units.largeSpacing
+Kirigami.ScrollablePage {
+	id: addServerDialog
+	title: "Drives"
 
-	Repeater {
+	ListView {
+		id: listView
 		model: currentServer.drives
-		Controls.GroupBox {
-			id: group
+		Kirigami.PlaceholderMessage {
+			anchors.centerIn: parent
+			width: parent.width - (Kirigami.Units.largeSpacing * 4)
+			visible: listView.count === 0
+			text: "なに？" // Do not translate.
+		}
+		delegate: Kirigami.AbstractListItem {
+			focus: false
 
-			background: Kirigami.Separator {
-				width : Math.floor(Kirigami.Units.devicePixelRatio)
-				height: group.height
+			onFocusChanged: {
+				if (focus !== false)
+					focus = false
 			}
 
-			title: dev_node
-			leftPadding: Kirigami.Units.largeSpacing
+			action: Kirigami.Action {
+				onTriggered: {
+					data.info.visible = !data.info.visible
+				}
+			}
 
-			Column {
-				Grid {
-					leftPadding: Kirigami.Units.largeSpacing
-					spacing: Kirigami.Units.largeSpacing
+			ColumnLayout {
+				id: data
+				implicitWidth: parent.implicitWidth
 
-					Controls.Label {
-						visible: model != ""
-						text: "Model: " + model
+				RowLayout {
+					Kirigami.Heading {
+						Layout.fillWidth: true
+						text: dev_node
 					}
-					Controls.Label {
-						text: "Size: " + size
+					Kirigami.Icon {
+						source: info.visible ? "draw-arrow-up" : "draw-arrow-down"
 					}
 				}
-				Controls.Label {
-					visible: partitions.count != 0
-					topPadding: Kirigami.Units.smallSpacing
-					leftPadding: Kirigami.Units.largeSpacing
-					text: "Partitions: "
-				}
-				Row {
-					leftPadding: Kirigami.Units.largeSpacing * 2
-					GridLayout {
-						visible: partitions.count != 0
-						columnSpacing: Kirigami.Units.largeSpacing
-						rowSpacing: 0
+
+				property var info: info
+				ColumnLayout {
+					id: info
+					visible: false
+
+					Grid {
+						Layout.fillWidth: true
+						spacing: Kirigami.Units.largeSpacing
 
 						Controls.Label {
-							Layout.fillWidth: true
-							Layout.column: 0
-							text: "Device Node"
-						}
-						Kirigami.Separator {
-							Layout.row: 0
-							Layout.column: 1
-							Layout.rowSpan: partitions.count * 2 + 2
-							Layout.fillHeight: true
+							visible: model != ""
+							text: "Model: " + model
 						}
 						Controls.Label {
-							Layout.fillWidth: true
-							Layout.column: 2
-							text: "Filesystem"
+							text: "Size: " + size
 						}
-						Kirigami.Separator {
-							Layout.row: 0
-							Layout.column: 3
-							Layout.rowSpan: partitions.count * 2 + 2
-							Layout.fillHeight: true
+					}
+
+					Components.Table {
+						Layout.fillWidth: true
+
+						Component.onCompleted: {
+							forceLayout();
 						}
-						Controls.Label {
-							Layout.fillWidth: true
-							Layout.column: 4
-							text: "Mountpoint"
-						}
-						Kirigami.Separator {
-							Layout.row: 0
-							Layout.column: 5
-							Layout.rowSpan: partitions.count * 2 + 2
-							Layout.fillHeight: true
-						}
-						Controls.Label {
-							Layout.fillWidth: true
-							Layout.column: 6
-							text: "Size"
-						}
-						Kirigami.Separator {
-							Layout.row: 0
-							Layout.column: 7
-							Layout.rowSpan: partitions.count * 2 + 2
-							Layout.fillHeight: true
-						}
-						Controls.Label {
-							Layout.fillWidth: true
-							Layout.column: 8
-							text: "Used"
+						onWidthChanged: {
+							forceLayout();
 						}
 
-						
-						Repeater {
-							model: partitions.count
-							Kirigami.Separator {
-								Layout.row: index * 2 + 1
-								Layout.column: 0
-								Layout.columnSpan: 9
-								Layout.fillWidth: true
+						model: partitions
+						implicitHeight: totalHeight
+						visible: partitions.count >= 0
+						columnWidthProvider: function (column) {
+							if (column === 3) {
+								return metrics.boundingRect("10000 TB").width + Kirigami.Units.largeSpacing * 2;
 							}
-						}
-						Repeater {
-							model: partitions
-							Controls.Label {
-								Layout.fillWidth: true
-								Layout.column: 0
-								Layout.row: index * 2 + 2
-								text: dev_node
+							if (column === 4) {
+								return metrics.boundingRect("1000%").width + Kirigami.Units.largeSpacing * 2;
 							}
-						}
-						Repeater {
-							model: partitions
-							Controls.Label {
-								Layout.fillWidth: true
-								Layout.column: 2
-								Layout.row: index * 2 + 2
-								text: filesystem
+							if (column === 2) {
+								var mins = defaultColumnWidthProvider(column);
+								var sum = width - (columnWidthProvider(0) + columnWidthProvider(1) + columnWidthProvider(3) + columnWidthProvider(4));
+								if (sum >= mins) {
+									return sum;
+								}
+								return mins;
 							}
+							return defaultColumnWidthProvider(column);
 						}
-						Repeater {
-							model: partitions
-							Controls.Label {
-								Layout.fillWidth: true
-								Layout.column: 4
-								Layout.row: index * 2 + 2
-								text: mountpoint
+						FontMetrics {
+							id: metrics
+							font: Kirigami.Theme.defaultFont
+						}
+						delegate: DelegateChooser {
+							DelegateChoice {
+								column: 0
+								delegate: Components.Table.Item {
+									text: model.dev_node
+								}
 							}
-						}
-						Repeater {
-							model: partitions
-							Controls.Label {
-								Layout.fillWidth: true
-								Layout.column: 6
-								Layout.row: index * 2 + 2
-								horizontalAlignment: Text.AlignRight
-								text: size
+							DelegateChoice {
+								column: 1
+								delegate: Components.Table.Item {
+									text: model.filesystem
+								}
 							}
-						}
-						Repeater {
-							model: partitions
-							Controls.Label {
-								Layout.fillWidth: true
-								Layout.column: 8
-								Layout.row: index * 2 + 2
-								horizontalAlignment: Text.AlignRight
-								text: used
+							DelegateChoice {
+								column: 2
+								delegate: Components.Table.Item {
+									text: model.mountpoint
+								}
+							}
+							DelegateChoice {
+								column: 3
+								delegate: Components.Table.Item {
+									horizontalAlignment: Text.AlignRight
+									text: model.size
+								}
+							}
+							DelegateChoice {
+								column: 4
+								delegate: Components.Table.Item {
+									horizontalAlignment: Text.AlignRight
+									text: model.used
+								}
 							}
 						}
 					}
@@ -163,4 +141,176 @@ Column {
 			}
 		}
 	}
+
+	/*Column {
+		id: base
+		spacing: Kirigami.Units.largeSpacing
+	
+		Repeater {
+			model: currentServer.drives
+			Controls.GroupBox {
+				id: group
+	
+				background: Kirigami.Separator {
+					width : Math.floor(Kirigami.Units.devicePixelRatio)
+					height: group.height
+				}
+	
+				title: dev_node
+				leftPadding: Kirigami.Units.largeSpacing
+	
+				ColumnLayout {
+					Grid {
+						Layout.fillWidth: true
+						leftPadding: Kirigami.Units.largeSpacing
+						spacing: Kirigami.Units.largeSpacing
+	
+						Controls.Label {
+							visible: model != ""
+							text: "Model: " + model
+						}
+						Controls.Label {
+							text: "Size: " + size
+						}
+					}
+					Controls.Label {
+						Layout.fillWidth: true
+						visible: partitions.count !== 0
+						topPadding: Kirigami.Units.smallSpacing
+						leftPadding: Kirigami.Units.largeSpacing
+						text: "Partitions: "
+					}
+					Components.Table {
+						Layout.fillWidth: true
+						model: partitions
+						implicitHeight: contentHeight + Kirigami.Units.largeSpacing
+						visible: partitions.count !== 0
+						delegate: DelegateChooser {
+							DelegateChoice {
+								column: 0
+								delegate: Components.Table.Item {
+									text: model.dev_node
+								}
+							}
+							DelegateChoice {
+								column: 1
+								delegate: Components.Table.Item {
+									text: model.filesystem
+								}
+							}
+							DelegateChoice {
+								column: 2
+								delegate: Components.Table.Item {
+									text: model.mountpoint
+								}
+							}
+							DelegateChoice {
+								column: 3
+								delegate: Components.Table.Item {
+									horizontalAlignment: Text.AlignRight
+									text: model.size
+								}
+							}
+							DelegateChoice {
+								column: 4
+								delegate: Components.Table.Item {
+									horizontalAlignment: Text.AlignRight
+									text: model.used
+								}
+							}
+						}
+					}
+
+					Row {
+						leftPadding: Kirigami.Units.largeSpacing * 2
+						GridLayout {
+							columnSpacing: Kirigami.Units.largeSpacing
+							rowSpacing: 0
+	
+							Controls.Label {
+								Layout.fillWidth: true
+								Layout.column: 0
+								text: "Device Node"
+							}
+							Controls.Label {
+								Layout.fillWidth: true
+								Layout.column: 1
+								text: "Filesystem"
+							}
+							Controls.Label {
+								Layout.fillWidth: true
+								Layout.column: 2
+								text: "Mountpoint"
+							}
+							Controls.Label {
+								Layout.fillWidth: true
+								Layout.column: 3
+								text: "Size"
+							}
+							Controls.Label {
+								Layout.fillWidth: true
+								Layout.column: 4
+								text: "Used"
+							}
+	
+							Kirigami.Separator {
+								Layout.row: 1
+								Layout.column: 0
+								Layout.columnSpan: 9
+								Layout.fillWidth: true
+							}
+	
+							Repeater {
+								model: partitions
+								Controls.Label {
+									Layout.fillWidth: true
+									Layout.column: 0
+									Layout.row: index + 2
+									text: dev_node
+								}
+							}
+							Repeater {
+								model: partitions
+								Controls.Label {
+									Layout.fillWidth: true
+									Layout.column: 1
+									Layout.row: index + 2
+									text: filesystem
+								}
+							}
+							Repeater {
+								model: partitions
+								Controls.Label {
+									Layout.fillWidth: true
+									Layout.column: 2
+									Layout.row: index + 2
+									text: mountpoint
+								}
+							}
+							Repeater {
+								model: partitions
+								Controls.Label {
+									Layout.fillWidth: true
+									Layout.column: 3
+									Layout.row: index + 2
+									horizontalAlignment: Text.AlignRight
+									text: size
+								}
+							}
+							Repeater {
+								model: partitions
+								Controls.Label {
+									Layout.fillWidth: true
+									Layout.column: 4
+									Layout.row: index + 2
+									horizontalAlignment: Text.AlignRight
+									text: used
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}*/
 }

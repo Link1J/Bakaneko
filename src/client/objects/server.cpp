@@ -67,9 +67,9 @@ AdapterModel* Server::get_adapters() { return &adapters; }
 
 void Server::update_info()
 {
-    std::lock_guard __lock_guard{update_lock};
-    if (steps_done != max_steps) return;
-    steps_done = 0;
+    if (!steps_done.try_wait())
+        return;
+    steps_done.reset(max_steps);
     
     auto new_state = ping_computer();
 
@@ -77,14 +77,15 @@ void Server::update_info()
     {
         if (state == State::Online)
         {
-            steps_done++;
+            steps_done.count_down();
             network_get("/drives"          , &Server::got_drives  );
             network_get("/updates"         , &Server::got_updates );
             network_get("/network/adapters", &Server::got_adapters);
         }
         else
         {
-            steps_done = max_steps;
+            for (int a = 0; a < max_steps; a++)
+                steps_done.count_down();
         }
         return;
     }
@@ -105,7 +106,13 @@ void Server::update_info()
 
     if (new_state == State::Offline)
     {
-        steps_done = max_steps;
+        if (hostname != defualt_hostname)
+        {
+            hostname = defualt_hostname;
+            Q_EMIT changed_hostname();
+        }
+        for (int a = 0; a < max_steps; a++)
+            steps_done.count_down();
         return;
     }
 
@@ -115,22 +122,24 @@ void Server::update_info()
     network_get("/network/adapters", &Server::got_adapters);
 }
 
-asio::ip::tcp::socket& Server::connection()
+asio::ip::tcp::socket Server::connection()
 {
-    if (!socket.is_open())
-    {
+    // if (!socket.is_open())
+    // {
+        asio::ip::tcp::socket socket(ioctx);
         asio::ip::tcp::resolver resolver(ioctx);
         auto const results = resolver.resolve(ip_address, "29921");
         asio::connect(socket, results.begin(), results.end());
-    }
-    return socket;
+        return socket;
+    // }
+    // return socket;
 }
 
 Server::State Server::ping_computer()
 {
     try
     {
-        std::lock_guard _{socket_lock};
+        // std::lock_guard _{socket_lock};
         
         beast::http::request<beast::http::string_body> req{beast::http::verb::head, "/", 11};
 
@@ -139,30 +148,33 @@ Server::State Server::ping_computer()
         req.version(11);
         req.keep_alive(true);
 
-        beast::http::write(connection(), req);
+        auto channel = connection();
+
+        beast::http::write(channel, req);
 
         beast::flat_buffer buffer;
         beast::http::response<beast::http::empty_body> res;
 
-        beast::http::read(connection(), buffer, res);
+        beast::http::read(channel, buffer, res);
 
         if (res.result_int() == 302)
             return Server::State::Online;
     }
     catch(const boost::wrapexcept<boost::system::system_error>& e)
     {
-        connection().close();
     }
     return Server::State::Offline;
 }
 
 Server::Server(std::string hostname, std::string mac_address, std::string ip_address, QObject* parent)
     : QObject(parent)
-    , hostname   {hostname   }
-    , ip_address {ip_address }
-    , mac_address{mac_address}
-    , socket     {ioctx      }
-    , updates    {this       }
+    , hostname        {hostname   }
+    , defualt_hostname{hostname   }
+    , ip_address      {ip_address }
+    , mac_address     {mac_address}
+    , socket          {ioctx      }
+    , updates         {this       }
+    , steps_done      {          0}
 {
     state = State::Unknown;
     connect(this, &Server::got_info    , this, &Server::handle_info    );
@@ -227,62 +239,13 @@ void Server::wake_up()
 #endif
 }
 
-std::tuple<int, std::string, std::string> Server::run_command(std::string command)
-{
-    auto connection = get_ssh_connection();
-
-    std::string std_out;
-    std::string std_err;
-
-    char buffer[256];
-    int nbytes;
-    int volatile code;
-
-    while ((code = ssh_channel_request_exec(connection, command.c_str())) == SSH_AGAIN);
-    if (code == SSH_OK)
-    {
-        memset(buffer, 0, sizeof(buffer));
-        while ((nbytes = ssh_channel_read(connection, buffer, sizeof(buffer), false)) > 0)
-            std_out += std::string(buffer, nbytes);
-
-        memset(buffer, 0, sizeof(buffer));
-        while ((nbytes = ssh_channel_read(connection, buffer, sizeof(buffer), true)) > 0)
-            std_err += std::string(buffer, nbytes);
-
-        code = ssh_channel_get_exit_status(connection);
-    }
-    else
-    {
-        std::cerr << ssh_get_error((ssh_session)connection) << "\n";
-    }
-
-    return {code, std_out, std_err};
-}
-
-ssh_connection Server::get_ssh_connection()
-{
-    auto session = ssh_new();
-
-    // ssh_options_set(session, SSH_OPTIONS_HOST, ip_address.toUtf8().data());
-    // ssh_options_set(session, SSH_OPTIONS_USER, username.toUtf8().data());
-
-    ssh_connect(session);
-
-    // ssh_userauth_password(session, NULL, password.toUtf8().data());
-    
-    auto channel = ssh_channel_new(session);
-    ssh_channel_open_session(channel);
-
-    return {session, channel};
-}
-
 template<typename T>
 void Server::network_get(std::string path, void(Server::*signal)(T))
 {
     QtConcurrent::run([this, path, signal]{
         try
         {
-            std::lock_guard _{socket_lock};
+            // std::lock_guard _{socket_lock};
 
             beast::http::request<beast::http::string_body> req{beast::http::verb::get, path, 11};
 
@@ -292,12 +255,14 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
             req.version(11);
             req.keep_alive(true);
 
-            beast::http::write(connection(), req);
+            auto channel = connection();
+
+            beast::http::write(channel, req);
 
             beast::flat_buffer buffer;
             beast::http::response<beast::http::string_body> res;
 
-            beast::http::read(connection(), buffer, res);
+            beast::http::read(channel, buffer, res);
             
             T info;
 
@@ -309,7 +274,7 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
         }
         catch (...)
         {
-            steps_done++;
+            steps_done.count_down();
         }
     });
 }
@@ -319,7 +284,7 @@ void Server::network_post(std::string path)
     QtConcurrent::run([this, path]{
         try
         {
-            std::lock_guard _{socket_lock};
+            // std::lock_guard _{socket_lock};
 
             beast::http::request<beast::http::string_body> req{beast::http::verb::post, path, 11};
 
@@ -328,11 +293,12 @@ void Server::network_post(std::string path)
             req.version(11);
             req.keep_alive(true);
 
-            beast::http::write(connection(), req);
+            auto channel = connection();
+
+            beast::http::write(channel, req);
         }
         catch (...)
         {
-            steps_done++;
         }
     });
 }
@@ -344,7 +310,14 @@ void Server::handle_info(Bakaneko::System info)
     Q_EMIT changed_icon();
     Q_EMIT changed_kernel();
     Q_EMIT changed_arch();
-    steps_done++;
+
+    if (hostname != info.hostname())
+    {
+        hostname = info.hostname();
+        Q_EMIT changed_hostname();
+    }
+
+    steps_done.count_down();
 }
 
 void Server::handle_updates(Bakaneko::Updates updates_info)
@@ -368,7 +341,7 @@ void Server::handle_updates(Bakaneko::Updates updates_info)
         }
     }
 
-    steps_done++;
+    steps_done.count_down();
 }
 
 void Server::handle_drives(Bakaneko::Drives info)
@@ -471,7 +444,7 @@ void Server::handle_drives(Bakaneko::Drives info)
         }
     }
 
-    steps_done++;
+    steps_done.count_down();
 }
 
 void Server::handle_adapters(Bakaneko::Adapters info)
@@ -536,7 +509,7 @@ void Server::handle_adapters(Bakaneko::Adapters info)
         }
     }
 
-    steps_done++;
+    steps_done.count_down();
 }
 
 void Server::shutdown()

@@ -61,7 +61,6 @@ Kirigami.ScrollablePage {
 		}
 		model: Models.ServerList {
 			onRowsRemoved: {
-				console.log("HI", first, last, currentServerIndex, currentServer);
 				if (currentServerIndex >= first && currentServerIndex <= last)
 				{
 					while (pageStack.depth > 1)

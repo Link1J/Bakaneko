@@ -6,7 +6,7 @@
 #include <objects/server.h>
 
 AdapterModel::AdapterModel(QObject* parent)
-    : QAbstractListModel(parent)
+    : QAbstractTableModel(parent)
 {
 }
 
@@ -24,7 +24,8 @@ Bakaneko::Adapter& AdapterModel::prev(int a)
 
 void AdapterModel::flag(int a, std::vector<int> roles)
 {
-    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>(roles.begin(), roles.end()));
+    roles.push_back(Qt::DisplayRole);
+    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, columnCount()), QVector<int>(roles.begin(), roles.end()));
 }
 
 QVariant AdapterModel::data(const QModelIndex& index, int role) const
@@ -32,14 +33,28 @@ QVariant AdapterModel::data(const QModelIndex& index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    auto& temp = updates[index.row()];
+    if (role == Qt::DisplayRole)
+    {
+        switch (index.column())
+        {
+        case 0: role = ROLE_name      ; break;
+        case 1: role = ROLE_state     ; break;
+        case 2: role = ROLE_link_speed; break;
+        case 3: role = ROLE_tx_rate   ; break;
+        case 4: role = ROLE_rx_rate   ; break;
+        }
+        return data(index, role);
+    }
+
+    auto row = index.row();
+    auto& temp = updates[row];
 
     if (role == ROLE_name       ) return QVariant::fromValue(QString::fromStdString(temp.name       ()));
     if (role == ROLE_mtu        ) return QVariant::fromValue(                       temp.mtu        () );
     if (role == ROLE_mac_address) return QVariant::fromValue(QString::fromStdString(temp.mac_address()));
     if (role == ROLE_ip_address ) return QVariant::fromValue(QString::fromStdString(temp.ip_address ()));
 
-    if (role == ROLE_link_speed )
+    if (role == ROLE_link_speed)
     {
         if (temp.link_speed() == 0)
             return QVariant::fromValue(QString::fromStdString("Unknown"));
@@ -51,21 +66,19 @@ QVariant AdapterModel::data(const QModelIndex& index, int role) const
         return QVariant::fromValue(QString::fromStdString(temp.state() == Bakaneko::Adapter_State_Up ? "Up" : "Down"));
     }
 
+    
+    auto& prec = prevous[row];
+    auto delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::nanoseconds(temp.time() - prec.time()));
+
     if (role == ROLE_rx_rate)
     {
-        auto delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::chrono::nanoseconds(temp.time()) - std::chrono::nanoseconds(prevous[index.row()].time())
-        );
-        auto delta_bytes = (temp.bytes_rx() - prevous[index.row()].bytes_rx()) * 8;
+        auto delta_bytes = (temp.bytes_rx() - prec.bytes_rx()) * 8;
         return QVariant::fromValue(QString::fromStdString(bitrate_to_string(delta_bytes / delta_time.count())));
     }
 
     if (role == ROLE_tx_rate)
     {
-        auto delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(
-                std::chrono::nanoseconds(temp.time()) - std::chrono::nanoseconds(prevous[index.row()].time())
-        );
-        auto delta_bytes = (temp.bytes_tx() - prevous[index.row()].bytes_tx()) * 8;
+        auto delta_bytes = (temp.bytes_tx() - prec.bytes_tx()) * 8;
         return QVariant::fromValue(QString::fromStdString(bitrate_to_string(delta_bytes / delta_time.count())));
     }
 
@@ -77,9 +90,15 @@ int AdapterModel::rowCount(const QModelIndex& parent) const
     return (int)updates.size();
 }
 
+int AdapterModel::columnCount(const QModelIndex& parent) const
+{
+    return 5;
+}
+
 QHash<int, QByteArray> AdapterModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
+    roles[Qt::DisplayRole ] = "display";
     roles[ROLE_name       ] = "name";
     roles[ROLE_state      ] = "connection_state";
     roles[ROLE_link_speed ] = "link_speed";
@@ -91,22 +110,38 @@ QHash<int, QByteArray> AdapterModel::roleNames() const
     return roles;
 }
 
+QVariant AdapterModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (orientation != Qt::Horizontal)
+        return section + 1;
+
+    switch (section)
+    {
+    case 0: return "Name";
+    case 1: return "State";
+    case 2: return "Link Speed";
+    case 3: return "Send";
+    case 4: return "Received";
+    }
+    return QVariant{};
+}
+
 bool AdapterModel::insertRows(int row, int count, const QModelIndex& parent)
 {
-    Q_EMIT beginInsertRows(parent, row, row + count);
+    beginInsertRows(parent, row, row + count);
     updates.insert(updates.begin() + row, count, Bakaneko::Adapter{});
     prevous.insert(prevous.begin() + row, count, Bakaneko::Adapter{});
-    Q_EMIT endInsertRows();
-    Q_EMIT changed_count();
+    endInsertRows();
+    changed_count();
     return true;
 }
 
 bool AdapterModel::removeRows(int row, int count, const QModelIndex& parent)
 {
-    Q_EMIT beginRemoveRows(parent, row, row + count);
+    beginRemoveRows(parent, row, row + count);
     updates.erase(updates.begin() + row, updates.begin() + row + count);
     prevous.erase(prevous.begin() + row, prevous.begin() + row + count);
-    Q_EMIT endRemoveRows();
-    Q_EMIT changed_count();
+    endRemoveRows();
+    changed_count();
     return true;
 }

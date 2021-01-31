@@ -89,7 +89,7 @@ bool DrivesModel::removeRows(int row, int count, const QModelIndex& parent)
 }
 
 PartitionModel::PartitionModel(QObject* parent)
-    : QAbstractListModel(parent)
+    : QAbstractTableModel(parent)
 {
 }
 
@@ -102,13 +102,26 @@ Bakaneko::Partition& PartitionModel::data(int a)
 
 void PartitionModel::flag(int a, std::vector<int> roles)
 {
-    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, 0), QVector<int>(roles.begin(), roles.end()));
+    Q_EMIT dataChanged(createIndex(a, 0), createIndex(a, columnCount()), QVector<int>(roles.begin(), roles.end()));
 }
 
 QVariant PartitionModel::data(const QModelIndex& index, int role) const
 {
     if (!index.isValid())
         return QVariant();
+
+    if (role == Qt::DisplayRole)
+    {
+        switch (index.column())
+        {
+        case 0: role = ROLE_dev_node  ; break;
+        case 1: role = ROLE_filesystem; break;
+        case 2: role = ROLE_mountpoint; break;
+        case 3: role = ROLE_size      ; break;
+        case 4: role = ROLE_used      ; break;
+        }
+        return data(index, role);
+    }
 
     auto& temp = updates[index.row()];
 
@@ -153,4 +166,25 @@ bool PartitionModel::removeRows(int row, int count, const QModelIndex& parent)
     Q_EMIT endRemoveRows();
     Q_EMIT changed_count();
     return true;
+}
+
+int PartitionModel::columnCount(const QModelIndex& parent) const
+{
+    return 5;
+}
+
+QVariant PartitionModel::headerData(int section, Qt::Orientation orientation, int role) const
+{
+    if (orientation != Qt::Horizontal)
+        return section + 1;
+
+    switch (section)
+    {
+    case 0: return "Dev Node";
+    case 1: return "Filesystem";
+    case 2: return "Mountpoint";
+    case 3: return "Size";
+    case 4: return "Used";
+    }
+    return QVariant{};
 }
