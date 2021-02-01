@@ -54,6 +54,8 @@ int main(int argc, const char* argv[])
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
     spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
 
+    spdlog::set_level(spdlog::level::debug);
+
     std::string_view address_string = DEFAULT_ADDRESS;
     std::string_view port_string    = DEFAULT_PORT   ;
 

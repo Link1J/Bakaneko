@@ -17,12 +17,12 @@ Rest::Server::Connection::Connection(asio::ip::tcp::socket socket_)
     , endpoint(stream.socket().remote_endpoint())
 #endif
 {
-    spdlog::get("networking")->info("Got connection from {}:{}", endpoint.address().to_string(), endpoint.port());
+    // spdlog::get("networking")->info("Got connection from {}:{}", endpoint.address().to_string(), endpoint.port());
 }
 
 Rest::Server::Connection::~Connection()
 {
-    spdlog::get("networking")->info("{}:{} disconnected", endpoint.address().to_string(), endpoint.port());
+    // spdlog::get("networking")->info("{}:{} disconnected", endpoint.address().to_string(), endpoint.port());
 }
 
 void Rest::Server::Connection::run()

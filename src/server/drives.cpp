@@ -10,6 +10,8 @@
 #include <ljh/windows/wmi.hpp>
 #endif
 
+#include <spdlog/spdlog.h>
+
 #undef interface
 
 extern std::string read_file(std::filesystem::path file_path);
@@ -24,7 +26,7 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
 
     for (auto& drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_DiskDrive"))
     {
-        if (!drive_info.has(L"Size"))
+        if (!drive_info.get<bool>(L"MediaLoaded") || drive_info.get<uint64_t>(L"Size") == 0)
             continue;
 
         auto drive = drives.add_drive();
@@ -62,9 +64,46 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
             }
         }
     }
+    for (auto& drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_CDROMDrive"))
+    {
+        if (!drive_info.get<bool>(L"MediaLoaded"))
+            continue;
+        
+        auto drive = drives.add_drive();
+
+        drive->set_dev_node    (drive_info.get<std::string>(L"DeviceID"     ));
+        // drive->set_interface   (drive_info.get<std::string>(L"InterfaceType"));
+        drive->set_size        (drive_info.get<uint64_t   >(L"Size"         ));
+        drive->set_model       (drive_info.get<std::string>(L"Name"         ));
+        drive->set_manufacturer(drive_info.get<std::string>(L"Manufacturer" ));
+
+        if (auto volumes = ljh::windows::wmi::service::root().get_class(L"Win32_Volume", L"DriveLetter", drive_info.get(L"Drive")); volumes.size() > 0)
+        {
+            auto volume_info = volumes[0];
+            auto partition = drive->add_partition();
+
+            partition->set_dev_node  (drive_info.get<std::string>(L"VolumeName"));
+            partition->set_mountpoint(drive_info.get<std::string>(L"Drive"     ));
+
+            partition->set_filesystem(volume_info.get<std::string>(L"FileSystem"));
+
+            uint64_t size = 0;
+            if (volume_info.has(L"Size"))
+                size = volume_info.get<uint64_t>(L"Size");
+            else
+                size = drive_info .get<uint64_t>(L"Size");
+
+            auto used = size - volume_info.get<uint64_t>(L"FreeSpace");
+
+            partition->set_size(size);
+            partition->set_used(used);
+        }
+    }
     std::sort(drives.mutable_drive()->begin(), drives.mutable_drive()->end(),
         [](Bakaneko::Drive& a, Bakaneko::Drive& b) {
-            return a.dev_node() < b.dev_node();
+            if (a.dev_node().substr(0, 4) == b.dev_node().substr(0, 4))
+                return a.dev_node() < b.dev_node();
+            return a.dev_node() > b.dev_node();
         }
     );
 #elif defined(LJH_TARGET_Linux)

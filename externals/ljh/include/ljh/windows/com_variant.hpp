@@ -151,6 +151,7 @@ namespace ljh::windows
 				else if (contains<unsigned long long>()) return std::to_string(get<unsigned long long>());
 				else if (contains<float             >()) return std::to_string(get<float             >());
 				else if (contains<double            >()) return std::to_string(get<double            >());
+				else if (contains<bool              >()) return std::to_string(get<bool              >());
 				else if (contains<std::string       >()) return                get<std::string       >() ;
 				else if (contains<std::wstring      >()) return convert_string(get<std::wstring      >());
 				else if (contains<com_bstr          >()) return convert_string(get<com_bstr          >());
@@ -167,6 +168,7 @@ namespace ljh::windows
 				else if (contains<unsigned long long>()) return std::to_wstring(get<unsigned long long>());
 				else if (contains<float             >()) return std::to_wstring(get<float             >());
 				else if (contains<double            >()) return std::to_wstring(get<double            >());
+				else if (contains<bool              >()) return std::to_wstring(get<bool              >());
 				else if (contains<std::string       >()) return convert_string (get<std::string       >());
 				else if (contains<std::wstring      >()) return                 get<std::wstring      >() ;
 				else if (contains<com_bstr          >()) 
@@ -187,6 +189,7 @@ namespace ljh::windows
 				else if (contains<unsigned long long>()) return (T)(get<unsigned long long>());
 				else if (contains<float             >()) return (T)(get<float             >());
 				else if (contains<double            >()) return (T)(get<double            >());
+				else if (contains<bool              >()) return (T)(get<bool              >());
 
 				else if constexpr (std::is_same_v<T, long>)
 				{

@@ -61,7 +61,7 @@ namespace ljh::windows::wmi
     public:
         service(const com_bstr& location);
         static service& root();
-        std::vector<clazz> get_class(const std::wstring& class_name);
+        std::vector<clazz> get_class(const std::wstring& class_name, const std::wstring& member = L"", const std::wstring& value = L"");
     };
 
     void setup();
