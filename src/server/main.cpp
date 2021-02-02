@@ -127,11 +127,12 @@ namespace std
     }
 }
 
-struct {
+struct ParsedArgs {
     std::optional<std::string> address    ;
     std::optional<uint16_t   > port       ;
     std::optional<std::string> config_file;
-} parse_args(carray<cstring> args)
+};
+ParsedArgs parse_args(carray<cstring> args)
 {
     auto print_help = [&args](int exit_code){
         printf("\nUsage: %s [OPTIONS]\n\n", (const char*)args[0]);
@@ -196,9 +197,7 @@ int main(int argc, const char* argv[])
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
     spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
 
-#if defined(_DEBUG)
     spdlog::set_level(spdlog::level::debug);
-#endif
 
     try
     {
