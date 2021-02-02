@@ -52,7 +52,7 @@ namespace Rest
             void handler(beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
             
             template<class MessageReply, class Body, class Allocator, class Send>
-            void Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
+            void Run(ljh::expected<MessageReply,Errors>(*function)(const Fields&), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send);
 
         public:
             explicit Connection(asio::ip::tcp::socket socket_);

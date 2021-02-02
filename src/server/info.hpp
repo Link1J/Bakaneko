@@ -3,6 +3,8 @@
 
 #pragma once
 #include <ljh/expected.hpp>
+#include <optional>
+#include <string>
 
 #include "server.pb.h"
 #include "updates.pb.h"
@@ -11,19 +13,29 @@
 
 enum class Errors
 {
-    None, NotImplemented, Failed
+    None, NotImplemented, Failed, NeedsPassword,
 };
+
+struct Fields
+{
+    std::optional<std::string> authentication;
+};
+
+namespace Helpers
+{
+    bool Authenticate(std::string authentication);
+}
 
 namespace Info
 {
-    ljh::expected<Bakaneko::Drives  , Errors> Drives  ();
-    ljh::expected<Bakaneko::Updates , Errors> Updates ();
-    ljh::expected<Bakaneko::System  , Errors> System  ();
-    ljh::expected<Bakaneko::Adapters, Errors> Adapters();
+    ljh::expected<Bakaneko::Drives  , Errors> Drives  (const Fields& fields);
+    ljh::expected<Bakaneko::Updates , Errors> Updates (const Fields& fields);
+    ljh::expected<Bakaneko::System  , Errors> System  (const Fields& fields);
+    ljh::expected<Bakaneko::Adapters, Errors> Adapters(const Fields& fields);
 };
 
 namespace Control
 {
-    ljh::expected<void, Errors> Shutdown();
-    ljh::expected<void, Errors> Reboot  ();
+    ljh::expected<void, Errors> Shutdown(const Fields& fields);
+    ljh::expected<void, Errors> Reboot  (const Fields& fields);
 };

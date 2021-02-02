@@ -126,11 +126,18 @@ void Rest::Server::on_accept(boost::system::error_code ec)
 }
 
 template<class MessageReply, class Body, class Allocator, class Send>
-void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)(), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)(const Fields&), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
     try
     {
-        auto message_res = function();
+        Fields fields;
+        if (auto ele = req.find(beast::http::field::authorization); ele != req.end())
+        {
+            auto field = ele->value();
+            fields.authentication = std::string(field.data(), field.size());
+        }
+
+        auto message_res = function(fields);
 
         if (message_res.has_value())
         {
@@ -191,6 +198,15 @@ void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)
         {
             beast::http::response<beast::http::empty_body> res{beast::http::status::internal_server_error, req.version()};
             res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            res.keep_alive(req.keep_alive());
+            res.prepare_payload();
+            return send(std::move(res));
+        }
+        else if (message_res.error() == Errors::NeedsPassword)
+        {
+            beast::http::response<beast::http::empty_body> res{beast::http::status::unauthorized, req.version()};
+            res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            res.set(beast::http::field::www_authenticate, "Basic realm=\"User Visible Realm\"");
             res.keep_alive(req.keep_alive());
             res.prepare_payload();
             return send(std::move(res));

@@ -42,9 +42,9 @@
 inline std::string chassis_type_as_system_icon(int a);
 extern std::string read_file(std::filesystem::path file_path);
 
-ljh::expected<Bakaneko::System, Errors> Info::System()
+ljh::expected<Bakaneko::System, Errors> Info::System(const Fields& fields)
 {
-    decltype(Info::System())::value_type system;
+    decltype(Info::System(fields))::value_type system;
 
     char ip_address[47];
     memset(ip_address, 0, sizeof(ip_address));
@@ -239,7 +239,7 @@ extern std::tuple<int, std::string> exec(const std::string& cmd);
 
 namespace Control
 {
-    ljh::expected<void, Errors> Shutdown()
+    ljh::expected<void, Errors> Shutdown(const Fields& fields)
     {
 #if defined(LJH_TARGET_Windows)
         if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, false, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)
@@ -253,7 +253,7 @@ namespace Control
 #endif
     }
 
-    ljh::expected<void, Errors> Reboot()
+    ljh::expected<void, Errors> Reboot(const Fields& fields)
     {
 #if defined(LJH_TARGET_Windows)
         if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, true, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)

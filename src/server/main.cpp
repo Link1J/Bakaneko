@@ -11,6 +11,7 @@
 #endif
 
 #include "windows.hpp"
+#include "ini.hpp"
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -22,11 +23,92 @@
 
 #include <charconv>
 
-constexpr auto DEFAULT_ADDRESS = "0.0.0.0";
-constexpr auto DEFAULT_PORT    =   "29921"; // Unless a well know service uses this port. Do not change it.
+constexpr auto DEFAULT_ADDRESS     = "0.0.0.0";
+constexpr auto DEFAULT_PORT        =     29921;
+constexpr auto DEFAULT_CONFIG_FILE = []() constexpr {
+#if defined(LJH_TARGET_Windows)
+    return "bakaneko-server.ini";
+#elif defined(LJH_TARGET_MacOS)
+    throw "/etc/bakaneko-server.ini";
+#elif defined(LJH_TARGET_Linux)
+    return "/etc/bakaneko-server.ini";
+#elif defined(LJH_TARGET_Unix)
+    return "/etc/bakaneko-server.ini";
+#endif
+}();
 
 int const thread_count = std::thread::hardware_concurrency();
 asio::io_context io_service{thread_count};
+std::string config_file;
+
+class cstring
+{
+    const char* string;
+public:
+    cstring(const char* string)
+        : string(string)
+    {}
+
+    bool operator==(const std::string_view& other)
+    {
+        return string == other;
+    }
+
+    operator std::string()
+    {
+        return string;
+    }
+
+    explicit operator const char*()
+    {
+        return string;
+    }
+
+    std::size_t size() const
+    {
+        return strlen(string);
+    }
+    
+    const char*  begin()       { return  string        ; }
+    const char* cbegin() const { return  string        ; }
+    const char*  begin() const { return  string        ; }
+    const char*  end  ()       { return &string[size()]; }
+    const char* cend  () const { return &string[size()]; }
+    const char*  end  () const { return &string[size()]; }
+};
+
+template<typename T>
+class carray
+{
+    T* array;
+    std::size_t _size;
+public:
+    carray(void* array, std::size_t size)
+        : array((T*)array), _size(size)
+    {}
+
+    T& operator[](std::size_t idx)
+    {
+        return array[idx];
+    }
+
+    const T& operator[](std::size_t idx) const
+    {
+        return array[idx];
+    }
+
+    std::size_t size() const
+    {
+        return _size;
+    }
+
+          T*  begin()       { return  array        ; }
+    const T* cbegin() const { return  array        ; }
+    const T*  begin() const { return  array        ; }
+          T*  end  ()       { return &array[size()]; }
+    const T* cend  () const { return &array[size()]; }
+    const T*  end  () const { return &array[size()]; }
+};
 
 namespace std
 {
@@ -36,6 +118,66 @@ namespace std
         std::from_chars(view.data(), view.data() + view.size(), i3);
         return i3;
     }
+
+    int atoi(const cstring& view) noexcept
+    {
+        int i3 = 0;
+        std::from_chars(view.begin(), view.end(), i3);
+        return i3;
+    }
+}
+
+struct {
+    std::optional<std::string> address    ;
+    std::optional<uint16_t   > port       ;
+    std::optional<std::string> config_file;
+} parse_args(carray<cstring> args)
+{
+    auto print_help = [&args](int exit_code){
+        printf("\nUsage: %s [OPTIONS]\n\n", (const char*)args[0]);
+        printf("  Options:\n");
+        printf("    -h --help                 Print this help\n");
+        printf("       --address address      Address to listen on\n");
+        printf("       --port    port         Port to listen on\n");
+        printf("       --install              Installs the Windows Service (needs Admin)\n");
+        printf("    -c --config  filename     Config file to use\n");
+        printf("\n");
+        exit(exit_code);
+    };
+
+    decltype(parse_args(std::declval<carray<cstring>>())) return_value;
+
+    for (auto it = args.begin() + 1; it != args.end(); it++)
+    {
+        auto& arg = *it;
+        using namespace std::literals;
+        if (arg == "--help" || arg == "-h")
+        {
+            print_help(0);
+        }
+        else if (arg == "--address")
+        {
+            arg = *++it;
+            return_value.address = arg;
+        }
+        else if (arg == "--port")
+        {
+            arg = *++it;
+            return_value.port = boost::lexical_cast<uint16_t, std::string>(arg);
+        }
+        else if (arg == "--config" || arg == "-c")
+        {
+            arg = *++it;
+            return_value.config_file = arg;
+        }
+        else
+        {
+            printf("Unknown arg: %s\n", (const char*)arg);
+            print_help(-1);
+        }
+    }
+
+    return return_value;
 }
 
 #if defined(LJH_TARGET_Windows)
@@ -54,41 +196,35 @@ int main(int argc, const char* argv[])
     spdlog::set_default_logger(std::make_shared<spdlog::logger>("", std::begin(sinks), std::end(sinks)));
     spdlog::register_logger(std::make_shared<spdlog::logger>("networking", std::begin(sinks), std::end(sinks)));
 
+#if defined(_DEBUG)
     spdlog::set_level(spdlog::level::debug);
-
-    std::string_view address_string = DEFAULT_ADDRESS;
-    std::string_view port_string    = DEFAULT_PORT   ;
-
-    for (int a = 0; a < argc; a++)
-    {
-        using namespace std::literals;
-        if (argv[a] == "--help"sv || argv[a] == "-h"sv)
-        {
-            printf("\n Usage: %s [OPTIONS]\n\n", argv[0]);
-            printf("  Options:\n");
-            printf("   -h --help                 Print this help\n");
-            printf("      --address address      Address to listen on\n");
-            printf("      --port    port         Port to listen on\n");
-            printf("      --install              Installs the Windows Service (needs Admin)\n");
-            printf("\n");
-            exit(0);
-        }
-        else if (argv[a] == "--address"sv)
-        {
-            a++;
-            address_string = argv[a];
-        }
-        else if (argv[a] == "--port"sv)
-        {
-            a++;
-            port_string = argv[a];
-        }
-    }
-
-    spdlog::info("Starting Bakaneko Server (Version {})", BAKANEKO_VERSION_STRING);
+#endif
 
     try
     {
+        auto args = parse_args(carray<cstring>(argv, argc));
+
+        config_file = args.config_file.value_or(DEFAULT_CONFIG_FILE);
+
+        spdlog::info("Starting Bakaneko Server (Version {})", BAKANEKO_VERSION_STRING);
+        spdlog::info("Using config file '{}'", config_file);
+        
+        auto [address, port] = [&args]{
+            ini ini_file;
+            ini_file.load_file(config_file);
+            if (!ini_file["admin"].has("password"))
+            {
+                spdlog::error("Config file does not have a password under the admin section. Please add one.");
+                exit(-2);
+            }
+
+            auto& networking = ini_file["networking"];
+            return std::make_tuple(
+                args.address.value_or(ini_file["networking"]["address"].get<std::string  >(DEFAULT_ADDRESS)),
+                args.port   .value_or(ini_file["networking"]["port"   ].get<std::uint16_t>(DEFAULT_PORT   ))
+            );
+        }();
+
 #if defined(LJH_TARGET_Windows)
         winrt::init_apartment();
         ljh::windows::wmi::setup();
@@ -111,11 +247,7 @@ int main(int argc, const char* argv[])
             spdlog::warn("Failed to get shutdown privilege. Power controls may not work.");
         }
 #endif
-
-        auto const address = asio::ip::make_address(address_string);
-        auto const port    = (unsigned short)std::atoi(port_string);
-
-        std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{address, port})->run();
+        std::make_shared<Rest::Server>(io_service, asio::ip::tcp::endpoint{asio::ip::make_address(address), port})->run();
 
         std::vector<std::thread> thread;
         thread.reserve(thread_count - 1);
@@ -125,13 +257,13 @@ int main(int argc, const char* argv[])
         for(auto& thr : thread)
             if (thr.joinable())
                 thr.join();
+
+        spdlog::info("Stopping Bakaneko Server");
     }
     catch(const std::exception& e)
     {
         spdlog::error(e.what());
     }
-
-    spdlog::info("Stopping Bakaneko Server");
 
     return 0;
 }

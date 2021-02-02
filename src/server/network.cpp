@@ -29,7 +29,7 @@
 
 extern std::string read_file(std::filesystem::path file_path);
 
-ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters()
+ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
 {
     Bakaneko::Adapters adapters;
 

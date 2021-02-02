@@ -17,9 +17,9 @@
 extern std::string read_file(std::filesystem::path file_path);
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
-ljh::expected<Bakaneko::Drives, Errors> Info::Drives()
+ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
 {
-    decltype(Info::Drives())::value_type drives;
+    decltype(Info::Drives(fields))::value_type drives;
 
 #if defined(LJH_TARGET_Windows)
     using namespace std::string_literals;

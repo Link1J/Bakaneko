@@ -79,7 +79,7 @@ namespace ljh
 	}
 
 	template<class C, class T = std::char_traits<C>, class A = std::allocator<C>>
-	std::vector<std::basic_string<C,T,A>> split(const std::basic_string<C,T,A>& s, C seperator)
+	std::vector<std::basic_string<C,T,A>> split(const std::basic_string<C,T,A>& s, C seperator, std::size_t max_elements = 0)
 	{
 		using size_type = typename std::basic_string<C,T,A>::size_type;
 
@@ -90,14 +90,17 @@ namespace ljh
 		{
 			output.push_back(s.substr(prev_pos, pos - prev_pos));
 			prev_pos = ++pos;
+
+			if (output.size() == max_elements - 1)
+				break;
 		}
 
-		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		output.push_back(s.substr(prev_pos));
 		return output;
 	}
 
 	template<size_t S, class C, class T = std::char_traits<C>, class A = std::allocator<C>>
-	std::vector<std::basic_string<C,T,A>> split(const std::basic_string<C,T,A>& s, const C (&seperator)[S])
+	std::vector<std::basic_string<C,T,A>> split(const std::basic_string<C,T,A>& s, const C (&seperator)[S], std::size_t max_elements = 0)
 	{
 		using size_type = typename std::basic_string<C,T,A>::size_type;
 
@@ -108,9 +111,12 @@ namespace ljh
 		{
 			output.push_back(s.substr(prev_pos, pos - prev_pos));
 			prev_pos = pos += S - 1;
+
+			if (output.size() == max_elements - 1)
+				break;
 		}
 
-		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		output.push_back(s.substr(prev_pos));
 		return output;
 	}
 
@@ -170,7 +176,7 @@ namespace ljh
 	}
 
 	template<class C, class T = std::char_traits<C>>
-	std::vector<std::basic_string_view<C,T>> split(const std::basic_string_view<C,T>& s, C seperator)
+	std::vector<std::basic_string_view<C,T>> split(const std::basic_string_view<C,T>& s, C seperator, std::size_t max_elements = 0)
 	{
 		using size_type = typename std::basic_string_view<C,T>::size_type;
 		
@@ -181,14 +187,17 @@ namespace ljh
 		{
 			output.push_back(s.substr(prev_pos, pos - prev_pos));
 			prev_pos = ++pos;
+			
+			if (output.size() == max_elements - 1)
+				break;
 		}
 
-		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		output.push_back(s.substr(prev_pos));
 		return output;
 	}
 	
 	template<size_t S, class C, class T = std::char_traits<C>>
-	std::vector<std::basic_string_view<C,T>> split(const std::basic_string_view<C,T>& s, const C (&seperator)[S])
+	std::vector<std::basic_string_view<C,T>> split(const std::basic_string_view<C,T>& s, const C (&seperator)[S], std::size_t max_elements = 0)
 	{
 		using size_type = typename std::basic_string_view<C,T>::size_type;
 		
@@ -199,9 +208,12 @@ namespace ljh
 		{
 			output.push_back(s.substr(prev_pos, pos - prev_pos));
 			prev_pos = pos += S - 1;
+			
+			if (output.size() == max_elements - 1)
+				break;
 		}
 
-		output.push_back(s.substr(prev_pos, pos-prev_pos));
+		output.push_back(s.substr(prev_pos));
 		return output;
 	}
 #endif

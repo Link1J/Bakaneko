@@ -9,6 +9,7 @@ set(SRCS
     updates.cpp
     windows_service.cpp
     network.cpp
+    info.cpp
 )
 
 add_executable(bakaneko-server ${SRCS})
@@ -46,4 +47,7 @@ install(TARGETS bakaneko-server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
 
 if (UNIX)
     install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.service" DESTINATION "${KDE_INSTALL_FULL_SYSTEMDUNITDIR}/system")
+    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_FULL_SYSCONFDIR}/bakaneko-server.ini")
+else()
+    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_BINDIR}")
 endif()

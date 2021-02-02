@@ -14,9 +14,9 @@
 
 extern std::tuple<int, std::string> exec(const std::string& cmd);
 
-ljh::expected<Bakaneko::Updates, Errors> Info::Updates()
+ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
 {
-    decltype(Info::Updates())::value_type updates;
+    decltype(Info::Updates(fields))::value_type updates;
 
 #if defined(LJH_TARGET_Windows)
     using namespace ljh::windows::com_bstr_literals;
