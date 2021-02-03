@@ -7,6 +7,8 @@
 
 #undef interface
 
+#include <regex>
+
 #if defined(LJH_TARGET_Windows)
 #include <ljh/windows/com_bstr.hpp>
 #include <wuapi.h>
@@ -85,10 +87,27 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
 
         return true;
     };
+    auto apk_decode = [](Bakaneko::Update& update, std::string package) {
+        auto info = ljh::split(package, '=');
+        if (info.size() != 2)
+            return false;
+
+        std::regex version(R"((.*)-(\d.*?-r\d))");
+        std::smatch sm;
+        if (!std::regex_search(info[0], sm, version))
+            return false;
+
+        update.set_name       (sm  [1].str());
+        update.set_old_version(sm  [2].str());
+        update.set_new_version(info[1]      );
+
+        return true;
+    };
 
     if (!run("yay", "-Qu", pacman_decode))
         run("pacman", "-Qu", pacman_decode);
     run("apt", "list --upgradable", apt_decode);
+    run("apk", "version -v -l '<'", apk_decode);
 #endif
 
     return std::move(updates);
