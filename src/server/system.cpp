@@ -124,7 +124,6 @@ GOT_ADDRESS:
     {
         std::string temp;
         std::getline(file, temp);
-        spdlog::debug("{}", temp);
         if (temp.find("ICON_NAME="      ) == 0) icon     = remove_quotes(temp.substr(10));
         if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = remove_quotes(temp.substr(16));
     }
