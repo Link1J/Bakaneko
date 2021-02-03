@@ -43,7 +43,7 @@ extern std::string read_file(std::filesystem::path file_path);
 
 std::string remove_quotes(std::string input)
 {
-    if (input.front() == input.back() && input.front() == '"')
+    if (input.front() == '"' && input.back() == '"')
         input = input.substr(1, input.size() - 2);
     return input;
 }
@@ -101,15 +101,21 @@ GOT_ADDRESS:
     struct utsname buffer;
     uname(&buffer);
 
-    std::string name;
+    std::string name, id, pretty_name, version;
     std::ifstream file("/etc/os-release");
     while(file)
     {
         std::string temp;
         std::getline(file, temp);
-        if (temp.find("NAME="   ) == 0) name  = remove_quotes(temp.substr(5));
-        if (temp.find("VERSION=") == 0) name += remove_quotes(temp.substr(8));
+        if (temp.find("NAME="       ) == 0) name        = remove_quotes(temp.substr( 5));
+        if (temp.find("VERSION="    ) == 0) version     = remove_quotes(temp.substr( 8));
+        if (temp.find("ID="         ) == 0) id          = remove_quotes(temp.substr( 3));
+        if (temp.find("PRETTY_NAME=") == 0) pretty_name = remove_quotes(temp.substr(12));
     }
+    file.close();
+
+    if (pretty_name.empty() || id == "antergos" || id == "linuxmint" || id == "ubuntu")
+        pretty_name = ljh::trim_copy(name + " " + version);
 
     std::string icon = "unknown";
     std::string hostname = buffer.nodename;
@@ -118,9 +124,11 @@ GOT_ADDRESS:
     {
         std::string temp;
         std::getline(file, temp);
+        spdlog::debug("{}", temp);
         if (temp.find("ICON_NAME="      ) == 0) icon     = remove_quotes(temp.substr(10));
-        if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = remove_quotes(temp.substr(18));
+        if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = remove_quotes(temp.substr(16));
     }
+    file.close();
 
     if (icon == "unknown")
     {
@@ -173,7 +181,7 @@ GOT_ADDRESS:
     freeifaddrs(base);
 
     system.set_hostname(hostname);
-    system.set_operating_system(name);
+    system.set_operating_system(pretty_name);
     system.set_kernel(buffer.sysname + std::string{" "} + buffer.release);
     system.set_architecture(buffer.machine);
     system.set_icon(icon);
@@ -252,7 +260,15 @@ namespace Control
             return ljh::unexpected{Errors::Failed};
         return ljh::expected<void, Errors>{};
 #elif defined(LJH_TARGET_Linux)
-        exec("poweroff");
+        auto [exit, _] = exec("poweroff now");
+        if (exit != 0)
+        {
+            std::tie(exit, _) = exec("shutdown now");
+            if (exit != 0)
+            {
+                return ljh::unexpected{Errors::Failed};
+            }
+        }
         return ljh::expected<void, Errors>{};
 #else
         return ljh::unexpected{Errors::NotImplemented};
@@ -266,7 +282,15 @@ namespace Control
             return ljh::unexpected{Errors::Failed};
         return ljh::expected<void, Errors>{};
 #elif defined(LJH_TARGET_Linux)
-        exec("reboot");
+        auto [exit, _] = exec("reboot now");
+        if (exit != 0)
+        {
+            std::tie(exit, _) = exec("shutdown -r now");
+            if (exit != 0)
+            {
+                return ljh::unexpected{Errors::Failed};
+            }
+        }
         return ljh::expected<void, Errors>{};
 #else
         return ljh::unexpected{Errors::NotImplemented};

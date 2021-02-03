@@ -2,7 +2,6 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 #include "info.hpp"
-#include "windows.hpp"
 
 #include <filesystem>
 #include <chrono>
@@ -17,6 +16,7 @@
 #include <ws2tcpip.h>
 #include <iphlpapi.h>
 #include <netioapi.h>
+#include "windows.hpp"
 #elif defined(LJH_TARGET_Linux)
 #include <unistd.h>
 #include <sys/types.h>
@@ -72,6 +72,8 @@ ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
     for (auto& adapter_file : std::filesystem::directory_iterator{"/sys/class/net"})
     {
         auto adapter_path = adapter_file.path();
+        if (!std::filesystem::exists(adapter_path/"type"))
+            continue;
         if (read_file(adapter_path/"type") == "772")
             continue;
         auto adapter = adapters.add_adapter();
