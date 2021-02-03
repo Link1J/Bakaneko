@@ -16,8 +16,27 @@ Kirigami.Page {
 	title: "Network Adapters"
 	padding: 0
 
+	header: Controls.ToolBar {
+		padding: 0
+		height: flickable.contentHeight + 1
+		Components.Table.HeaderBar {
+			id: flickable
+			anchors.fill: parent
+			table: table
+		}
+	}
+
 	Components.Table {
+		id: table
+
+		showHeaders: false
+		model: currentServer.adapters
+		anchors.fill: parent
+
 		columnWidthProvider: function (column) {
+			if (column === 0) {
+				return dynamic_column(column);
+			}
 			if (column >= 2 && column <= 4) {
 				return metrics.boundingRect("10000000 Tbps").width + Kirigami.Units.largeSpacing * 2;
 			}
@@ -28,9 +47,6 @@ Kirigami.Page {
 			id: metrics
 			font: Kirigami.Theme.defaultFont
 		}
-
-		model: currentServer.adapters
-		anchors.fill: parent
 
 		delegate: DelegateChooser {
 			DelegateChoice {
@@ -66,6 +82,7 @@ Kirigami.Page {
 				delegate: Components.Table.Item {
 					horizontalAlignment: Text.AlignRight
 					text: model.rx_rate
+					rightBorder: false
 				}
 			}
 		}

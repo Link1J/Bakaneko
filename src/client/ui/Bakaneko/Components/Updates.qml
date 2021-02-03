@@ -15,20 +15,33 @@ Kirigami.Page {
 	title: "Updates"
 	padding: 0
 
+	header: Controls.ToolBar {
+		padding: 0
+		height: flickable.contentHeight + 1
+		Components.Table.HeaderBar {
+			id: flickable
+			anchors.fill: parent
+			table: table
+		}
+	}
+
 	Components.Table {
+		id: table
+
+		showHeaders: false
 		model: currentServer.updates
 		anchors.fill: parent
 		
 		columnWidthProvider: function (column) {
 			if (column === 0) {
-				var mins = defaultColumnWidthProvider(column);
-				var sum = width - (columnWidthProvider(1) + columnWidthProvider(2));
-				if (sum >= mins) {
-					return sum;
-				}
-				return mins;
+				return dynamic_column(column);
 			}
-			return metrics.boundingRect("WWWWWWWWWW").width + Kirigami.Units.largeSpacing * 2;
+			var mins = defaultColumnWidthProvider(column);
+			var sum = metrics.boundingRect("WWWWWWWWWW").width + Kirigami.Units.largeSpacing * 2;
+			if (sum >= mins) {
+				return sum;
+			}
+			return mins;
 		}
 
 		FontMetrics {
@@ -53,6 +66,7 @@ Kirigami.Page {
 				column: 2
 				delegate: Components.Table.Item {
 					text: model.new_version
+					rightBorder: false
 				}
 			}
 		}

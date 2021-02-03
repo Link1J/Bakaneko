@@ -74,9 +74,6 @@ Kirigami.ScrollablePage {
 						Component.onCompleted: {
 							forceLayout();
 						}
-						onWidthChanged: {
-							forceLayout();
-						}
 
 						model: partitions
 						implicitHeight: totalHeight
@@ -89,12 +86,7 @@ Kirigami.ScrollablePage {
 								return metrics.boundingRect("1000%").width + Kirigami.Units.largeSpacing * 2;
 							}
 							if (column === 2) {
-								var mins = defaultColumnWidthProvider(column);
-								var sum = width - (columnWidthProvider(0) + columnWidthProvider(1) + columnWidthProvider(3) + columnWidthProvider(4));
-								if (sum >= mins) {
-									return sum;
-								}
-								return mins;
+								return dynamic_column(column);
 							}
 							return defaultColumnWidthProvider(column);
 						}
@@ -107,6 +99,7 @@ Kirigami.ScrollablePage {
 								column: 0
 								delegate: Components.Table.Item {
 									text: model.dev_node
+									leftBorder: true
 								}
 							}
 							DelegateChoice {
