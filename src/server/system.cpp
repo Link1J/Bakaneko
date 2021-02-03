@@ -12,8 +12,6 @@
 #include <ljh/string_utils.hpp>
 #include <ljh/casting.hpp>
 
-#include "windows.hpp"
-
 #if defined(LJH_TARGET_Windows)
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -21,6 +19,7 @@
 #include <icmpapi.h>
 #include <Mstcpip.h>
 #include <Ip2string.h>
+#include "windows.hpp"
 #include <ljh/windows/wmi.hpp>
 #include <ljh/windows/registry.hpp>
 #elif defined(LJH_TARGET_Linux)
@@ -41,6 +40,13 @@
 
 inline std::string chassis_type_as_system_icon(int a);
 extern std::string read_file(std::filesystem::path file_path);
+
+std::string remove_quotes(std::string input)
+{
+    if (input.front() == input.back() && input.front() == '"')
+        input = input.substr(1, input.size() - 2);
+    return input;
+}
 
 ljh::expected<Bakaneko::System, Errors> Info::System(const Fields& fields)
 {
@@ -101,8 +107,8 @@ GOT_ADDRESS:
     {
         std::string temp;
         std::getline(file, temp);
-        if (temp.find("NAME="   ) == 0) name  = temp.substr(6, temp.find_last_of('"') - 6);
-        if (temp.find("VERSION=") == 0) name += temp.substr(9, temp.find_last_of('"') - 9);
+        if (temp.find("NAME="   ) == 0) name  = remove_quotes(temp.substr(5));
+        if (temp.find("VERSION=") == 0) name += remove_quotes(temp.substr(8));
     }
 
     std::string icon = "unknown";
@@ -112,8 +118,8 @@ GOT_ADDRESS:
     {
         std::string temp;
         std::getline(file, temp);
-        if (temp.find("ICON_NAME="      ) == 0) icon     = temp.substr(11, temp.find_last_of('"') - 11);
-        if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = temp.substr(17, temp.find_last_of('"') - 17);
+        if (temp.find("ICON_NAME="      ) == 0) icon     = remove_quotes(temp.substr(10));
+        if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = remove_quotes(temp.substr(18));
     }
 
     if (icon == "unknown")

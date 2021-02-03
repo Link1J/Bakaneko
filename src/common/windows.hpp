@@ -8,6 +8,8 @@
 #include <ljh/function_traits.hpp>
 
 #if defined(LJH_TARGET_Windows)
+#include <windows.h>
+
 template<typename T>
 std::shared_ptr<std::remove_pointer_t<T>> malloc_shared_ptr(std::size_t size)
 {
@@ -72,6 +74,8 @@ Win32Run(F&& function)
     function(nullptr, &size);
     auto data = _Win32Run_RT<F>(size);
     function(std::data(data), &size);
+    if constexpr (ljh::is_instance_v<decltype(data), std::basic_string>)
+        data = data.substr(0, data.size() - 1);
     return data;
 }
 
@@ -83,6 +87,8 @@ Win32Run(F&& function, A&&... args)
     function(std::forward<A>(args)..., nullptr, &size);
     auto data = _Win32Run_RT<F,A...>(size);
     function(std::forward<A>(args)..., std::data(data), &size);
+    if constexpr (ljh::is_instance_v<decltype(data), std::basic_string>)
+        data = data.substr(0, data.size() - 1);
     return data;
 }
 
@@ -94,6 +100,8 @@ Win32Run(F&& function, A&&... args)
     function(nullptr, &size, std::forward<A>(args)...);
     auto data = _Win32Run_RT<F,A...>(size);
     function(std::data(data), &size, std::forward<A>(args)...);
+    if constexpr (ljh::is_instance_v<decltype(data), std::basic_string>)
+        data = data.substr(0, data.size() - 1);
     return data;
 }
 
@@ -114,5 +122,52 @@ Win32Run(D&& deleter, F&& function, A&&... args)
     function(&data, std::forward<A>(args)...);
     return std::shared_ptr<std::remove_pointer_t<decltype(data)>>(data, std::forward<D>(deleter));
 }
+
+template<typename HandleType = HANDLE, BOOL(__stdcall* Close)(HandleType) = CloseHandle>
+class Win32Handle
+{
+    HandleType handle;
+
+public:
+    template<typename F, typename... A, typename = std::enable_if<std::is_invocable_v<F, A...>>>
+    explicit Win32Handle(F&& function, A&&... args)
+    {
+        handle = function(std::forward<A>(args)...);
+    }
+
+    ~Win32Handle()
+    {
+        Close(handle);
+    }
+
+    Win32Handle(const Win32Handle& other)
+    {
+        DuplicateHandle(GetCurrentProcess(), other, GetCurrentProcess(), &handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        return *this;
+    }
+
+    Win32Handle& operator=(const Win32Handle& other)
+    {
+        DuplicateHandle(GetCurrentProcess(), other, GetCurrentProcess(), &handle, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        return *this;
+    }
+
+    operator HandleType() const
+    {
+        return handle;
+    }
+
+    bool operator==(const Win32Handle& other) const
+    {
+        return CompareObjectHandles(handle, other);
+    }
+
+    bool operator!=(const Win32Handle& other) const
+    {
+        return !(*this == other);
+    }
+};
+
+using Win32ServiceHandle = Win32Handle<SC_HANDLE, CloseServiceHandle>;
 
 #endif
