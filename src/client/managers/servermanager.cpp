@@ -263,12 +263,14 @@ void ServerManager::change_server_options(int index, QString ip)
         model->endRowAppend();
     }
 
+    if (index == servers.size())
+        servers.push_back(temp);
+    else
+        servers[index] = temp;
+
     QSettings settings;
 
-    int size = settings.beginReadArray("servers");
-    settings.endArray();
-
-    settings.beginWriteArray("servers", size < index ? index : size);
+    settings.beginWriteArray("servers", servers.size());
     settings.setArrayIndex(index);
 
     settings.setValue("hostname", temp->get_hostname());
@@ -276,11 +278,6 @@ void ServerManager::change_server_options(int index, QString ip)
     settings.setValue("ip"      , temp->get_ip      ());
 
     settings.endArray();
-    
-    if (index == servers.size())
-        servers.push_back(temp);
-    else
-        servers[index] = temp;
 }
 
 void ServerManager::server_offline(Server* server)
