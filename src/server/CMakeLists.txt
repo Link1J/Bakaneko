@@ -10,6 +10,7 @@ set(SRCS
     windows_service.cpp
     network.cpp
     info.cpp
+    services.cpp
 )
 
 add_executable(bakaneko-server ${SRCS})
@@ -34,7 +35,7 @@ target_include_directories(bakaneko-server PUBLIC
 
 target_link_libraries(bakaneko-server PUBLIC
     ljh
-    commun
+    protobuf-files
     spdlog::spdlog
 )
 if (WIN32)
@@ -49,5 +50,5 @@ if (UNIX)
     install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.service" DESTINATION "${KDE_INSTALL_FULL_SYSTEMDUNITDIR}/system")
     install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_FULL_SYSCONFDIR}/bakaneko-server.ini")
 else()
-    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_BINDIR}")
+    #install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_BINDIR}")
 endif()

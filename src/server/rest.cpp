@@ -6,6 +6,7 @@
 #include <spdlog/spdlog.h>
 
 #include <ljh/function_pointer.hpp>
+#include <ljh/function_traits.hpp>
 
 Rest::Server::Connection::Connection(asio::ip::tcp::socket socket_)
 #if BOOST_VERSION < 107000
@@ -125,9 +126,16 @@ void Rest::Server::on_accept(boost::system::error_code ec)
     do_accept();
 }
 
-template<class MessageReply, class Body, class Allocator, class Send>
-void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)(const Fields&), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+
+// template<class MessageReply, class Body, class Allocator, class Send, class MessageRequest>
+// void Run(ljh::expected<MessageReply,Errors>(*function)(const Fields&, MessageRequest), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+
+template<class Function, class Body, class Allocator, class Send>
+void Rest::Server::Connection::Run(Function function, beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
+    using FunctionTraits = ljh::function_traits<Function>;
+    using MessageReply = FunctionTraits::return_type::value_type;
+
     try
     {
         Fields fields;
@@ -137,11 +145,22 @@ void Rest::Server::Connection::Run(ljh::expected<MessageReply,Errors>(*function)
             fields.authentication = std::string(field.data(), field.size());
         }
 
-        auto message_res = function(fields);
+        auto message_res = [&fields, &req, &function]{
+            if constexpr (FunctionTraits::argument_count < 2)
+            {
+                return function(fields);
+            }
+            else
+            {
+                FunctionTraits::argument_type<1> message_req;
+                message_req.ParseFromString(req.body());
+                return function(fields, message_req);
+            }
+        }();
 
         if (message_res.has_value())
         {
-            if constexpr (!std::is_same_v<MessageReply,void>)
+            if constexpr (!std::is_void_v<MessageReply>)
             {
                 if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
                 {
@@ -228,6 +247,8 @@ template<class Body, class Allocator, class Send>
 void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
     auto path = req.target();
+
+    spdlog::get("networking")->debug("API Requested: {}", std::string{path.data(), path.size()});
     
     if (path == "/")
     {
@@ -248,6 +269,10 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
             return Run(&Info::Updates , std::move(req), std::move(send));
         if (path == "/network/adapters")
             return Run(&Info::Adapters, std::move(req), std::move(send));
+        if (path == "/service")
+            return Run(&Info::Service , std::move(req), std::move(send));
+        if (path == "/services")
+            return Run(&Info::Services, std::move(req), std::move(send));
     }
     if (req.method() == beast::http::verb::post)
     {
