@@ -63,6 +63,8 @@ public Q_SLOT:
     bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
     bool removeRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;
 
+    Q_INVOKABLE bool fuzzy_check(int row, QString data);
+
 Q_SIGNALS:
 
 private:

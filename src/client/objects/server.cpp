@@ -687,7 +687,7 @@ void Server::handle_services(Bakaneko::Services info)
                 if (cur.display_name() != din.display_name())
                 {
                     cur.set_display_name(din.display_name());
-                    delta.emplace_back(2);
+                    delta.emplace_back(3);
                 }
                 services.flag(a, delta);
             }
@@ -697,7 +697,7 @@ void Server::handle_services(Bakaneko::Services info)
             services.insertRow(services.rowCount());
             services.data(services.rowCount() - 1) = din;
             services.flag(services.rowCount() - 1, {
-                0, 1, 2,
+                0, 1, 2, 3,
             });
         }
     }

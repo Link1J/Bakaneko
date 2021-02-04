@@ -4,6 +4,7 @@
 #include "services.h"
 #include <PlatformTheme>
 #include <QFontMetricsF>
+#include <algorithm>
 
 ServiceTypeList::ServiceTypeList(QObject* parent)
     : QAbstractListModel(parent)
@@ -54,7 +55,7 @@ ServiceModel::ServiceModel(QObject* parent)
     int largeSpacing = int(metrics.height()) / 4 * 2;
     for (int a = 0; a < columnCount(); a++)
     {
-        min_width[a].size = metrics.boundingRect(headerData(a, Qt::Horizontal).toString()).width() + largeSpacing * 2 + 1;
+        min_width[a].size = metrics.boundingRect(headerData(a, Qt::Horizontal).toString()).width() + largeSpacing * 2;
     }
 }
 
@@ -72,7 +73,7 @@ void ServiceModel::flag(int row, std::vector<int> columns)
 
     for (auto& column : columns)
     {
-        qreal width = metrics.boundingRect(data(createIndex(row, column)).toString()).width() + largeSpacing * 2 + 1;
+        qreal width = metrics.boundingRect(data(createIndex(row, column)).toString()).width() + largeSpacing * 2;
         if (width > min_width[column].size)
         {
             min_width[column].size = width;
@@ -80,7 +81,7 @@ void ServiceModel::flag(int row, std::vector<int> columns)
         }
         else if (row == min_width[column].index && width < min_width[column].size)
         {
-            auto width = metrics.boundingRect(headerData(column, Qt::Horizontal).toString()).width() + largeSpacing * 2 + 1;
+            auto width = metrics.boundingRect(headerData(column, Qt::Horizontal).toString()).width() + largeSpacing * 2;
             if (width > min_width[column].size)
             {
                 min_width[column].size  = width;
@@ -92,7 +93,7 @@ void ServiceModel::flag(int row, std::vector<int> columns)
                 if (a == row)
                     continue;
 
-                width = metrics.boundingRect(data(createIndex(a, column)).toString()).width() + largeSpacing * 2 + 1;
+                width = metrics.boundingRect(data(createIndex(a, column)).toString()).width() + largeSpacing * 2;
                 if (width > min_width[column].size)
                 {
                     min_width[column].size = width;
@@ -151,6 +152,9 @@ QVariant ServiceModel::data(const QModelIndex& index, int role) const
         return temp.enabled() ? "Enabled" : "Disabled";
 
     case 2:
+        return QString::fromStdString(temp.type());
+
+    case 3:
         return QString::fromStdString(temp.display_name());
     }
     return QVariant();
@@ -163,7 +167,7 @@ int ServiceModel::rowCount(const QModelIndex& parent) const
 
 int ServiceModel::columnCount(const QModelIndex& parent) const
 {
-    return 3;
+    return 4;
 }
 
 QHash<int, QByteArray> ServiceModel::roleNames() const
@@ -186,7 +190,8 @@ QVariant ServiceModel::headerData(int section, Qt::Orientation orientation, int 
     {
     case 0: return "State";
     case 1: return "Enabled";
-    case 2: return "Name";
+    case 2: return "Type";
+    case 3: return "Name";
     }
     return QVariant{};
 }
@@ -210,4 +215,15 @@ bool ServiceModel::removeRows(int row, int count, const QModelIndex& parent)
 int ServiceModel::columnMinWidth(int column)
 {
     return min_width[column].size;
+}
+
+bool ServiceModel::fuzzy_check(int row, QString data)
+{
+    std::string search = data.toUtf8().data();
+    std::string text = updates[row].display_name();
+
+    std::transform(search.begin(), search.end(), search.begin(), &toupper);
+    std::transform(text  .begin(), text  .end(), text  .begin(), &toupper);
+
+    return text.find(search) != std::string::npos;
 }

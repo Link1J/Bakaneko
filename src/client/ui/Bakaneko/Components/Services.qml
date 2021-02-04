@@ -17,17 +17,38 @@ Kirigami.Page {
 	title: currentServer.serviceManager
 	padding: 0
 	
-	header: 
+	header:
 	Controls.ToolBar {
+		property alias comboBox: row.comboBox
+		property alias searchField: row.searchField
+
 		RowLayout {
+			id: row
+
+			property var comboBox: comboBox
+			property var searchField: searchField
+
 			anchors.fill: parent
+
 			Controls.ComboBox {
+				id: comboBox
+
 				Layout.maximumWidth: 100 * Kirigami.Units.devicePixelRatio
+
 				model: currentServer.serviceTypes
 				textRole: "display"
+
+				onActivated: {
+					table.forceLayout()
+				}
 			}
 			Kirigami.SearchField {
+				id: searchField
 				Layout.fillWidth: true
+
+				onTextChanged: {
+					table.forceLayout()
+				}
 			}
 		}
 	}
@@ -37,10 +58,22 @@ Kirigami.Page {
 		anchors.fill: parent
 
 		columnWidthProvider: function (column) {
-			if (column === 2) {
-				return dynamic_column(column);
+			if (column === 3) {
+				return dynamic_column(3);
 			}
 			return defaultColumnWidthProvider(column);
+		}
+
+		rowHeightProvider: function (row) {
+			if (header.comboBox.currentText !== "All") {
+				if (header.comboBox.currentText !== model.data(model.index(row, 2), Qt.DisplayRole)) {
+					return 0;
+				}
+			}
+			if (!model.fuzzy_check(row, header.searchField.text)) {
+				return 0;
+			}
+			return defaultRowHeightProvider(row);
 		}
 
 		model: currentServer.services
@@ -48,6 +81,7 @@ Kirigami.Page {
 		delegate:
 		Components.Table.Item {
 			id: item
+			visible: table.contentHeight !== 0
 			text: display
 			hoverEnabled: true
 			leftBorder : !table.fillsParent ? column === 0 : false

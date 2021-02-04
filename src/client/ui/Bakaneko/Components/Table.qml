@@ -33,7 +33,7 @@ Rectangle {
 
 	readonly property alias table : grid.table
 
-	color: "transparent"
+	color: /*Kirigami.Theme.backgroundColor //*/ "transparent"
 
 	function forceLayout() {
 		table.forceLayout();
@@ -51,10 +51,23 @@ Rectangle {
 		forceLayout();
 	}
 
+	Connections {
+		target: scrollView.Controls.ScrollBar.vertical
+		onVisibleChanged: {
+			base.forceLayout();
+		}
+	}
+	Connections {
+		target: scrollView.Controls.ScrollBar.horizontal
+		onVisibleChanged: {
+			base.forceLayout();
+		}
+	}
+
 	function dynamic_column(column) {
 		var mins = defaultColumnWidthProvider(column);
-		var sum = width - scrollWidth;
-		for (var a = 0; a < columns; a++) {
+		var sum = table.width;
+		for (var a = 0; a < model.columnCount(); a++) {
 			if (a === column) continue;
 			sum -= columnWidthProvider(a);
 		}
@@ -72,11 +85,11 @@ Rectangle {
 			var sum = 0;
 
 			if (table.hasColumnHeaders) {
-				sum = metrics.boundingRect(model.headerData(column, Qt.Horizontal)).width + Kirigami.Units.largeSpacing * 2 + 1;
+				sum = metrics.boundingRect(model.headerData(column, Qt.Horizontal)).width + Kirigami.Units.largeSpacing * 2;
 			}
 
 			for (var i = 0; i < model.rowCount(); i++) {
-				var width = metrics.boundingRect(model.data(model.index(i, column), Qt.DisplayRole)).width + Kirigami.Units.largeSpacing * 2 + 1;
+				var width = metrics.boundingRect(model.data(model.index(i, column), Qt.DisplayRole)).width + Kirigami.Units.largeSpacing * 2;
 				if (width > sum) {
 					sum = width;
 				}
@@ -98,6 +111,11 @@ Rectangle {
 				sum = height;
 			}
 		}
+
+		if (!base.fillsParent) {
+			sum += 1;
+		}
+
 		return sum;
 	}
 
@@ -157,6 +175,7 @@ Rectangle {
 					for (var i = 0; i < table.columns; i++) {
 						sum += table.columnWidthProvider(i);
 					}
+					console.log(sum);
 					return sum;
 				}
 
@@ -171,7 +190,7 @@ Rectangle {
 				boundsBehavior: Flickable.StopAtBounds
 
 				delegate: Item {
-					text: display
+					text: table.contentHeight !== 0 ? display : ""
 					leftBorder : !base.fillsParent ? column === 0 : false
 					rightBorder: (base.fillsParent && column === table.columns - 1) ? table.remainWidth > 0 : true
 				}
@@ -258,7 +277,7 @@ Rectangle {
 		property bool bottomBorder: true
 		property bool rightBorder : true
 		
-		height: column.height
+		property alias objectHeight: column.height
 
 		ColumnLayout {
 			id: column
@@ -284,6 +303,8 @@ Rectangle {
 
 				Layout.fillWidth: true
 				Layout.margins  : 0
+
+				height: label.height
 
 				id: row
 
@@ -357,6 +378,8 @@ Rectangle {
 				model: table.columns >= 0 ? table.columns : 0
 				Item {
 					id: headerItem
+
+					height: objectHeight
 
 					width: table.columnWidthProvider(modelData)
 					text : table.model.headerData(modelData, Qt.Horizontal)
