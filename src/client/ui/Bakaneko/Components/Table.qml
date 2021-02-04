@@ -4,7 +4,7 @@
 import QtQuick 2.14
 import QtQuick.Layouts 1.0
 import org.kde.kirigami 2.5 as Kirigami
-import QtQuick.Controls 2.0 as Controls
+import QtQuick.Controls 2.9 as Controls
 
 Rectangle {
 	id: base
@@ -23,12 +23,14 @@ Rectangle {
 	readonly property alias contentY     : table.contentY
 	readonly property alias contentX     : table.contentX
 
-	readonly property real  scrollWidth  : table.Controls.ScrollBar.vertical  .visible * (table.Controls.ScrollBar.vertical  .width )
-	readonly property real  scrollHeight : table.Controls.ScrollBar.horizontal.visible * (table.Controls.ScrollBar.horizontal.height)
-	readonly property real  totalWidth   : contentWidth  + table.leftMargin + scrollWidth
-	readonly property real  totalHeight  : contentHeight + table.topMargin  + scrollHeight
+	readonly property real  scrollWidth  : scrollView.Controls.ScrollBar.vertical  .visible * (scrollView.Controls.ScrollBar.vertical  .width )
+	readonly property real  scrollHeight : scrollView.Controls.ScrollBar.horizontal.visible * (scrollView.Controls.ScrollBar.horizontal.height)
+	readonly property real  totalWidth   : contentWidth  + scrollWidth  + 0
+	readonly property real  totalHeight  : contentHeight + scrollHeight + columnsHeader.height
 
-	readonly property var tableView : table
+	readonly property bool fillsParent: anchors.fill === parent
+
+	readonly property alias table : grid.table
 
 	color: "transparent" // Kirigami.Theme.backgroundColor
 
@@ -37,6 +39,14 @@ Rectangle {
 	}
 
 	onWidthChanged: {
+		forceLayout();
+	}
+
+	onScrollWidthChanged: {
+		forceLayout();
+	}
+
+	onScrollHeightChanged: {
 		forceLayout();
 	}
 
@@ -54,19 +64,24 @@ Rectangle {
 	}
 
 	function defaultColumnWidthProvider(column) {
-		var sum = 0;
-		
-		if (table.hasColumnHeaders) {
-			sum = metrics.boundingRect(model.headerData(column, Qt.Horizontal)).width + Kirigami.Units.largeSpacing * 2 + 1;
+		if (model.columnMinWidth !== undefined) {
+			return model.columnMinWidth(column);
 		}
+		else {
+			var sum = 0;
 
-		for (var i = 0; i < model.rowCount(); i++) {
-			var width = metrics.boundingRect(model.data(model.index(i, column), Qt.DisplayRole)).width + Kirigami.Units.largeSpacing * 2 + 1;
-			if (width > sum) {
-				sum = width;
+			if (table.hasColumnHeaders) {
+				sum = metrics.boundingRect(model.headerData(column, Qt.Horizontal)).width + Kirigami.Units.largeSpacing * 2 + 1;
 			}
+
+			for (var i = 0; i < model.rowCount(); i++) {
+				var width = metrics.boundingRect(model.data(model.index(i, column), Qt.DisplayRole)).width + Kirigami.Units.largeSpacing * 2 + 1;
+				if (width > sum) {
+					sum = width;
+				}
+			}
+			return sum;
 		}
-		return sum;
 	}
 	
 	function defaultRowHeightProvider(row) {
@@ -85,152 +100,150 @@ Rectangle {
 		return sum;
 	}
 
-	TableView {
-		id: table
-		clip: true
+	GridLayout {
+		id: grid
+		columns: 2
+		rows   : 2
 
-		property bool hasColumnHeaders: table.model.headerData(-1, Qt.Horizontal) !== 0
-		property bool hasRowHeaders   : table.model.headerData(-1, Qt.Vertical  ) !== 0
+		columnSpacing: 0
+		rowSpacing   : 0
 
 		anchors.fill: parent
 
-		Controls.ScrollBar.horizontal: Controls.ScrollBar {}
-		Controls.ScrollBar.vertical  : Controls.ScrollBar {}
+		property alias table: scrollView.table
+		property var scrollView: scrollView
+		property var columnsHeader: columnsHeader
 
-		topMargin : (hasColumnHeaders && base.showHeaders) ? columnsHeader.implicitHeight : 0
-		leftMargin: (hasRowHeaders                       ) ? rowsHeader   .implicitHeight : 0
+		Rectangle {
+			Layout.row   : 0
+			Layout.column: 1
+			Layout.fillWidth : true
 
-		contentWidth: {
-			var sum = 0;
-			for (var i = 0; i < table.columns; i++) {
-				sum += table.columnWidthProvider(i);
-			}
-			return sum;
-		}
-
-		contentHeight: {
-			var sum = 0;
-			for (var i = 0; i < table.rows; i++) {
-				sum += table.rowHeightProvider(i);
-			}
-			return sum;
-		}
-
-		boundsBehavior: Flickable.StopAtBounds
-
-		delegate: Item {
-			text: display
-			leftBorder: !(base.anchors.fill === base.parent && column === 0)
-			rightBorder: !(base.anchors.fill === base.parent && column === table.columns - 1 && table.remainWidth <= 0)
-		}
-
-		columnWidthProvider: parent.defaultColumnWidthProvider
-		rowHeightProvider  : parent.defaultRowHeightProvider
-		
-		property real remainHeight: table.parent.height - table.contentHeight - (table.topMargin )
-		property real remainWidth : table.parent.width  - table.contentWidth  - (table.leftMargin)
-
-		Column {
 			id: columnsHeader
-			y: table.contentY
-			z: 3
 			visible: base.showHeaders
-			Rectangle {
-				Kirigami.Theme.colorSet: Kirigami.Theme.Header
-				Kirigami.Theme.inherit: false
-				color: Kirigami.Theme.backgroundColor
-				width : table.contentWidth + table.leftMargin + (table.remainWidth > 0 ? table.remainWidth : 0)
-				height: header.height
-				visible: base.showHeaders
-				
-				onWidthChanged: {
-					header.updateSize();
-				}
 
-				Header {
-					id: header
-					table: table
-					_base: base
-				}
-			}
-		}
+			Kirigami.Theme.colorSet: Kirigami.Theme.Header
+			Kirigami.Theme.inherit: false
+			color: Kirigami.Theme.backgroundColor
+			implicitHeight: header.height
 
-		Row {
-			id: columnsExtra
-			y: table.contentY + table.contentHeight + table.topMargin
-			z: 3
-
-			width : table.contentWidth + table.leftMargin + (table.remainWidth > 0 ? table.remainWidth : 0)
-			
 			onWidthChanged: {
-				updateSize();
+				header.updateSize();
 			}
-
-			signal updateSize()
-
-			Repeater {
-				model: table.columns >= 0 ? table.columns : 0
-				Item {
-					id: headerItem
-
-					width: table.columnWidthProvider(modelData)
-					height: table.remainHeight > 0 ? table.remainHeight : 0
-					text : ""
-					leftBorder  : base.anchors.fill !== base.parent ? modelData === 0 : false
-					bottomBorder: base.anchors.fill !== base.parent
-					rightBorder : !(base.anchors.fill === base.parent && modelData === table.columns - 1 && table.remainWidth <= base.scrollWidth)
-
-					Connections {
-						target: table.model
-						function onDataChanged() {
-							headerItem.width = table.columnWidthProvider(modelData);
-						}
-					}
-					Connections {
-						target: columnsExtra
-						function onUpdateSize() {
-							headerItem.width = table.columnWidthProvider(modelData);
-						}
-					}
-				}
-			}
-			Item {
-				x: table.contentWidth + table.leftMargin
-				width: table.remainWidth > 0 ? table.remainWidth : 0
-				visible: table.remainWidth > 0
-
-				bottomBorder: base.anchors.fill !== base.parent
-				rightBorder : base.anchors.fill !== base.parent
+			Header {
+				id: header
+				table: base
 			}
 		}
+		Controls.ScrollView {
+			id: scrollView
+			property var table: table
 
-			/*Repeater {
-				model: table.columns >= 0 ? table.columns : 0
-				Item {
-					width: table.columnWidthProvider(modelData)
-					visible: table.remainHeight > 0
-					bottomBorder: false
-					rightBorder: !(base.anchors.fill === base.parent && modelData === table.columns - 1 && table.remainWidth <= base.scrollWidth)
+			Layout.row       : 1
+			Layout.column    : 1
+			Layout.fillWidth : true
+			Layout.fillHeight: true
 
-					Connections {
-						target: table.model
-						function onDataChanged() {
-							parent.width = table.columnWidthProvider(modelData);
+			TableView {
+				id: table
+				clip: true
+
+				property bool hasColumnHeaders: table.model.headerData(-1, Qt.Horizontal) !== 0
+				property bool hasRowHeaders   : table.model.headerData(-1, Qt.Vertical  ) !== 0
+
+				contentWidth: {
+					var sum = 0;
+					for (var i = 0; i < table.columns; i++) {
+						sum += table.columnWidthProvider(i);
+					}
+					return sum;
+				}
+
+				contentHeight: {
+					var sum = 0;
+					for (var i = 0; i < table.rows; i++) {
+						sum += table.rowHeightProvider(i);
+					}
+					return sum;
+				}
+
+				boundsBehavior: Flickable.StopAtBounds
+
+				delegate: Item {
+					text: display
+					leftBorder : !base.fillsParent ? column === 0 : false
+					rightBorder: (base.fillsParent && column === table.columns - 1) ? table.remainWidth > 0 : true
+				}
+
+				columnWidthProvider: base.defaultColumnWidthProvider
+				rowHeightProvider  : base.defaultRowHeightProvider
+
+				property real remainHeight: base.height - table.contentHeight - base.scrollHeight
+				property real remainWidth : base.width  - table.contentWidth  - base.scrollWidth
+
+				pixelAligned: true
+
+				Row {
+					id: columnsExtra
+					y: table.contentY + table.contentHeight + table.topMargin
+					z: 3
+
+					width : table.contentWidth + table.leftMargin + (table.remainWidth > 0 ? table.remainWidth : 0)
+
+					onWidthChanged: {
+						updateSize();
+					}
+
+					signal updateSize()
+
+					Repeater {
+						model: table.columns >= 0 ? table.columns : 0
+						Item {
+							id: headerItem
+
+							width: table.columnWidthProvider(modelData)
+							height: table.remainHeight > 0 ? table.remainHeight : 0
+							text : ""
+							leftBorder  : !base.fillsParent ? modelData === 0 : false
+							bottomBorder: !base.fillsParent
+							rightBorder : (base.fillsParent && modelData === table.columns - 1) ? table.remainWidth > 0 : true
+
+							Connections {
+								target: table.model
+								function onDataChanged() {
+									headerItem.width = table.columnWidthProvider(modelData);
+								}
+							}
+							Connections {
+								target: columnsExtra
+								function onUpdateSize() {
+									headerItem.width = table.columnWidthProvider(modelData);
+								}
+							}
 						}
 					}
+					Item {
+						x: table.contentWidth + table.leftMargin
+						width: table.remainWidth > 0 ? table.remainWidth : 0
+						visible: table.remainWidth > 0
+
+						bottomBorder: !base.fillsParent
+						rightBorder : !base.fillsParent
+					}
 				}
-			}*/
 
-		Connections {
-			target: table.model
-			function onDataChanged() {
-				table.forceLayout();
+				Connections {
+					target: table.model
+					function onDataChanged() {
+						table.forceLayout();
+					}
+				}
+
+				FontMetrics {
+					id: metrics
+					font: Kirigami.Theme.defaultFont
+				}
 			}
-		}
-
-		FontMetrics {
-			id: metrics
-			font: Kirigami.Theme.defaultFont
 		}
 	}
 
@@ -288,77 +301,77 @@ Rectangle {
 		}
 	}
 
-	component Header : Row {
-		id: row
-
+	component Header : Flickable {
+		id: scroll
 		property var table
 		property var _base: null
 
 		Component.onCompleted: {
-			if (table.tableView !== undefined) {
+			if (table.table !== undefined) {
 				_base = table;
-				table = _base.tableView;
+				table = _base.table;
 			}
 		}
+
+		interactive: false
+		contentX: table.contentX
+		contentHeight: row.height
+		height: row.height
 		
 		onWidthChanged: {
 			updateSize();
 		}
-
 		signal updateSize()
+		
+		Connections {
+			target: _base
+			function onScrollWidthChanged() {
+				scroll.updateSize();
+			}
+			function onScrollHeightChanged() {
+				scroll.updateSize();
+			}
+		}
 
-		Repeater {
-			model: table.columns >= 0 ? table.columns : 0
-			Item {
-				id: headerItem
+		Row {
+			id: row
 
-				width: table.columnWidthProvider(modelData)
-				text : table.model.headerData(modelData, Qt.Horizontal)
-				topBorder   : _base.showHeaders && _base.anchors.fill !== _base.parent
-				leftBorder  : _base.anchors.fill !== _base.parent ? modelData === 0 : false
-				bottomBorder: _base.showHeaders
-				rightBorder : !(_base.anchors.fill === _base.parent && modelData === table.columns - 1 && table.remainWidth <= _base.scrollWidth)
+			Repeater {
+				model: table.columns >= 0 ? table.columns : 0
+				Item {
+					id: headerItem
 
-				Connections {
-					target: table.model
-					function onDataChanged() {
-						headerItem.width = table.columnWidthProvider(modelData);
+					width: table.columnWidthProvider(modelData)
+					text : table.model.headerData(modelData, Qt.Horizontal)
+					topBorder   : _base.showHeaders && !_base.fillsParent
+					leftBorder  : !_base.fillsParent ? modelData === 0 : false
+					bottomBorder: _base.showHeaders
+					rightBorder : _base.fillsParent && modelData === table.columns - 1 ? table.remainWidth > 0 : true
+
+					Connections {
+						target: table.model
+						function onDataChanged() {
+							headerItem.width = table.columnWidthProvider(modelData);
+						}
 					}
-				}
-				Connections {
-					target: row
-					function onUpdateSize() {
-						headerItem.width = table.columnWidthProvider(modelData);
+					Connections {
+						target: scroll
+						function onUpdateSize() {
+							headerItem.width = table.columnWidthProvider(modelData);
+							
+						}
 					}
 				}
 			}
-		}
-		Item {
-			x: table.contentWidth + table.leftMargin
-			width: table.remainWidth > 0 ? table.remainWidth : 0
-			visible: table.remainWidth > 0 && _base.showHeaders
+			Item {
+				x: table.contentWidth + table.leftMargin
+				width: (table.remainWidth > 0 ? table.remainWidth : 0) + _base.scrollWidth
+				visible: (table.remainWidth > 0 && _base.showHeaders) || table.Controls.ScrollBar.vertical.visible
 
-			topBorder   : _base.showHeaders && _base.anchors.fill !== _base.parent
-			bottomBorder: _base.showHeaders
-			rightBorder : _base.anchors.fill !== _base.parent
-		}
-	}
-
-	component HeaderBar : Flickable {
-		id: scroll
-		property alias table: header.table
-
-		interactive: false
-		contentX: header.table.contentX
-		contentHeight: header.height
-		height: header.height
-		
-		onWidthChanged: {
-			header.updateSize();
-		}
-
-		Header {
-			id: header
+				topBorder   : _base.showHeaders && !_base.fillsParent
+				bottomBorder: _base.showHeaders
+				rightBorder : !_base.fillsParent
+			}
 		}
 	}
 }

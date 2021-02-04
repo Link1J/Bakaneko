@@ -21,6 +21,7 @@
         <file>ui/Bakaneko/Components/Drives.qml</file>
         <file>ui/Bakaneko/Components/Adapters.qml</file>
         <file>ui/Bakaneko/Components/Table.qml</file>
+        <file>ui/Bakaneko/Components/Services.qml</file>
 
         <file>ui/Bakaneko/Dialogs/qmldir</file>
         <file>ui/Bakaneko/Dialogs/AddServerDialog.qml</file>

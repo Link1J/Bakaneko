@@ -100,6 +100,11 @@ Kirigami.Page {
 					name: "Updates",
 					icon: info_colunm.is_breeze_theme() ? "update-none" : "system-software-update",
 					page: updates_page
+				},
+				{
+					name: "Services",
+					icon: info_colunm.is_breeze_theme() ? "system-run" : "preferences-system-services",
+					page: services_page
 				}
 			]
 			delegate: Kirigami.BasicListItem {
@@ -141,6 +146,12 @@ Kirigami.Page {
 			id: updates_page
 			Components.UpdateList {
 				objectName: "Updates"
+			}
+		}
+		Component {
+			id: services_page
+			Components.Services {
+				objectName: "Services"
 			}
 		}
 	}

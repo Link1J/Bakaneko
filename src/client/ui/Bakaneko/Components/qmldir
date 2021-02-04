@@ -9,3 +9,4 @@ ServerInfo 1.0 ServerInfo.qml
 Drives 1.0 Drives.qml
 Adapters 1.0 Adapters.qml
 Table 1.0 Table.qml
+Services 1.0 Services.qml

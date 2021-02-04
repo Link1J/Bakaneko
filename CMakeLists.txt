@@ -22,9 +22,9 @@ ecm_setup_version(0.1.1
 )
 
 add_subdirectory(externals)
-add_subdirectory(src/commun)
+add_subdirectory(src/protobuf)
 
-set_target_properties(ljh spdlog commun PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
+set_target_properties(ljh spdlog protobuf-files PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 
 if (NOT BAKANEKO_DONT_BUILD_CLIENT)
     add_subdirectory(src/client)

@@ -18,7 +18,7 @@ Kirigami.Page {
 	header: Controls.ToolBar {
 		padding: 0
 		height: flickable.contentHeight + 1
-		Components.Table.HeaderBar {
+		Components.Table.Header {
 			id: flickable
 			anchors.fill: parent
 			table: table

@@ -34,6 +34,7 @@ set(SRCS
     models/updatemodel.cpp
     models/drivesmodel.cpp
     models/adaptermodel.cpp
+    models/services.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc
@@ -96,7 +97,7 @@ target_link_libraries(bakaneko-client PUBLIC
     KF5::ConfigCore
     KF5::ConfigGui
 
-    commun
+    protobuf-files
     ssh
     ljh
 )

@@ -63,7 +63,7 @@ Kirigami.ScrollablePage {
 			onRowsRemoved: {
 				if (currentServerIndex >= first && currentServerIndex <= last)
 				{
-					while (pageStack.depth > 1)
+					while (pageStack.depth > 0)
 						pageStack.pop();
 					currentServer = null
 					currentServerIndex = -1;

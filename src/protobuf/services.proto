@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
+syntax = "proto3";
+
+package Bakaneko;
+
+message ServiceInfo {
+	string server = 1;
+
+	repeated string types = 16;
+}
+
+message Services {
+	repeated Service service = 1;
+}
+
+message ServicesRequest {
+	string type = 1;
+}
+
+message Service {
+	enum State {
+		Stopped  = 0;
+		Running  = 1;
+		Starting = 2;
+		Stopping = 3;
+	}
+
+	string id      = 1;
+	State  state   = 2;
+	bool   enabled = 3;
+	string type    = 4;
+
+	// Display data
+	string display_name = 16;
+	string description  = 17;
+
+	message Control {
+		enum Action {
+			Stop    = 0;
+			Start   = 1;
+			Restart = 2;
+			Enable  = 3;
+			Disable = 4;
+		}
+
+		string id     = 1;
+		Action action = 2;
+	}
+}

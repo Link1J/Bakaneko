@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string_view>
 #include <thread>
+#include <iostream>
 
 #include "managers/servermanager.h"
 #include "managers/settings.h"
@@ -65,6 +66,10 @@ UpdateModel * Server::get_updates () { return &updates ; }
 DrivesModel * Server::get_drives  () { return &drives  ; }
 AdapterModel* Server::get_adapters() { return &adapters; }
 
+QString          Server::get_service_manager() { return QString::fromStdString(service_manager); }
+ServiceTypeList* Server::get_service_types  () { return                       &service_types   ; }
+ServiceModel   * Server::get_services       () { return                       &services        ; }
+
 void Server::update_info()
 {
     if (!steps_done.try_wait())
@@ -78,9 +83,11 @@ void Server::update_info()
         if (state == State::Online)
         {
             steps_done.count_down();
+            steps_done.count_down();
             network_get("/drives"          , &Server::got_drives  );
             network_get("/updates"         , &Server::got_updates );
             network_get("/network/adapters", &Server::got_adapters);
+            network_get("/services"        , &Server::got_services);
         }
         else
         {
@@ -111,36 +118,33 @@ void Server::update_info()
             hostname = defualt_hostname;
             Q_EMIT changed_hostname();
         }
+        service_types.Clear();
         for (int a = 0; a < max_steps; a++)
             steps_done.count_down();
         return;
     }
 
     network_get("/system"          , &Server::got_info    );
+    network_get("/service"         , &Server::got_service );
     network_get("/drives"          , &Server::got_drives  );
     network_get("/updates"         , &Server::got_updates );
     network_get("/network/adapters", &Server::got_adapters);
+    network_get("/services"        , &Server::got_services);
 }
 
 asio::ip::tcp::socket Server::connection()
 {
-    // if (!socket.is_open())
-    // {
-        asio::ip::tcp::socket socket(ioctx);
-        asio::ip::tcp::resolver resolver(ioctx);
-        auto const results = resolver.resolve(ip_address, "29921");
-        asio::connect(socket, results.begin(), results.end());
-        return socket;
-    // }
-    // return socket;
+    asio::ip::tcp::socket socket(ioctx);
+    asio::ip::tcp::resolver resolver(ioctx);
+    auto const results = resolver.resolve(ip_address, "29921");
+    asio::connect(socket, results.begin(), results.end());
+    return socket;
 }
 
 Server::State Server::ping_computer()
 {
     try
-    {
-        // std::lock_guard _{socket_lock};
-        
+    {        
         beast::http::request<beast::http::string_body> req{beast::http::verb::head, "/", 11};
 
         req.set(beast::http::field::host, ip_address);
@@ -181,6 +185,8 @@ Server::Server(std::string hostname, std::string mac_address, std::string ip_add
     connect(this, &Server::got_drives  , this, &Server::handle_drives  );
     connect(this, &Server::got_updates , this, &Server::handle_updates );
     connect(this, &Server::got_adapters, this, &Server::handle_adapters);
+    connect(this, &Server::got_service , this, &Server::handle_service );
+    connect(this, &Server::got_services, this, &Server::handle_services);
 }
 
 void Server::wake_up()
@@ -245,15 +251,13 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
     QtConcurrent::run([this, path, signal]{
         try
         {
-            // std::lock_guard _{socket_lock};
-
             beast::http::request<beast::http::string_body> req{beast::http::verb::get, path, 11};
 
             req.set(beast::http::field::host, ip_address);
             req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
             req.set(beast::http::field::content_type, "application/x-protobuf");
             req.version(11);
-            req.keep_alive(true);
+            req.keep_alive(false);
 
             auto channel = connection();
 
@@ -266,14 +270,25 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
             
             T info;
 
-            if (res.result_int() != 200) throw 1;
-            if (info.GetTypeName() != res["Protobuf-Type"]) throw 1;
+            if (res.result_int() != 200) throw res.result_int();
+            if (info.GetTypeName() != res["Protobuf-Type"]) throw 0;
 
             info.ParseFromString(res.body());
             Q_EMIT (*this.*signal)(info);
         }
-        catch (...)
+        catch (std::exception e)
         {
+            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e.what() << "\n";
+            steps_done.count_down();
+        }
+        catch (int e)
+        {
+            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
+            steps_done.count_down();
+        }
+        catch (unsigned int e)
+        {
+            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
             steps_done.count_down();
         }
     });
@@ -284,14 +299,12 @@ void Server::network_post(std::string path)
     QtConcurrent::run([this, path]{
         try
         {
-            // std::lock_guard _{socket_lock};
-
             beast::http::request<beast::http::string_body> req{beast::http::verb::post, path, 11};
 
             req.set(beast::http::field::host, ip_address);
             req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
             req.version(11);
-            req.keep_alive(true);
+            req.keep_alive(false);
 
             auto channel = connection();
 
@@ -496,7 +509,7 @@ void Server::handle_adapters(Bakaneko::Adapters info)
             pre.set_bytes_rx(din.bytes_rx());
             pre.set_bytes_tx(din.bytes_tx());
             pre.set_time    (din.time    ());
-            drives.flag(drives.rowCount() - 1, {
+            adapters.flag(adapters.rowCount() - 1, {
                 AdapterModel::ROLE_name,
                 AdapterModel::ROLE_link_speed,
                 AdapterModel::ROLE_state,
@@ -584,4 +597,71 @@ void Server::open_term(QObject* page, QObject* login, QString username, QString 
 
         Q_EMIT open_term(QVariant::fromValue(new Pty({session, channel})));
     });
+}
+
+void Server::handle_service(Bakaneko::ServiceInfo info)
+{
+    service_manager = info.server();
+    Q_EMIT changed_service_manager();
+
+    for (auto& type : info.types())
+        service_types.AddItem(type);
+
+    steps_done.count_down();
+}
+
+void Server::handle_services(Bakaneko::Services info)
+{
+    for (int a = 0; a < services.rowCount(); a++)
+    {
+        bool found = false;
+        for (auto& dinfo : info.service())
+            if (services.data(a).id() == dinfo.id())
+                found = true;
+        if (!found)
+        {
+            services.removeRow(a);
+            a--;
+        }
+    }
+
+    for (auto& din : info.service())
+    {
+        bool done = false;
+        for (int a = 0; a < services.rowCount(); a++)
+        {
+            auto& cur = services.data(a);
+            if (cur.id() == din.id())
+            {
+                done = true;
+                std::vector<int> delta;
+                if (cur.state() != din.state())
+                {
+                    cur.set_state(din.state());
+                    delta.emplace_back(0);
+                }
+                if (cur.enabled() != din.enabled())
+                {
+                    cur.set_enabled(din.enabled());
+                    delta.emplace_back(1);
+                }
+                if (cur.display_name() != din.display_name())
+                {
+                    cur.set_display_name(din.display_name());
+                    delta.emplace_back(2);
+                }
+                services.flag(a, delta);
+            }
+        }
+        if (!done)
+        {
+            services.insertRow(services.rowCount());
+            services.data(services.rowCount() - 1) = din;
+            services.flag(services.rowCount() - 1, {
+                0, 1, 2,
+            });
+        }
+    }
+
+    steps_done.count_down();
 }

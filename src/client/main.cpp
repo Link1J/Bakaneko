@@ -24,6 +24,7 @@
 #include "models/serverlistmodel.h"
 #include "models/termlist.h"
 #include "models/updatemodel.h"
+#include "models/services.h"
 
 #include "objects/server.h"
 
@@ -65,10 +66,12 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     WSAStartup(MAKEWORD(2,2), &wsaData);
 #endif
 
-    qRegisterMetaType<Bakaneko::System  >("Bakaneko::System"  );
-    qRegisterMetaType<Bakaneko::Drives  >("Bakaneko::Drives"  );
-    qRegisterMetaType<Bakaneko::Updates >("Bakaneko::Updates" );
-    qRegisterMetaType<Bakaneko::Adapters>("Bakaneko::Adapters");
+    qRegisterMetaType<Bakaneko::System     >("Bakaneko::System"     );
+    qRegisterMetaType<Bakaneko::Drives     >("Bakaneko::Drives"     );
+    qRegisterMetaType<Bakaneko::Updates    >("Bakaneko::Updates"    );
+    qRegisterMetaType<Bakaneko::Adapters   >("Bakaneko::Adapters"   );
+    qRegisterMetaType<Bakaneko::ServiceInfo>("Bakaneko::ServiceInfo");
+    qRegisterMetaType<Bakaneko::Services   >("Bakaneko::Services"   );
 
     ServerManager::Instance().update_server_info(true);
 
