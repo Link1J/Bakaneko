@@ -47,9 +47,9 @@ Kirigami.ScrollablePage
 				text: parent.value
 				x: (parent.visualPosition * parent.implicitWidth) - (implicitWidth / 2)
 			}
-			Controls.ToolTip {
-				text: i18n("\nIf unsure leave at 5.")
-			}
+			//Controls.ToolTip {
+			//	text: i18n("\nIf unsure leave at 5.")
+			//}
 		}
 		Kirigami.Separator {
 			Kirigami.FormData.label: i18n("Terminal")

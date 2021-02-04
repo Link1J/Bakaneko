@@ -15,10 +15,19 @@ Kirigami.OverlaySheet {
 
 	property var source_page
 
+	signal run(Objects.LoginData logindata)
+
 	header: Kirigami.Heading {
 		text: i18n("Login")
 	}
 	contentItem: ColumnLayout {
+		Objects.LoginData {
+			id: logindata
+			page    : source_page;
+			login   : addServerDialog;
+			username: username.text;
+			password: password.text;
+		}
 		Kirigami.InlineMessage {
 			Layout.fillWidth: true
 			id: fail_text
@@ -50,15 +59,20 @@ Kirigami.OverlaySheet {
 					id: addButton
 					text: i18nc("@action:button", "Login")
 					onClicked: {
-						if (username.text !== "") {
+						if (username.text !== "" && password.text !== "") {
 							form     .visible = false;
 							addButton.enabled = false;
-							indic.running = indic.visible = true;
+							indic.running     = true ;
+							indic.visible     = true ;
 							fail_text.visible = false;
-							currentServer.open_term(source_page, addServerDialog, username.text, password.text);
+							run(logindata)
 						}
-						else {
+						else if (username.text === "") {
 							fail_text.text = "No username given";
+							fail_text.visible = true;
+						}
+						else if (password.text === "") {
+							fail_text.text = "No password given";
 							fail_text.visible = true;
 						}
 					}
@@ -67,12 +81,12 @@ Kirigami.OverlaySheet {
 		}
 	}
 	function connecting_fail(msg) {
-		fail_text.text = msg;
+		fail_text.text    = msg;
 		fail_text.visible = true;
 		form     .visible = true;
 		addButton.enabled = true;
-		indic.running = false;
-		indic.visible = false;
+		indic.running     = false;
+		indic.visible     = false;
 	}
 	function done() {
 		close()

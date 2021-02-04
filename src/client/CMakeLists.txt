@@ -35,6 +35,7 @@ set(SRCS
     models/drivesmodel.cpp
     models/adaptermodel.cpp
     models/services.cpp
+    objects/logindata.cpp
 )
 qt5_add_resources(RESOURCES
     qml.qrc

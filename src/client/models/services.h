@@ -36,17 +36,12 @@ class ServiceModel : public QAbstractTableModel
     Q_OBJECT
 
 public:
-    //enum ServerRoles {
-    //    ROLE_name  = Qt::UserRole + 1,
-    //    ROLE_link_speed,
-    //    ROLE_state,
-    //    ROLE_mtu,
-    //    ROLE_mac_address,
-    //    ROLE_ip_address,
-    //    ROLE_rx_rate,
-    //    ROLE_tx_rate,
-    //};
-    //Q_ENUM(ServerRoles)
+    enum ServerRoles {
+        ROLE_state = Qt::UserRole + 1,
+        ROLE_enable,
+        ROLE_id,
+    };
+    Q_ENUM(ServerRoles);
 
     explicit ServiceModel(QObject* parent = nullptr);
     ~ServiceModel() override;
@@ -62,7 +57,7 @@ public Q_SLOT:
 
     Q_INVOKABLE int columnMinWidth(int column);
 
-    // [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
+    [[nodiscard]] QHash<int, QByteArray> roleNames() const override;
     [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const override;
 
     bool insertRows(int row, int count, const QModelIndex& parent = QModelIndex()) override;

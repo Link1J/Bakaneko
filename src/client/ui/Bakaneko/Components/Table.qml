@@ -13,6 +13,7 @@ Rectangle {
 	property alias rowHeightProvider  : table.rowHeightProvider
 	property alias model              : table.model
 	property alias delegate           : table.delegate
+	property alias reuseItems         : table.reuseItems
 
 	property bool showHeaders: true
 
@@ -32,7 +33,7 @@ Rectangle {
 
 	readonly property alias table : grid.table
 
-	color: "transparent" // Kirigami.Theme.backgroundColor
+	color: "transparent"
 
 	function forceLayout() {
 		table.forceLayout();
@@ -88,11 +89,11 @@ Rectangle {
 		var sum = 0;
 		
 		if (table.hasRowHeaders) {
-			sum = metrics.boundingRect(model.headerData(row, Qt.Vertical)).height + Kirigami.Units.largeSpacing * 2 + 1;
+			sum = metrics.boundingRect(model.headerData(row, Qt.Vertical)).height + Kirigami.Units.largeSpacing * 2;
 		}
 	
 		for (var i = 0; i < model.columnCount(); i++) {
-			var height = metrics.boundingRect(model.data(model.index(row, i), Qt.DisplayRole)).height + Kirigami.Units.largeSpacing * 2 + 1;
+			var height = metrics.boundingRect(model.data(model.index(row, i), Qt.DisplayRole)).height + Kirigami.Units.largeSpacing * 2;
 			if (height > sum) {
 				sum = height;
 			}
@@ -247,57 +248,73 @@ Rectangle {
 		}
 	}
 
-	component Item : ColumnLayout {
-		property alias text: row.text
-		property alias horizontalAlignment: row.horizontalAlignment
-		
+	component Item : 
+	Controls.Control {
+		property alias text: column.text
+		property alias horizontalAlignment: column.horizontalAlignment
+
 		property bool topBorder   : false
 		property bool leftBorder  : false
 		property bool bottomBorder: true
 		property bool rightBorder : true
+		
+		height: column.height
 
-		spacing: 0
+		ColumnLayout {
+			id: column
 
-		Kirigami.Separator {
-			Layout.margins  : 0
-			Layout.fillWidth: true
-			visible: topBorder
-		}
-		RowLayout {
-			property alias text: label.text
-			property alias horizontalAlignment: label.horizontalAlignment
+			anchors.fill: parent
 
-			Layout.fillWidth: true
-			Layout.margins  : 0
+			height: row.height + _bottomBorder.height
 
-			id: row
+			property alias text: row.text
+			property alias horizontalAlignment: row.horizontalAlignment
 
 			spacing: 0
 
 			Kirigami.Separator {
+				id: _topBorder
 				Layout.margins  : 0
-				Layout.fillHeight: true
-				visible: leftBorder
+				Layout.fillWidth: true
+				visible: topBorder
 			}
-			Controls.Label {
+			RowLayout {
+				property alias text: label.text
+				property alias horizontalAlignment: label.horizontalAlignment
+
 				Layout.fillWidth: true
 				Layout.margins  : 0
 
-				id: label
-				padding: Kirigami.Units.largeSpacing
-				font   : Kirigami.Theme.defaultFont
-				color  : Kirigami.Theme.textColor
+				id: row
+
+				spacing: 0
+
+				Kirigami.Separator {
+					Layout.margins  : 0
+					Layout.fillHeight: true
+					visible: leftBorder
+				}
+				Controls.Label {
+					Layout.fillWidth: true
+					Layout.margins  : 0
+
+					id: label
+					padding: Kirigami.Units.largeSpacing
+					font   : Kirigami.Theme.defaultFont
+					color  : Kirigami.Theme.textColor
+				}
+				Kirigami.Separator {
+					Layout.margins  : 0
+					Layout.fillHeight: true
+					visible: rightBorder
+				}
 			}
 			Kirigami.Separator {
+				id: _bottomBorder
 				Layout.margins  : 0
-				Layout.fillHeight: true
-				visible: rightBorder
+				Layout.fillWidth: true
+				visible: bottomBorder
 			}
-		}
-		Kirigami.Separator {
-			Layout.margins  : 0
-			Layout.fillWidth: true
-			visible: bottomBorder
 		}
 	}
 
@@ -364,9 +381,8 @@ Rectangle {
 				}
 			}
 			Item {
-				x: table.contentWidth + table.leftMargin
 				width: (table.remainWidth > 0 ? table.remainWidth : 0) + _base.scrollWidth
-				visible: (table.remainWidth > 0 && _base.showHeaders) || table.Controls.ScrollBar.vertical.visible
+				visible: (table.remainWidth > 0 && _base.showHeaders) || _base.scrollWidth > 0
 
 				topBorder   : _base.showHeaders && !_base.fillsParent
 				bottomBorder: _base.showHeaders

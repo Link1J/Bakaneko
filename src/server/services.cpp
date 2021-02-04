@@ -133,6 +133,8 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
     if (!Helpers::Authenticate(fields.authentication.value()))
         return ljh::unexpected{Errors::NeedsPassword};
 
+    spdlog::debug("Action {} requsested on {}", data.action(), data.id());
+
 #if defined(LJH_TARGET_Windows)
     Win32ServiceHandle sc_handle(OpenSCManagerA, nullptr, SERVICES_ACTIVE_DATABASE, GENERIC_READ);
     Win32ServiceHandle service_handle(OpenServiceA, sc_handle, data.id().c_str(), SERVICE_START | SERVICE_STOP | SERVICE_CHANGE_CONFIG);

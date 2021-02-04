@@ -166,6 +166,10 @@ Kirigami.Page {
 	}
 	Component {
 		id: login_prompt
-		Dialogs.Login {}
+		Dialogs.Login {
+			onRun: function (logindata) {
+				currentServer.open_term(logindata);
+			}
+		}
 	}
 }

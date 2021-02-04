@@ -21,6 +21,8 @@
 #include <models/adaptermodel.h>
 #include <models/services.h>
 
+#include "logindata.h"
+
 #undef interface
 #include "server.pb.h"
 #include "drives.pb.h"
@@ -78,6 +80,8 @@ protected:
     template<typename T>
     void network_get(std::string path, void(Server::*signal)(T));
     void network_post(std::string path);
+    template<typename T, typename F>
+    void network_post(std::string path, T data, std::string auth, void(Server::*suc)(), void(Server::*fai)(F));
 
 public:
     asio::ip::tcp::socket connection();
@@ -119,7 +123,9 @@ public Q_SLOTS:
     void shutdown();
     void reboot  ();
 
-    void open_term(QObject* page, QObject* login, QString username, QString password);
+    void open_term(LoginData* login);
+    
+    void control_service(LoginData* login, QString id, int action);
 
 Q_SIGNALS:
     void changed_state          ();
@@ -147,6 +153,8 @@ Q_SIGNALS:
 
     void open_term      (QVariant pty);
     void connecting_fail(QVariant msg);
+    
+    void service_action_done();
 
 protected:
     asio::ip::tcp::socket socket;

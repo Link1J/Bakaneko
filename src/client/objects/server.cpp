@@ -23,6 +23,7 @@
 #include <ljh/function_traits.hpp>
 
 #include "windows.hpp"
+#include "base64.hpp"
 #include "bakaneko-version.h"
 
 #if defined(_WIN32)
@@ -278,18 +279,56 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
         }
         catch (std::exception e)
         {
-            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e.what() << "\n";
+            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e.what() << "\n";
             steps_done.count_down();
         }
         catch (int e)
         {
-            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
+            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
             steps_done.count_down();
         }
         catch (unsigned int e)
         {
-            std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
+            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
             steps_done.count_down();
+        }
+    });
+}
+
+template<typename T, typename F>
+void Server::network_post(std::string path, T data, std::string auth, void(Server::*suc)(), void(Server::*fai)(F))
+{
+    QtConcurrent::run([this, path, data, auth, suc, fai]{
+        try
+        {
+            beast::http::request<beast::http::string_body> req{beast::http::verb::post, path, 11};
+
+            req.set(beast::http::field::host, ip_address);
+            req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
+            req.set(beast::http::field::authorization, auth);
+            req.version(11);
+            req.keep_alive(false);
+            req.body() = data.SerializeAsString();
+            req.prepare_payload();
+
+            auto channel = connection();
+
+            beast::http::write(channel, req);
+
+            beast::flat_buffer buffer;
+            beast::http::response<beast::http::string_body> res;
+
+            beast::http::read(channel, buffer, res);
+
+            if (res.result_int() != 200) {
+                Q_EMIT (*this.*fai)("An error happened");
+                return;
+            }
+
+            Q_EMIT (*this.*suc)();
+        }
+        catch (...)
+        {
         }
     });
 }
@@ -299,7 +338,7 @@ void Server::network_post(std::string path)
     QtConcurrent::run([this, path]{
         try
         {
-            beast::http::request<beast::http::string_body> req{beast::http::verb::post, path, 11};
+            beast::http::request<beast::http::empty_body> req{beast::http::verb::post, path, 11};
 
             req.set(beast::http::field::host, ip_address);
             req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
@@ -541,13 +580,13 @@ Server::~Server()
     socket.shutdown(asio::ip::tcp::socket::shutdown_both, ec);
 }
 
-void Server::open_term(QObject* page, QObject* login, QString username, QString password)
+void Server::open_term(LoginData* login)
 {
-    connect(this, SIGNAL(open_term      (QVariant)), page , SLOT(open_term      (QVariant)));
-    connect(this, SIGNAL(connecting_fail(QVariant)), login, SLOT(connecting_fail(QVariant)));
-    connect(this, SIGNAL(open_term      (QVariant)), login, SLOT(done           (        )));
+    connect(this, SIGNAL(open_term      (QVariant)), login->page , SLOT(open_term      (QVariant)));
+    connect(this, SIGNAL(connecting_fail(QVariant)), login->login, SLOT(connecting_fail(QVariant)));
+    connect(this, SIGNAL(open_term      (QVariant)), login->login, SLOT(done           (        )));
     
-    QtConcurrent::run([this, username, password]{
+    QtConcurrent::run([this, login]{
         auto session = ssh_new();
         if (session == nullptr)
         {
@@ -556,7 +595,7 @@ void Server::open_term(QObject* page, QObject* login, QString username, QString 
         }
 
         ssh_options_set(session, SSH_OPTIONS_HOST, ip_address.c_str());
-        ssh_options_set(session, SSH_OPTIONS_USER, username.toUtf8().data());
+        ssh_options_set(session, SSH_OPTIONS_USER, login->username.toUtf8().data());
 
         if (ssh_connect(session) != SSH_OK)
         {
@@ -566,7 +605,7 @@ void Server::open_term(QObject* page, QObject* login, QString username, QString 
             return;
         }
 
-        if (ssh_userauth_password(session, NULL, password.toUtf8().data()) != SSH_OK)
+        if (ssh_userauth_password(session, NULL, login->password.toUtf8().data()) != SSH_OK)
         {
             auto message = ssh_get_error(session);
             Q_EMIT connecting_fail(QString::fromUtf8(message));
@@ -664,4 +703,20 @@ void Server::handle_services(Bakaneko::Services info)
     }
 
     steps_done.count_down();
+}
+
+void Server::control_service(LoginData* login, QString id, int action)
+{
+    connect(this, SIGNAL(connecting_fail    (QVariant)), login->login, SLOT(connecting_fail(QVariant)));
+    connect(this, SIGNAL(service_action_done(        )), login->login, SLOT(done           (        )));
+
+    std::string user{login->username.toUtf8().data()};
+    std::string pass{login->password.toUtf8().data()};
+
+    std::string auth = "Basic " + Base64::encode(user + ":" + pass);
+
+    Bakaneko::Service_Control data;
+    data.set_id(id.toUtf8().data());
+    data.set_action((Bakaneko::Service_Control_Action)action);
+    network_post("/service", data, auth, &Server::service_action_done, &Server::connecting_fail);
 }

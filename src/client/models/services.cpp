@@ -113,6 +113,23 @@ QVariant ServiceModel::data(const QModelIndex& index, int role) const
     auto row = index.row();
     auto& temp = updates[row];
 
+    if (role == Qt::ToolTipRole)
+    {
+        return QString::fromStdString(temp.description());
+    }
+    if (role == ROLE_state)
+    {
+        return temp.state();
+    }
+    if (role == ROLE_enable)
+    {
+        return temp.enabled();
+    }
+    if (role == ROLE_id)
+    {
+        return QString::fromStdString(temp.id());
+    }
+
     switch (index.column())
     {
     case 0:
@@ -149,22 +166,16 @@ int ServiceModel::columnCount(const QModelIndex& parent) const
     return 3;
 }
 
-/*
 QHash<int, QByteArray> ServiceModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
-    roles[Qt::DisplayRole ] = "display";
-    roles[ROLE_name       ] = "name";
-    roles[ROLE_state      ] = "connection_state";
-    roles[ROLE_link_speed ] = "link_speed";
-    roles[ROLE_mtu        ] = "mtu";
-    roles[ROLE_mac_address] = "mac_address";
-    roles[ROLE_ip_address ] = "ip_address";
-    roles[ROLE_rx_rate    ] = "rx_rate";
-    roles[ROLE_tx_rate    ] = "tx_rate";
+    roles[Qt::DisplayRole] = "display";
+    roles[Qt::ToolTipRole] = "tooltip";
+    roles[ROLE_state     ] = "service_state";
+    roles[ROLE_enable    ] = "service_enabled";
+    roles[ROLE_id        ] = "service_id";
     return roles;
 }
-*/
 
 QVariant ServiceModel::headerData(int section, Qt::Orientation orientation, int role) const
 {

@@ -223,6 +223,10 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
         }
         else if (message_res.error() == Errors::NeedsPassword)
         {
+            std::string_view lpath(req.target().data(), req.target().size());
+            std::string_view lclient(req[beast::http::field::user_agent].data(), req[beast::http::field::user_agent].size());
+            spdlog::get("networking")->warn("Unauthicated Request '{}' requested from {}:{} ({})", lpath, endpoint.address().to_string(), endpoint.port(), lclient);
+
             beast::http::response<beast::http::empty_body> res{beast::http::status::unauthorized, req.version()};
             res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
             res.set(beast::http::field::www_authenticate, "Basic realm=\"User Visible Realm\"");
@@ -248,7 +252,7 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
 {
     auto path = req.target();
 
-    spdlog::get("networking")->debug("API Requested: {}", std::string{path.data(), path.size()});
+    spdlog::get("networking")->debug("API Requested: ({}) {}", req.method(), std::string{path.data(), path.size()});
     
     if (path == "/")
     {
@@ -280,6 +284,8 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
             return Run(&Control::Shutdown, std::move(req), std::move(send));
         if (path == "/power/reboot")
             return Run(&Control::Reboot  , std::move(req), std::move(send));
+        if (path == "/service")
+            return Run(&Control::Service , std::move(req), std::move(send));
     }
 
     std::string_view lpath(path.data(), path.size());
