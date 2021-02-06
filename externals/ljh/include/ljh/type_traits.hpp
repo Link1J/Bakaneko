@@ -101,7 +101,7 @@ namespace ljh
 	inline constexpr bool is_instance_v = is_instance<T, U>::value;
 #endif
 
-#if LJH_CPP_VERSION > LJH_CPP17_VERSION
+#if __cpp_lib_remove_cvref >= 201711L
 	template<typename T> using remove_cvref   = std::remove_cvref  <T>;
 	template<typename T> using remove_cvref_t = std::remove_cvref_t<T>;
 #else
@@ -116,4 +116,20 @@ namespace ljh
 	using remove_cvref_t = typename remove_cvref<T>::type;
 #endif
 #endif
+
+#if __cpp_lib_bounded_array_traits >= 201902L
+	template<typename T> using is_bounded_array = std::is_bounded_array<T>;
+	template<typename T> inline constexpr bool is_bounded_array_v = std::is_bounded_array_v<T>;
+#else
+	template<class T>
+	struct is_bounded_array: std::false_type {};
+	template<class T, std::size_t N>
+	struct is_bounded_array<T[N]> : std::true_type {};
+	
+#if LJH_CPP_VERSION >= LJH_CPP17_VERSION
+	template< class T >
+	inline constexpr bool is_bounded_array_v = is_bounded_array<T>::value;
+#endif
+#endif
+
 }

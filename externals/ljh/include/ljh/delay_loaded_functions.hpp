@@ -17,7 +17,7 @@
 //    `ljh::delay_load::function<dll, func, sig>`
 //    replacing dll with a string will the shared lib's filename,
 //    func with the name of the function, and sig with the function
-//    signature (Return type, Calling convection )
+//    signature (Return type, Calling convection, Parameters)
 //
 // Version History
 //     1.0 Inital Version
@@ -39,10 +39,10 @@ namespace ljh::delay_load
 		using FARPROC = void(*)()  ;
 		using BOOL    = int        ;
 		extern "C" {
-			__declspec(dllimport) HMODULE __stdcall LJH_OS_LoadLibraryA    (LPCSTR lpLibFileName              );
-			__declspec(dllimport) FARPROC __stdcall LJH_OS_GetProcAddress  (HMODULE hModule, LPCSTR lpProcName);
-			__declspec(dllimport) BOOL    __stdcall LJH_OS_FreeLibrary     (HMODULE hLibModule                );
-			__declspec(dllimport) HMODULE __stdcall LJH_OS_GetModuleHandleA(LPCSTR lpModuleName               );
+			_os::HMODULE __stdcall LJH_OS_LoadLibraryA    (_os::LPCSTR lpLibFileName                   );
+			_os::FARPROC __stdcall LJH_OS_GetProcAddress  (_os::HMODULE hModule, _os::LPCSTR lpProcName);
+			_os::BOOL    __stdcall LJH_OS_FreeLibrary     (_os::HMODULE hLibModule                     );
+			_os::HMODULE __stdcall LJH_OS_GetModuleHandleA(_os::LPCSTR lpModuleName                    );
 		};
 #if defined(_M_IX86)
 #pragma comment(linker, "/alternatename:_LJH_OS_LoadLibraryA@4=_LoadLibraryA@4")
@@ -78,12 +78,16 @@ namespace ljh::delay_load
 	template<compile_time_string name>
 	class library
 	{
-		friend function;
+		template<compile_time_string dll_name, compile_time_string function_name, function_type type>
+		friend struct function;
 
 		inline static void* dll = nullptr;
 		
 		static void* function(std::string_view function) noexcept
 		{
+			auto a = _os::LJH_OS_GetModuleHandleA;
+			if (dll == nullptr)
+				dll = LOADED_LIB(name.data());
 			if (dll == nullptr)
 				dll = LOAD_LIB(name.data());
 			return GET_FUNC(dll, function.data());

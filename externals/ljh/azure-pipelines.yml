@@ -56,6 +56,9 @@ stages:
       vmImage: $(imageName)
 
     steps:
+    - script: sudo apt-get update && sudo apt-get install -y libdbus-1-dev
+      displayName: 'Update packages'
+      condition: in(variables['agent.os'], 'Linux')
     - script: mkdir $(BuildConfiguration)
       displayName: Create Build Directory
       workingDirectory: $(Build.SourcesDirectory)
@@ -71,6 +74,7 @@ stages:
         cmakeArgs: '--build . --config $(BuildConfiguration)'
     - pwsh: | 
         ./$(BuildConfiguration)/tests_11.exe -r jUnit -s --out tests_11_data.xml
+        ./$(BuildConfiguration)/tests_14.exe -r jUnit -s --out tests_14_data.xml
         ./$(BuildConfiguration)/tests_17.exe -r jUnit -s --out tests_17_data.xml
         ./$(BuildConfiguration)/tests_20.exe -r jUnit -s --out tests_20_data.xml
       ignoreLASTEXITCODE: true
@@ -79,6 +83,7 @@ stages:
       condition: eq(variables['agent.os'], 'Windows_NT')
     - pwsh: | 
         ./tests_11 -r jUnit -s --out tests_11_data.xml
+        ./tests_11 -r jUnit -s --out tests_14_data.xml
         ./tests_17 -r jUnit -s --out tests_17_data.xml
         ./tests_20 -r jUnit -s --out tests_20_data.xml
       ignoreLASTEXITCODE: true

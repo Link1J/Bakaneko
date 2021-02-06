@@ -4,7 +4,7 @@
 //    (See accompanying file LICENSE_1_0.txt or copy at
 //          https://www.boost.org/LICENSE_1_0.txt)
 
-// cpp_version.hpp - v1.1
+// cpp_version.hpp - v1.2
 // SPDX-License-Identifier: BSL-1.0
 // 
 // Requires C++
@@ -17,6 +17,7 @@
 // Version History
 //     1.0 Inital Version
 //     1.1 Add more constexpr versions and LJH_TRY_TO_GET_FEATURE_TESTING
+//     1.2 Add C++ 20 version, add compiler macros
 
 #pragma once
 
@@ -29,17 +30,24 @@
 #define LJH_CPP11_VERSION 201103L
 #define LJH_CPP14_VERSION 201402L
 #define LJH_CPP17_VERSION 201703L
+#define LJH_CPP20_VERSION 202002L
 
 #define LJH_COMPILER_GEN_FULL_VERSION(ma, mi, pa) (ma * 10000 + mi * 100 + pa)
 #define LJH_COMPILER_GEN_VERSION(ma, mi) (ma * 100 + mi)
 
 #if defined(__clang__)
+#	define LJH_COMPILER_CLANG
+#	if defined(__apple_build_version__)
+#		define LJH_COMPILER_APPLE_CLANG
+#	endif
 #	define LJH_CLANG_FULL_VERSION LJH_COMPILER_GEN_FULL_VERSION(__clang_major__, __clang_minor__, __clang_patchlevel__)
 #	define LJH_CLANG_VERSION LJH_COMPILER_GEN_VERSION(__clang_major__, __clang_minor__)
 #elif defined(__GNUC__)
+#	define LJH_COMPILER_GCC
 #	define LJH_GCC_FULL_VERSION LJH_COMPILER_GEN_FULL_VERSION(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__)
 #	define LJH_GCC_VERSION LJH_COMPILER_GEN_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
+#	define LJH_COMPILER_MSVC
 #	define LJH_MSVC_FULL_VERSION _MSC_FULL_VER
 #	define LJH_MSVC_VERSION _MSC_VER
 #endif

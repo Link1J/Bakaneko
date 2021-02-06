@@ -55,14 +55,11 @@ ljh::memory_mapped::file::file(std::filesystem::path&& filename, permissions per
 	memcpy(&filesize, &size_help, sizeof(filesize));
 #else
 	int mode = 0;
-	switch (permissions)
-	{
-	case permissions::r  : mode = O_RDONLY; break;
-	case permissions::w  : mode = O_WRONLY; break;
-	case permissions::rw : mode = O_RDWR  ; break;
-	case permissions::rx : mode = O_RDONLY; break;
-	case permissions::rwx: mode = O_RDWR  ; break;
-	}
+	if (permissions == memory_mapped::permissions::r  ) { mode = O_RDONLY; }
+	if (permissions == memory_mapped::permissions::w  ) { mode = O_WRONLY; }
+	if (permissions == memory_mapped::permissions::rw ) { mode = O_RDWR  ; }
+	if (permissions == memory_mapped::permissions::rx ) { mode = O_RDONLY; }
+	if (permissions == memory_mapped::permissions::rwx) { mode = O_RDWR  ; }
 
 	struct stat st;
 	if (stat(filename.c_str(), &st)) { throw invalid_file{}; }

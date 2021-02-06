@@ -29,40 +29,40 @@
 
 namespace ljh::windows::wmi
 {
-    class clazz
-    {
-        friend class service;
-        winrt::com_ptr<IWbemServices> _i_service;
-        winrt::com_ptr<IWbemClassObject> _i_object;
+	class clazz
+	{
+		friend class service;
+		winrt::com_ptr<IWbemServices> _i_service;
+		winrt::com_ptr<IWbemClassObject> _i_object;
 
-        com_variant _i_get(const std::wstring& member);
+		com_variant _i_get(const std::wstring& member);
 
-    public:
-        clazz(const winrt::com_ptr<IWbemServices>& _i_service, const winrt::com_ptr<IWbemClassObject>& _i_object);
+	public:
+		clazz(const winrt::com_ptr<IWbemServices>& _i_service, const winrt::com_ptr<IWbemClassObject>& _i_object);
 
-        template<typename T = std::wstring>
-        T get(const std::wstring& member)
-        {
-            return _i_get(member).as<T>();
-        }
+		template<typename T = std::wstring>
+		T get(const std::wstring& member)
+		{
+			return _i_get(member).as<T>();
+		}
 
-        bool has(const std::wstring& member);
+		bool has(const std::wstring& member);
 
-        std::vector<std::wstring> member_names();
+		std::vector<std::wstring> member_names();
 
-        std::vector<clazz> associators();
-        std::vector<clazz> associators(const std::wstring& assoc_class);
-    };
+		std::vector<clazz> associators();
+		std::vector<clazz> associators(const std::wstring& assoc_class);
+	};
 
-    class service
-    {
-        winrt::com_ptr<IWbemServices> _i_service;
+	class service
+	{
+		winrt::com_ptr<IWbemServices> _i_service;
 
-    public:
-        service(const com_bstr& location);
-        static service& root();
-        std::vector<clazz> get_class(const std::wstring& class_name, const std::wstring& member = L"", const std::wstring& value = L"");
-    };
+	public:
+		service(const com_bstr& location);
+		static service& root();
+		std::vector<clazz> get_class(const std::wstring& class_name, const std::wstring& member = L"", const std::wstring& value = L"");
+	};
 
-    void setup();
+	void setup();
 }
