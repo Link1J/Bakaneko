@@ -108,6 +108,8 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
         run("pacman", "-Qu", pacman_decode);
     run("apt", "list --upgradable", apt_decode);
     run("apk", "version -v -l '<'", apk_decode);
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     return std::move(updates);

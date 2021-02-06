@@ -184,6 +184,8 @@ GOT_ADDRESS:
     system.set_kernel(buffer.sysname + std::string{" "} + buffer.release);
     system.set_architecture(buffer.machine);
     system.set_icon(icon);
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     system.set_mac_address(mac_address);

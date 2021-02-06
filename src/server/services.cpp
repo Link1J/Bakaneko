@@ -121,6 +121,8 @@ ljh::expected<Bakaneko::Services, Errors> Info::Services(const Fields& fields, B
     }
 
     free(service_statuses);
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     return std::move(info);
@@ -165,6 +167,8 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
             return ljh::unexpected{Errors::Failed};
         break;
     }
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     return ljh::expected<void, Errors>{};

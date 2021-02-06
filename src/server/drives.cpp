@@ -229,6 +229,8 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
             [](Bakaneko::Partition& a, Bakaneko::Partition& b) { return a.dev_node() < b.dev_node(); }
         );
     }
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     return std::move(drives);

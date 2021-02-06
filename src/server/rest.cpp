@@ -126,15 +126,11 @@ void Rest::Server::on_accept(boost::system::error_code ec)
     do_accept();
 }
 
-
-// template<class MessageReply, class Body, class Allocator, class Send, class MessageRequest>
-// void Run(ljh::expected<MessageReply,Errors>(*function)(const Fields&, MessageRequest), beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
-
 template<class Function, class Body, class Allocator, class Send>
 void Rest::Server::Connection::Run(Function function, beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
 {
     using FunctionTraits = ljh::function_traits<Function>;
-    using MessageReply = FunctionTraits::return_type::value_type;
+    using MessageReply = typename FunctionTraits::return_type::value_type;
 
     try
     {
@@ -152,7 +148,7 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             }
             else
             {
-                FunctionTraits::argument_type<1> message_req;
+                typename FunctionTraits::template argument_type<1> message_req;
                 message_req.ParseFromString(req.body());
                 return function(fields, message_req);
             }

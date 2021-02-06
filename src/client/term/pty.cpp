@@ -165,7 +165,7 @@ std::string Pty::read(bool std_err, bool blocking, unsigned char bytes)
 
     auto read_function = blocking ? ssh_channel_read : ssh_channel_read_nonblocking;
 
-    while (bytes_receved = read_function(connection, buffer.data(), bytes, std_err))
+    while ((bytes_receved = read_function(connection, buffer.data(), bytes, std_err)))
     {
         output += buffer.data();
         memset(buffer.data(), 0, bytes);

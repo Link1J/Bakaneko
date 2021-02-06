@@ -110,6 +110,8 @@ ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
         if (auto speed = read_file(adapter_path/"speed"); !speed.empty() && speed != "-1")
             adapter->set_link_speed(std::stoull(speed) * 1000000);
     }
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
     return adapters;
 }
