@@ -6,6 +6,7 @@
 
 #include <filesystem>
 #include <chrono>
+#include <mutex>
 
 #include <ljh/system_info.hpp>
 #include <ljh/string_utils.hpp>
@@ -13,9 +14,56 @@
 #if defined(LJH_TARGET_Windows)
 #include <windows.h>
 #include <ljh/windows/wmi.hpp>
+#elif defined(LJH_TARGET_Linux)
+#include <ljh/unix/dbus.hpp>
 #endif
 
 #include <spdlog/spdlog.h>
+
+enum class service_manager 
+{
+    Unknown, systemd, 
+};
+
+service_manager get_service_manager()
+{
+    static service_manager manager = service_manager::Unknown;
+    static bool ran = false;
+    static std::mutex mutex;
+
+    std::lock_guard _(mutex);
+    if (!ran)
+    {
+        ljh::unix::dbus::connection system_bus(ljh::unix::dbus::bus::SYSTEM);
+        auto interface = system_bus.get(DBUS_SERVICE_DBUS, DBUS_PATH_DBUS, DBUS_INTERFACE_DBUS);
+        auto dbus_services = interface.call("ListNames").run<std::vector<std::string>>();
+        for (auto& service : dbus_services)
+        {
+            if (service == "org.freedesktop.systemd1")
+            {
+                manager = service_manager::systemd;
+                break;
+            }
+        }
+    }
+    return manager;
+}
+
+template<typename... Ts>
+std::ostream& operator<<(std::ostream& os, std::tuple<Ts...> const& theTuple)
+{
+    std::apply
+    (
+        [&os](Ts const&... tupleArgs)
+        {
+            os << '[';
+            std::size_t n{0};
+            ((os << tupleArgs << (++n != sizeof...(Ts) ? ", " : "")), ...);
+            os << ']';
+        }, theTuple
+    );
+    return os;
+}
 
 ljh::expected<Bakaneko::ServiceInfo, Errors> Info::Service(const Fields& fields)
 {
@@ -29,6 +77,30 @@ ljh::expected<Bakaneko::ServiceInfo, Errors> Info::Service(const Fields& fields)
     *info.add_types() = "File System Driver";
     *info.add_types() = "Adapter";
     *info.add_types() = "Recongizer Driver";
+#elif defined(LJH_TARGET_Linux)
+    switch (get_service_manager())
+    {
+    case service_manager::systemd:
+        info.set_server("systemd");
+        *info.add_types() = "Service";
+        *info.add_types() = "Socket";
+        *info.add_types() = "Device";
+        *info.add_types() = "Mount";
+        *info.add_types() = "Automount";
+        *info.add_types() = "Swap";
+        *info.add_types() = "Target";
+        *info.add_types() = "Path";
+        *info.add_types() = "Timer";
+        *info.add_types() = "Snapshot";
+        *info.add_types() = "Slice";
+        *info.add_types() = "Scope";
+        break;
+    
+    default:
+        return ljh::unexpected{Errors::NotImplemented};
+    }
+#else
+    return ljh::unexpected{Errors::NotImplemented};
 #endif
 
     return info;
@@ -38,7 +110,7 @@ ljh::expected<Bakaneko::Services, Errors> Info::Services(const Fields& fields, B
 {
     Bakaneko::Services info;
     std::string type = !data.type().empty() ? data.type() : "All";
-    
+
 #if defined(LJH_TARGET_Windows)
     Win32ServiceHandle sc_handle(OpenSCManagerA, nullptr, SERVICES_ACTIVE_DATABASE, GENERIC_READ);
 
@@ -121,6 +193,135 @@ ljh::expected<Bakaneko::Services, Errors> Info::Services(const Fields& fields, B
     }
 
     free(service_statuses);
+#elif defined(LJH_TARGET_Linux)
+    switch (get_service_manager())
+    {
+    case service_manager::systemd:
+        try
+        {
+            ljh::unix::dbus::connection system_bus(ljh::unix::dbus::bus::SYSTEM);
+            auto interface = system_bus.get("org.freedesktop.systemd1", "/org/freedesktop/systemd1", "org.freedesktop.systemd1.Manager");
+            auto services = interface.call("ListUnits").run<std::vector<std::tuple<std::string, std::string, std::string, std::string, std::string, ljh::unix::dbus::object_path, uint32_t, std::string, ljh::unix::dbus::object_path>>>();
+            std::set<std::string> files;
+            for (auto& service : services)
+            {
+                auto service_interface = system_bus.get("org.freedesktop.systemd1", std::get<8>(service).data(), "org.freedesktop.systemd1.Unit");
+                auto service_info = info.add_service();
+                
+                auto path = service_interface.get<std::string>("FragmentPath");
+                if (!path.empty()) files.emplace(path);
+
+                auto id = std::get<0>(service);
+                auto description = std::get<1>(service);
+
+                for (int a = 0; a < id.size() - 1; a++)
+                {
+                    if (id[a] == '\\' && id[a + 1] == 'x')
+                    {
+                        auto value = id.substr(a + 2, 2);
+                        char letter = std::stoull(value, nullptr, 16);
+                        id.insert(id.begin() + a, letter);
+                        id.erase(a + 1, 4);
+                    }
+                }
+                for (int a = 0; a < description.size() - 1; a++)
+                {
+                    if (description[a] == '\\' && description[a + 1] == 'x')
+                    {
+                        auto value = description.substr(a + 2, 2);
+                        char letter = std::stoull(value, nullptr, 16);
+                        description.insert(description.begin() + a, letter);
+                        description.erase(a + 1, 4);
+                    }
+                }
+
+                service_info->set_id(id);
+                service_info->set_display_name(id);
+                service_info->set_description(description);
+
+                auto type = id.substr(id.find_last_of('.') + 1);
+                type[0] = std::toupper(type[0]);
+                service_info->set_type(type);
+
+                auto enabled_state = service_interface.get<std::string>("UnitFileState");
+                if (enabled_state == "enabled" || enabled_state == "static")
+                    service_info->set_enabled(true);
+
+                auto active_state = service_interface.get<std::string>("ActiveState");
+                if (active_state == "inactive"    ) service_info->set_state(Bakaneko::Service_State_Stopped );
+                if (active_state == "failed"      ) service_info->set_state(Bakaneko::Service_State_Stopped );
+                if (active_state == "active"      ) service_info->set_state(Bakaneko::Service_State_Running );
+                if (active_state == "activating"  ) service_info->set_state(Bakaneko::Service_State_Starting);
+                if (active_state == "deactivating") service_info->set_state(Bakaneko::Service_State_Stopping);
+            }
+            auto unloaded = interface.call("ListUnitFiles").run<std::vector<std::tuple<std::string, std::string>>>();
+            for (auto& service : unloaded)
+            {
+                auto id = std::get<0>(service);
+                if (files.find(id) != files.end())
+                    continue;
+                if (id.find('@') != std::string::npos)
+                    continue;
+
+                id = id.substr(id.find_last_of('/') + 1);
+                auto unit_path = interface.call("LoadUnit").args(id).run<ljh::unix::dbus::object_path>();
+                
+                auto service_interface = system_bus.get("org.freedesktop.systemd1", unit_path.data(), "org.freedesktop.systemd1.Unit");
+                auto service_info = info.add_service();
+
+                auto description = service_interface.get<std::string>("Description");
+
+                for (int a = 0; a < id.size() - 1; a++)
+                {
+                    if (id[a] == '\\' && id[a + 1] == 'x')
+                    {
+                        auto value = id.substr(a + 2, 2);
+                        char letter = std::stoull(value, nullptr, 16);
+                        id.insert(id.begin() + a, letter);
+                        id.erase(a + 1, 4);
+                    }
+                }
+                for (int a = 0; a < description.size() - 1; a++)
+                {
+                    if (description[a] == '\\' && description[a + 1] == 'x')
+                    {
+                        auto value = description.substr(a + 2, 2);
+                        char letter = std::stoull(value, nullptr, 16);
+                        description.insert(description.begin() + a, letter);
+                        description.erase(a + 1, 4);
+                    }
+                }
+
+                service_info->set_id(id);
+                service_info->set_display_name(id);
+                service_info->set_description(description);
+
+                auto type = id.substr(id.find_last_of('.') + 1);
+                type[0] = std::toupper(type[0]);
+                service_info->set_type(type);
+
+                auto enabled_state = service_interface.get<std::string>("UnitFileState");
+                if (enabled_state == "enabled" || enabled_state == "static")
+                    service_info->set_enabled(true);
+
+                auto active_state = service_interface.get<std::string>("ActiveState");
+                if (active_state == "inactive"    ) service_info->set_state(Bakaneko::Service_State_Stopped );
+                if (active_state == "failed"      ) service_info->set_state(Bakaneko::Service_State_Stopped );
+                if (active_state == "active"      ) service_info->set_state(Bakaneko::Service_State_Running );
+                if (active_state == "activating"  ) service_info->set_state(Bakaneko::Service_State_Starting);
+                if (active_state == "deactivating") service_info->set_state(Bakaneko::Service_State_Stopping);
+            }
+        }
+        catch(const ljh::unix::dbus::error& e)
+        {
+            auto error_message = fmt::format("DBus Error: ({}) {}", e.name(), e.message());
+            throw std::runtime_error{error_message};
+        }
+        break;
+    
+    default:
+        return ljh::unexpected{Errors::NotImplemented};
+    }
 #else
     return ljh::unexpected{Errors::NotImplemented};
 #endif
@@ -166,6 +367,59 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
         if (ChangeServiceConfigA(service_handle, SERVICE_NO_CHANGE, SERVICE_DEMAND_START, SERVICE_NO_CHANGE, NULL, NULL, NULL, NULL, NULL, NULL, NULL) != 0)
             return ljh::unexpected{Errors::Failed};
         break;
+    }
+#elif defined(LJH_TARGET_Linux)
+    switch (get_service_manager())
+    {
+    case service_manager::systemd:
+        try {
+            bool _1;
+            std::vector<std::tuple<std::string,std::string,std::string>> _2;
+
+            ljh::unix::dbus::connection system_bus(ljh::unix::dbus::bus::SYSTEM);
+            auto interface = system_bus.get("org.freedesktop.systemd1", "/org/freedesktop/systemd1", "org.freedesktop.systemd1.Manager");
+            auto unit_path = interface.call("LoadUnit").args(data.id()).run<ljh::unix::dbus::object_path>();
+            auto service_interface = system_bus.get("org.freedesktop.systemd1", unit_path.data(), "org.freedesktop.systemd1.Unit");
+            switch (data.action())
+            {
+            case Bakaneko::Service_Control_Action_Stop:
+                service_interface.call("Stop").args("replace").run<ljh::unix::dbus::object_path>();
+                break;
+            case Bakaneko::Service_Control_Action_Start:
+                service_interface.call("Start").args("replace").run<ljh::unix::dbus::object_path>();
+                break;
+            case Bakaneko::Service_Control_Action_Restart:
+                service_interface.call("Restart").args("replace").run<ljh::unix::dbus::object_path>();
+                break;
+            case Bakaneko::Service_Control_Action_Enable:
+                {
+                    auto path = service_interface.get<std::string>("FragmentPath");
+                    if (path.empty()) return ljh::unexpected{Errors::Failed};
+                    interface.call("EnableUnitFiles").args(std::vector{data.id()}, false, false).run(_1, _2);
+                    for (auto& s : _2)
+                    {
+                        spdlog::debug("{}, {}, {}", std::get<0>(s), std::get<1>(s), std::get<2>(s));
+                    }
+                }
+                break;
+            case Bakaneko::Service_Control_Action_Disable:
+                {
+                    auto path = service_interface.get<std::string>("FragmentPath");
+                    if (path.empty()) return ljh::unexpected{Errors::Failed};
+                    interface.call("DisableUnitFiles").args(std::vector{data.id()}, false).run(_2);
+                }
+                break;
+            }
+        }
+        catch(const ljh::unix::dbus::error& e)
+        {
+            auto error_message = fmt::format("DBus Error: ({}) {}", e.name(), e.message());
+            throw std::runtime_error{error_message};
+        }
+        break;
+    
+    default:
+        return ljh::unexpected{Errors::NotImplemented};
     }
 #else
     return ljh::unexpected{Errors::NotImplemented};

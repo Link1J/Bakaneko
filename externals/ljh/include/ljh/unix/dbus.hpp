@@ -43,17 +43,58 @@ namespace ljh::unix::dbus
 	};
 
 	template<template<int> class W, std::size_t... I, typename...A>
-	void caller_impl(std::index_sequence<I...>, A&... args) {
+	void caller_impl(std::index_sequence<I...>, A&&... args) {
 		int t[] = { 0, ((void)W<I>()(args...), 1)... };
 		(void)t;
 	}
 	
 	template<template<int> class W, std::size_t N, typename Indices = std::make_index_sequence<N>, typename...A>
-	void call_times(A&... args) {
-		caller_impl<W>(Indices(), args...);
+	void call_times(A&&... args) {
+		caller_impl<W>(Indices(), std::forward<A>(args)...);
 	}
+	
+	template<typename T>
+	struct _i_object_path_allocator : public std::allocator<T>
+	{
+	public:
+		using size_type     = size_t;
+		using pointer       = T*;
+		using const_pointer = const T*;
 
-	class object_path : public std::string {};
+		template<typename T1>
+		struct rebind
+		{
+			typedef _i_object_path_allocator<T1> other;
+		};
+
+		pointer allocate(size_type n, const void *hint=0)
+		{
+			return std::allocator<T>::allocate(n, hint);
+		}
+
+		void deallocate(pointer p, size_type n)
+		{
+			return std::allocator<T>::deallocate(p, n);
+		}
+
+		_i_object_path_allocator()
+			: std::allocator<T>()
+		{}
+
+		_i_object_path_allocator(const _i_object_path_allocator& a)
+			: std::allocator<T>(a)
+		{}
+
+		template <class U>
+		_i_object_path_allocator(const _i_object_path_allocator<U>& a) 
+			: std::allocator<T>(a)
+		{}
+
+		~_i_object_path_allocator()
+		{}
+	};
+	using object_path = std::basic_string<char, std::char_traits<char>, _i_object_path_allocator<char>>;
+	static_assert(!std::is_same_v<object_path, std::string>, "std::string and object_path must be different types");
 
 	template<typename T>
 	constexpr auto _i_type_value_f()
@@ -88,6 +129,8 @@ namespace ljh::unix::dbus
 			return DBUS_TYPE_STRUCT;
 		else if constexpr (ljh::is_instance_v<T, std::map>)
 			return DBUS_TYPE_ARRAY;
+		else if constexpr (std::is_same_v<bool, T>)
+			return DBUS_TYPE_BOOLEAN;
 		else
 			return 0.1;
 	}
@@ -120,7 +163,7 @@ namespace ljh::unix::dbus
 	constexpr auto _i_gen_sig_f()
 	{
 		if constexpr (ljh::is_instance_v<T, std::vector>)
-			return compile_time_string{DBUS_TYPE_ARRAY_AS_STRING} + _i_gen_sig_f<T::value_type>();
+			return compile_time_string{DBUS_TYPE_ARRAY_AS_STRING} + _i_gen_sig_f<typename T::value_type>();
 		else if constexpr (ljh::is_instance_v<T, std::variant>)
 			return compile_time_string{DBUS_TYPE_VARIANT_AS_STRING};
 		else if constexpr (std::is_same_v<std::string, T>)
@@ -149,6 +192,8 @@ namespace ljh::unix::dbus
 			return compile_time_string{DBUS_STRUCT_BEGIN_CHAR_AS_STRING} + _i_gen_sig_s<T, std::tuple>()() + compile_time_string{DBUS_STRUCT_END_CHAR_AS_STRING};
 		else if constexpr (ljh::is_instance_v<T, std::map>)
 			return compile_time_string{DBUS_TYPE_ARRAY_AS_STRING} + compile_time_string{DBUS_DICT_ENTRY_BEGIN_CHAR_AS_STRING} + _i_gen_sig_f<typename T::key_type>() + _i_gen_sig_f<typename T::mapped_type>() + compile_time_string{DBUS_DICT_ENTRY_END_CHAR_AS_STRING};
+		else if constexpr (std::is_same_v<bool, T>)
+			return compile_time_string{DBUS_TYPE_BOOLEAN_AS_STRING};
 	}
 
 	template <template <typename...> typename U, typename...Ts>
@@ -276,7 +321,12 @@ namespace ljh::unix::dbus
 		{
 			using type = std::decay_t<T>;
 			static_assert(std::is_same_v<decltype(_i_type_value<T>), decltype(_i_type_value<int>)>, "Unknown type");
-			if constexpr (std::is_fundamental_v<T>)
+			if constexpr (std::is_same_v<bool, T>)
+			{
+				int value = data ? 1 : 0;
+				dbus_message_iter_append_basic(&item, _i_type_value<T>, &value);
+			}
+			else if constexpr (std::is_fundamental_v<T>)
 			{
 				dbus_message_iter_append_basic(&item, _i_type_value<T>, &data);
 			}
@@ -298,7 +348,7 @@ namespace ljh::unix::dbus
 			else if constexpr (ljh::is_instance_v<T, std::vector>)
 			{
 				DBusMessageIter sub;
-				dbus_message_iter_open_container(&item, _i_type_value<T>, gen_sig<typename T::value_type>.data(), &sub);
+				dbus_message_iter_open_container(&item, _i_type_value<T>, gen_sig<typename std::decay_t<T>::value_type>.data(), &sub);
 				for (int a = 0; a < data.size(); add(sub, data[a++]));
 				dbus_message_iter_close_container(&item, &sub);
 			}
@@ -375,6 +425,10 @@ namespace ljh::unix::dbus
 		{
 			auto pending = do_call();
 			if (pending) throw pending;
+			
+			error err;
+			if (dbus_set_error_from_message((DBusError*)err, _message))
+				throw err;
 
 			DBusMessageIter iter;
 			dbus_message_iter_init(_message, &iter);
@@ -408,13 +462,22 @@ namespace ljh::unix::dbus
 	bool message::get(DBusMessageIter& item, T& data)
 	{
 		static_assert(std::is_same_v<std::decay_t<decltype(_i_type_value<T>)>, int>, "Unknown type");
-		if (dbus_message_iter_get_arg_type(&item) != _i_type_value<T>)
+
+		char cur = (char)dbus_message_iter_get_arg_type(&item);
+		char req = (char)_i_type_value<T>;
+		if (cur != req)
 		{
-			char cur = (char)dbus_message_iter_get_arg_type(&item);
-			char req = (char)_i_type_value<T>;
+			if (cur == DBUS_TYPE_INVALID)
+				throw std::runtime_error(std::string{"Got an invalid type over the requested type ("} + req + ")");
 			throw std::runtime_error(std::string{"Type ("} + cur + ") does not equal requested type (" + req + ")");
 		}
-		if constexpr (std::is_fundamental_v<T>)
+		if constexpr (std::is_same_v<bool, T>)
+		{
+			int value;
+			dbus_message_iter_get_basic(&item, &value);
+			data = (value == 1);
+		}
+		else if constexpr (std::is_fundamental_v<T>)
 		{
 			dbus_message_iter_get_basic(&item, &data);
 		}
@@ -426,9 +489,14 @@ namespace ljh::unix::dbus
 		}
 		else if constexpr (ljh::is_instance_v<T, std::vector>)
 		{
-			DBusMessageIter sub;
-			dbus_message_iter_recurse(&item, &sub);
-			while (get(sub, data.emplace_back()));
+			int count = dbus_message_iter_get_element_count(&item);
+			if (count > 0)
+			{
+				data.reserve(count);
+				DBusMessageIter sub;
+				dbus_message_iter_recurse(&item, &sub);
+				while (get(sub, data.emplace_back()));
+			}
 		}
 		else if constexpr (ljh::is_instance_v<T, std::variant>)
 		{
