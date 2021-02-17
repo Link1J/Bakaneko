@@ -1,0 +1,26 @@
+# Maintainer: Jared Irwin <jrairwin@sympatico.ca>
+pkgname=bakaneko-server
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Server for Bakaneko"
+arch=('x86_64')
+url="https://github.com/Link1J/Bakaneko"
+license=('GPL3')
+depends=('boost' 'protobuf' 'openssl' 'dbus')
+makedepends=('cmake' 'extra-cmake-modules')
+backup=('etc/bakaneko-server.ini')
+source=("${pkgname}-${pkgver}.tar.gz::https://github.com/Link1J/Bakaneko/archive/v${pkgver}.tar.gz")
+md5sums=('1c82a21d1aedbf60508ff588b38be170')
+
+build() {
+  cmake -B build -S "Bakaneko-${pkgver}" \
+    -Wno-dev \
+    -DCMAKE_BUILD_TYPE='None' \
+    -DCMAKE_INSTALL_PREFIX='/usr' \
+    -DBAKANEKO_DONT_BUILD_CLIENT=ON
+  make -C build
+}
+
+package() {
+  make -C build DESTDIR="$pkgdir/" install
+}
