@@ -71,6 +71,11 @@ QString          Server::get_service_manager() { return QString::fromStdString(s
 ServiceTypeList* Server::get_service_types  () { return                       &service_types   ; }
 ServiceModel   * Server::get_services       () { return                       &services        ; }
 
+bool Server::get_avaliable_adapters() { return avaliable_adapters; }
+bool Server::get_avaliable_drives  () { return avaliable_drives  ; }
+bool Server::get_avaliable_updates () { return avaliable_updates ; }
+bool Server::get_avaliable_services() { return avaliable_services; }
+
 void Server::update_info()
 {
     if (!steps_done.try_wait())
@@ -85,10 +90,11 @@ void Server::update_info()
         {
             steps_done.count_down();
             steps_done.count_down();
-            network_get("/drives"          , &Server::got_drives  );
-            network_get("/updates"         , &Server::got_updates );
-            network_get("/network/adapters", &Server::got_adapters);
-            network_get("/services"        , &Server::got_services);
+            
+            if (avaliable_adapters) network_get("/drives"          , &Server::got_drives  );
+            if (avaliable_drives  ) network_get("/updates"         , &Server::got_updates );
+            if (avaliable_updates ) network_get("/network/adapters", &Server::got_adapters);
+            if (avaliable_services) network_get("/services"        , &Server::got_services);
         }
         else
         {
@@ -119,18 +125,25 @@ void Server::update_info()
             hostname = defualt_hostname;
             Q_EMIT changed_hostname();
         }
-        service_types.Clear();
+
+        avaliable_adapters = false;
+        avaliable_drives   = false;
+        avaliable_updates  = false;
+        avaliable_services = false;
+        Q_EMIT changed_enabled_pages();
+
+        //services.removeRows(0, services.rowCount());
+        //service_types.Clear();
         for (int a = 0; a < max_steps; a++)
             steps_done.count_down();
         return;
     }
 
-    network_get("/system"          , &Server::got_info    );
-    network_get("/service"         , &Server::got_service );
-    network_get("/drives"          , &Server::got_drives  );
-    network_get("/updates"         , &Server::got_updates );
-    network_get("/network/adapters", &Server::got_adapters);
-    network_get("/services"        , &Server::got_services);
+    network_get("/system"          , &Server::got_info                        );
+    network_get("/service"         , &Server::got_service , avaliable_services);
+    network_get("/drives"          , &Server::got_drives  , avaliable_drives  );
+    network_get("/updates"         , &Server::got_updates , avaliable_updates );
+    network_get("/network/adapters", &Server::got_adapters, avaliable_adapters);
 }
 
 asio::ip::tcp::socket Server::connection()
@@ -246,10 +259,18 @@ void Server::wake_up()
 #endif
 }
 
+static bool dont_care = false;
+
 template<typename T>
 void Server::network_get(std::string path, void(Server::*signal)(T))
 {
-    QtConcurrent::run([this, path, signal]{
+    network_get(path, signal, dont_care);
+}
+
+template<typename T>
+void Server::network_get(std::string path, void(Server::*signal)(T), bool& control)
+{
+    QtConcurrent::run([this, path, signal, &control]{
         try
         {
             beast::http::request<beast::http::string_body> req{beast::http::verb::get, path, 11};
@@ -271,25 +292,36 @@ void Server::network_get(std::string path, void(Server::*signal)(T))
             
             T info;
 
-            if (res.result_int() != 200) throw res.result_int();
+            if (res.result() != beast::http::status::ok) throw res.result();
             if (info.GetTypeName() != res["Protobuf-Type"]) throw 0;
+
+            if (&dont_care != &control)
+            {
+                control = true;
+                Q_EMIT changed_enabled_pages();
+            }
 
             info.ParseFromString(res.body());
             Q_EMIT (*this.*signal)(info);
         }
         catch (std::exception e)
         {
-            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e.what() << "\n";
             steps_done.count_down();
         }
         catch (int e)
         {
-            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
             steps_done.count_down();
         }
-        catch (unsigned int e)
+        catch (boost::beast::http::status e)
         {
-            // std::cerr << path << "|" << T{}.GetTypeName() << "|" << e <<  "\n";
+            if (e == beast::http::status::not_implemented)
+            {
+                if (&dont_care != &control)
+                {
+                    control = false;
+                    Q_EMIT changed_enabled_pages();
+                }
+            }
             steps_done.count_down();
         }
     });
@@ -644,9 +676,21 @@ void Server::handle_service(Bakaneko::ServiceInfo info)
     Q_EMIT changed_service_manager();
 
     for (auto& type : info.types())
-        service_types.AddItem(type);
+    {
+        bool has = false;
+        for (int a = 0; a < service_types.rowCount(); a++)
+        {
+            if (service_types.Data(a) == type)
+                has = true;
+        }
+        
+        if (!has)
+            service_types.AddItem(type);
+    }
 
     steps_done.count_down();
+
+    network_get("/services", &Server::got_services);
 }
 
 void Server::handle_services(Bakaneko::Services info)
@@ -674,22 +718,25 @@ void Server::handle_services(Bakaneko::Services info)
             {
                 done = true;
                 std::vector<int> delta;
+                std::vector<int> roles;
                 if (cur.state() != din.state())
                 {
                     cur.set_state(din.state());
                     delta.emplace_back(0);
+                    roles.emplace_back(ServiceModel::ROLE_state);
                 }
                 if (cur.enabled() != din.enabled())
                 {
                     cur.set_enabled(din.enabled());
                     delta.emplace_back(1);
+                    roles.emplace_back(ServiceModel::ROLE_enable);
                 }
                 if (cur.display_name() != din.display_name())
                 {
                     cur.set_display_name(din.display_name());
                     delta.emplace_back(3);
                 }
-                services.flag(a, delta);
+                services.flag(a, delta, roles);
             }
         }
         if (!done)
@@ -698,7 +745,7 @@ void Server::handle_services(Bakaneko::Services info)
             services.data(services.rowCount() - 1) = din;
             services.flag(services.rowCount() - 1, {
                 0, 1, 2, 3,
-            });
+            }, {});
         }
     }
 

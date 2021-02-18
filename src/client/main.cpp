@@ -53,7 +53,10 @@ Q_DECL_EXPORT int main(int argc, char* argv[])
     app.processEvents();
 
     if (qEnvironmentVariableIsEmpty("QT_QUICK_CONTROLS_STYLE"))
+    {
         QQuickStyle::setStyle("org.kde.desktop");
+        //QQuickStyle::setStyle("org.kde.breeze");
+    }
 #endif
 
     QIcon::setFallbackSearchPaths(QIcon::fallbackSearchPaths() << ":/icons");

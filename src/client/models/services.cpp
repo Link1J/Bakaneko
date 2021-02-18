@@ -27,9 +27,14 @@ int ServiceTypeList::rowCount(const QModelIndex& parent) const
 
 void ServiceTypeList::Clear()
 {
-    beginRemoveRows(QModelIndex{}, 0, items.size());
+    beginResetModel();
     items.clear();
-    endRemoveRows();
+    endResetModel();
+}
+
+std::string ServiceTypeList::Data(int item)
+{
+    return items[item];
 }
 
 void ServiceTypeList::AddItem(std::string item)
@@ -66,7 +71,7 @@ Bakaneko::Service& ServiceModel::data(int a)
     return updates[a];
 }
 
-void ServiceModel::flag(int row, std::vector<int> columns)
+void ServiceModel::flag(int row, std::vector<int> columns, std::vector<int> roles)
 {
     QFontMetrics metrics{Kirigami::PlatformTheme().defaultFont()};
     int largeSpacing = int(metrics.height()) / 4 * 2;
@@ -103,6 +108,11 @@ void ServiceModel::flag(int row, std::vector<int> columns)
         }
 
         Q_EMIT dataChanged(createIndex(row, column), createIndex(row, column), QVector<int>(Qt::DisplayRole));
+    }
+
+    if (!roles.empty())
+    {
+        Q_EMIT dataChanged(createIndex(row, 0), createIndex(row, columnCount()), QVector<int>(roles.begin(), roles.end()));
     }
 }
 
@@ -219,6 +229,9 @@ int ServiceModel::columnMinWidth(int column)
 
 bool ServiceModel::fuzzy_check(int row, QString data)
 {
+    if (row >= updates.size())
+        return false;
+
     std::string search = data.toUtf8().data();
     std::string text = updates[row].display_name();
 

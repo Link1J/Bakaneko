@@ -27,6 +27,7 @@ public:
 
     void Clear();
     void AddItem(std::string item);
+    std::string Data(int item);
 
 public Q_SLOT:
 };
@@ -49,7 +50,7 @@ public:
 public Q_SLOT:
     Bakaneko::Service& data(int a);
 
-    void flag(int a, std::vector<int> columns);
+    void flag(int a, std::vector<int> columns, std::vector<int> roles);
 
     [[nodiscard]] QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     [[nodiscard]] int rowCount(const QModelIndex& parent = QModelIndex()) const override;

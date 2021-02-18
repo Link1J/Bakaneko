@@ -21,9 +21,9 @@
 #include <spdlog/spdlog.h>
 
 #if defined(LJH_TARGET_Linux)
-enum class service_manager 
+enum class service_manager
 {
-    Unknown, systemd, 
+    Unknown, systemd,
 };
 
 service_manager get_service_manager()

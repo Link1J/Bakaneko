@@ -61,24 +61,30 @@ public:
     };
     Q_ENUM(State);
 
-    Q_PROPERTY(QString          hostname       READ get_hostname        NOTIFY changed_hostname       );
-    Q_PROPERTY(QString          ip             READ get_ip              CONSTANT                      );
-    Q_PROPERTY(QString          mac            READ get_mac             CONSTANT                      );
-    Q_PROPERTY(State            state          READ get_state           NOTIFY changed_state          );
-    Q_PROPERTY(QString          icon           READ get_icon            NOTIFY changed_icon           );
-    Q_PROPERTY(QString          os             READ get_os              NOTIFY changed_os             );
-    Q_PROPERTY(QString          kernel         READ get_kernel          NOTIFY changed_kernel         );
-    Q_PROPERTY(QString          arch           READ get_arch            NOTIFY changed_arch           );
-    Q_PROPERTY(UpdateModel    * updates        READ get_updates         CONSTANT                      );
-    Q_PROPERTY(DrivesModel    * drives         READ get_drives          CONSTANT                      );
-    Q_PROPERTY(AdapterModel   * adapters       READ get_adapters        CONSTANT                      );
-    Q_PROPERTY(QString          serviceManager READ get_service_manager NOTIFY changed_service_manager);
-    Q_PROPERTY(ServiceTypeList* serviceTypes   READ get_service_types   CONSTANT                      );
-    Q_PROPERTY(ServiceModel   * services       READ get_services        CONSTANT                      );
+    Q_PROPERTY(QString          hostname           READ get_hostname           NOTIFY changed_hostname       );
+    Q_PROPERTY(QString          ip                 READ get_ip                 CONSTANT                      );
+    Q_PROPERTY(QString          mac                READ get_mac                CONSTANT                      );
+    Q_PROPERTY(State            state              READ get_state              NOTIFY changed_state          );
+    Q_PROPERTY(QString          icon               READ get_icon               NOTIFY changed_icon           );
+    Q_PROPERTY(QString          os                 READ get_os                 NOTIFY changed_os             );
+    Q_PROPERTY(QString          kernel             READ get_kernel             NOTIFY changed_kernel         );
+    Q_PROPERTY(QString          arch               READ get_arch               NOTIFY changed_arch           );
+    Q_PROPERTY(UpdateModel    * updates            READ get_updates            CONSTANT                      );
+    Q_PROPERTY(DrivesModel    * drives             READ get_drives             CONSTANT                      );
+    Q_PROPERTY(AdapterModel   * adapters           READ get_adapters           CONSTANT                      );
+    Q_PROPERTY(QString          serviceManager     READ get_service_manager    NOTIFY changed_service_manager);
+    Q_PROPERTY(ServiceTypeList* serviceTypes       READ get_service_types      CONSTANT                      );
+    Q_PROPERTY(ServiceModel   * services           READ get_services           CONSTANT                      );
+    Q_PROPERTY(bool             avaliable_adapters READ get_avaliable_adapters NOTIFY changed_enabled_pages  );
+    Q_PROPERTY(bool             avaliable_drives   READ get_avaliable_drives   NOTIFY changed_enabled_pages  );
+    Q_PROPERTY(bool             avaliable_updates  READ get_avaliable_updates  NOTIFY changed_enabled_pages  );
+    Q_PROPERTY(bool             avaliable_services READ get_avaliable_services NOTIFY changed_enabled_pages  );
 
 protected:
     template<typename T>
     void network_get(std::string path, void(Server::*signal)(T));
+    template<typename T>
+    void network_get(std::string path, void(Server::*signal)(T), bool& control);
     void network_post(std::string path);
     template<typename T, typename F>
     void network_post(std::string path, T data, std::string auth, void(Server::*suc)(), void(Server::*fai)(F));
@@ -90,24 +96,29 @@ public:
     boost::latch steps_done;
 
 public Q_SLOTS:
-    State           get_state           ();
+    State            get_state             ();
+ 
+    QString          get_hostname          ();
+    QString          get_ip                ();
+    QString          get_mac               ();
+     
+    QString          get_os                ();
+    QString          get_icon              ();
+    QString          get_kernel            ();
+    QString          get_arch              ();
 
-    QString         get_hostname        ();
-    QString         get_ip              ();
-    QString         get_mac             ();
-    
-    QString         get_os              ();
-    QString         get_icon            ();
-    QString         get_kernel          ();
-    QString         get_arch            ();
+    UpdateModel    * get_updates           ();
+    DrivesModel    * get_drives            ();
+    AdapterModel   * get_adapters          ();
 
-    UpdateModel    * get_updates        ();
-    DrivesModel    * get_drives         ();
-    AdapterModel   * get_adapters       ();
+    QString          get_service_manager   ();
+    ServiceTypeList* get_service_types     ();
+    ServiceModel   * get_services          ();
 
-    QString          get_service_manager();
-    ServiceTypeList* get_service_types  ();
-    ServiceModel   * get_services       ();
+    bool             get_avaliable_adapters();
+    bool             get_avaliable_drives  ();
+    bool             get_avaliable_updates ();
+    bool             get_avaliable_services();
 
     void  update_info    ();
     State ping_computer  ();
@@ -140,6 +151,7 @@ Q_SIGNALS:
     void changed_arch           ();
 
     void changed_service_manager();
+    void changed_enabled_pages  ();
     
     void got_info    (Bakaneko::System     );
     void got_drives  (Bakaneko::Drives     );
@@ -175,6 +187,11 @@ protected:
     std::string     service_manager;
     ServiceTypeList service_types  ;
     ServiceModel    services       ;
+
+    bool avaliable_adapters = false;
+    bool avaliable_drives   = false;
+    bool avaliable_updates  = false;
+    bool avaliable_services = false;
 };
 
 using ServerPointer = Server*;
