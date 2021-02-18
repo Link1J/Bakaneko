@@ -20,6 +20,7 @@
 
 #include <spdlog/spdlog.h>
 
+#if defined(LJH_TARGET_Linux)
 enum class service_manager 
 {
     Unknown, systemd, 
@@ -48,6 +49,7 @@ service_manager get_service_manager()
     }
     return manager;
 }
+#endif
 
 template<typename... Ts>
 std::ostream& operator<<(std::ostream& os, std::tuple<Ts...> const& theTuple)
