@@ -10,52 +10,65 @@ import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
 import Bakaneko.Dialogs 1.0 as Dialogs
 
-Kirigami.Page {
-	Kirigami.Theme.colorSet: Kirigami.Theme.View
-
+ColumnLayout {
 	id: page
-	title: currentServer.serviceManager
-	padding: 0
-	
-	header:
+	spacing: 0
+
 	Controls.ToolBar {
+		id: header
+
+		Layout.fillWidth: true
 		property alias comboBox: row.comboBox
 		property alias searchField: row.searchField
 
-		RowLayout {
-			id: row
+		padding: 0
+		height: row.height + 10 + flickable.contentHeight + 1
+		contentHeight: row.height + 10 + flickable.contentHeight + 1
 
-			property var comboBox: comboBox
-			property var searchField: searchField
-
+		ColumnLayout {
 			anchors.fill: parent
+			spacing: 0
+			RowLayout {
+				id: row
+				Layout.fillWidth: true
+				Layout.margins: 5
 
-			Controls.ComboBox {
-				id: comboBox
+				property var comboBox: comboBox
+				property var searchField: searchField
 
-				Layout.maximumWidth: 100 * Kirigami.Units.devicePixelRatio
+				Controls.ComboBox {
+					id: comboBox
 
-				model: currentServer.serviceTypes
-				textRole: "display"
+					model: currentServer.serviceTypes
+					textRole: "display"
 
-				onActivated: {
-					table.forceLayout()
+					onActivated: {
+						table.forceLayout()
+					}
+				}
+				Kirigami.SearchField {
+					id: searchField
+					Layout.fillWidth: true
+
+					onTextChanged: {
+						table.forceLayout()
+					}
 				}
 			}
-			Kirigami.SearchField {
-				id: searchField
+			Components.Table.Header {
+				Layout.fillHeight: true
 				Layout.fillWidth: true
-
-				onTextChanged: {
-					table.forceLayout()
-				}
+				id: flickable
+				table: table
 			}
 		}
 	}
 
 	Components.Table {
 		id: table
-		anchors.fill: parent
+		Layout.fillWidth: true
+		Layout.fillHeight: true
+		showHeaders: false
 
 		columnWidthProvider: function (column) {
 			if (column === 3) {
@@ -101,8 +114,6 @@ Kirigami.Page {
 			}
 			MouseArea {
 				id: mouseArea
-
-				anchors.fill: parent
 				acceptedButtons: Qt.LeftButton | Qt.RightButton
 				onClicked: {
 					if (mouse.button === Qt.RightButton)

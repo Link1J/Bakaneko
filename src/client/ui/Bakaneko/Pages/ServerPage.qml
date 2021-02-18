@@ -2,7 +2,7 @@
 // SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
 
 import QtQuick 2.12
-import QtQuick.Layouts 1.0
+import QtQuick.Layouts 1.3
 import org.kde.kirigami 2.5 as Kirigami
 import QtQuick.Controls 2.9 as Controls
 import Bakaneko.Objects 1.0 as Objects
@@ -52,107 +52,74 @@ Kirigami.Page {
 		}
 	]
 
-	ColumnLayout {
-		id: info_colunm
-		anchors.fill: parent
-		spacing: 0
-		
-		Components.ServerInfo {}
-
-		Kirigami.Separator {
-			Layout.fillWidth   : true
-			Layout.bottomMargin: 0
-			Layout.leftMargin  : 0
-			Layout.rightMargin : 0
-			Layout.topMargin   : 5
-		}
-
-		RowLayout {
-			implicitWidth       : page.width
-			implicitHeight      : 0
-			Layout.margins      : 0
-			Layout.maximumWidth : 0
-			Layout.maximumHeight: 0
-		}
-
-		ListView {
-			Layout.fillWidth : true
-			Layout.fillHeight: true
-
-			clip        : true
-			bottomMargin: 0
-			leftMargin  : 0
-			rightMargin : 0
-			topMargin   : 0
-
-			model: [
-				{
-					name: "Network",
-					icon: "network-wired",
-					page: adapters_page
-				},
-				{
-					name: "Drives",
-					icon: "drive-harddisk",
-					page: drives_page
-				},
-				{
-					name: "Updates",
-					icon: info_colunm.is_breeze_theme() ? "update-none" : "system-software-update",
-					page: updates_page
-				},
-				{
-					name: "Services",
-					icon: info_colunm.is_breeze_theme() ? "system-run" : "preferences-system-services",
-					page: services_page
-				}
-			]
-			delegate: Kirigami.BasicListItem {
-				highlighted: (pageStack.get(2) ? pageStack.get(2).objectName === modelData.name : false)
-				label: modelData.name
-				icon: {
-					name: modelData.icon
-				}
-				TapHandler {
-					onTapped: {
-						if (pageStack.depth === 3) {
-							pageStack.currentIndex = 2;
-							pageStack.replace(modelData.page);
-						}
-						else {
-							pageStack.push(modelData.page);
-						}
-					}
+	header:
+	Controls.ToolBar {
+		height: bar.contentHeight + Kirigami.Units.smallSpacing + 1
+		Controls.TabBar {
+			id: bar
+			width: parent.width
+			Controls.TabButton {
+				display: Controls.AbstractButton.TextBesideIcon
+				text: i18n("Info")
+				icon.name: ""
+			}
+			Controls.TabButton {
+				display: Controls.AbstractButton.TextBesideIcon
+				text: i18n("Network")
+				icon.name: "network-wired"
+				enabled: currentServer.avaliable_adapters
+			}
+			Controls.TabButton {
+				display: Controls.AbstractButton.TextBesideIcon
+				text: i18n("Drives")
+				icon.name: "drive-harddisk"
+				enabled: currentServer.avaliable_drives
+			}
+			Controls.TabButton {
+				display: Controls.AbstractButton.TextBesideIcon
+				text: i18n("Updates")
+				icon.name: info_colunm.is_breeze_theme() ? "update-none" : "system-software-update"
+				enabled: currentServer.avaliable_updates
+			}
+			Controls.TabButton {
+				display: Controls.AbstractButton.TextBesideIcon
+				text: i18n("Services")
+				icon.name: info_colunm.is_breeze_theme() ? "system-run" : "preferences-system-services"
+				enabled: currentServer.avaliable_services
+			}
+			Connections {
+				target: currentServer
+				function onChanged_enabled_pages() {
+					if (!bar.data[bar.currentIndex].enabled)
+						bar.currentIndex = 0;
 				}
 			}
 		}
+	}
+
+	ColumnLayout {
+		id: info_colunm
+		anchors.fill: parent
 
 		function is_breeze_theme() {
 			return Managers.AppInfo.icon_theme === "breeze" || Managers.AppInfo.icon_theme === "breeze-dark" || Managers.AppInfo.icon_theme === "kf5_rcc_theme";
 		}
-		Component {
-			id: adapters_page
+
+		StackLayout {
+			width: parent.width
+			currentIndex: bar.currentIndex
+
+			Components.ServerInfo {}
 			Components.Adapters {
-				objectName: "Network"
+				Layout.fillWidth: true
+				Layout.fillHeight: true
 			}
-		}
-		Component {
-			id: drives_page
-			Components.Drives {
-				objectName: "Drives"
-			}
-		}
-		Component {
-			id: updates_page
+			Components.Drives {}
 			Components.UpdateList {
-				objectName: "Updates"
+				Layout.fillWidth: true
+				Layout.fillHeight: true
 			}
-		}
-		Component {
-			id: services_page
-			Components.Services {
-				objectName: "Services"
-			}
+			Components.Services {}
 		}
 	}
 

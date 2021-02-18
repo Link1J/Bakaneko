@@ -9,81 +9,60 @@ import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
 
-Kirigami.Page {
-	Kirigami.Theme.colorSet: Kirigami.Theme.View
+Components.Table {
+	id: table
+	model: currentServer.adapters
 
-	id: addServerDialog
-	title: "Network Adapters"
-	padding: 0
-
-	header: Controls.ToolBar {
-		padding: 0
-		height: flickable.contentHeight + 1
-		Components.Table.Header {
-			id: flickable
-			anchors.fill: parent
-			table: table
+	columnWidthProvider: function (column) {
+		if (column === 0) {
+			return dynamic_column(column);
 		}
+		if (column >= 2 && column <= 4) {
+			return metrics.boundingRect("10000000 Tbps").width + Kirigami.Units.largeSpacing * 2;
+		}
+		return defaultColumnWidthProvider(column);
 	}
 
-	Components.Table {
-		id: table
+	FontMetrics {
+		id: metrics
+		font: Kirigami.Theme.defaultFont
+	}
 
-		showHeaders: false
-		model: currentServer.adapters
-		anchors.fill: parent
-
-		columnWidthProvider: function (column) {
-			if (column === 0) {
-				return dynamic_column(column);
+	delegate: DelegateChooser {
+		DelegateChoice {
+			column: 0
+			delegate: Components.Table.Item {
+				text: model.name
 			}
-			if (column >= 2 && column <= 4) {
-				return metrics.boundingRect("10000000 Tbps").width + Kirigami.Units.largeSpacing * 2;
-			}
-			return defaultColumnWidthProvider(column);
 		}
-
-		FontMetrics {
-			id: metrics
-			font: Kirigami.Theme.defaultFont
+		DelegateChoice {
+			column: 1
+			delegate: Components.Table.Item {
+				text: model.connection_state
+			}
 		}
-
-		delegate: DelegateChooser {
-			DelegateChoice {
-				column: 0
-				delegate: Components.Table.Item {
-					text: model.name
-				}
+		DelegateChoice {
+			column: 2
+			delegate: Components.Table.Item {
+				horizontalAlignment: (model.link_speed != "Unknown")
+					? Text.AlignRight
+					: Text.AlignLeft
+				text: model.link_speed
 			}
-			DelegateChoice {
-				column: 1
-				delegate: Components.Table.Item {
-					text: model.connection_state
-				}
+		}
+		DelegateChoice {
+			column: 3
+			delegate: Components.Table.Item {
+				horizontalAlignment: Text.AlignRight
+				text: model.tx_rate
 			}
-			DelegateChoice {
-				column: 2
-				delegate: Components.Table.Item {
-					horizontalAlignment: (model.link_speed != "Unknown")
-						? Text.AlignRight
-						: Text.AlignLeft
-					text: model.link_speed
-				}
-			}
-			DelegateChoice {
-				column: 3
-				delegate: Components.Table.Item {
-					horizontalAlignment: Text.AlignRight
-					text: model.tx_rate
-				}
-			}
-			DelegateChoice {
-				column: 4
-				delegate: Components.Table.Item {
-					horizontalAlignment: Text.AlignRight
-					text: model.rx_rate
-					rightBorder: false
-				}
+		}
+		DelegateChoice {
+			column: 4
+			delegate: Components.Table.Item {
+				horizontalAlignment: Text.AlignRight
+				text: model.rx_rate
+				rightBorder: false
 			}
 		}
 	}

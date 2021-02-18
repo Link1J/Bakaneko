@@ -8,66 +8,46 @@ import QtQuick.Controls 2.0 as Controls
 import Bakaneko.Models 1.0 as Models
 import Bakaneko.Components 1.0 as Components
 
-Kirigami.Page {
-	Kirigami.Theme.colorSet: Kirigami.Theme.View
+Components.Table {
+	id: table
 
-	id: addServerDialog
-	title: "Updates"
-	padding: 0
-
-	header: Controls.ToolBar {
-		padding: 0
-		height: flickable.contentHeight + 1
-		Components.Table.Header {
-			id: flickable
-			anchors.fill: parent
-			table: table
+	model: currentServer.updates
+	
+	columnWidthProvider: function (column) {
+		if (column === 0) {
+			return dynamic_column(column);
 		}
+		var mins = defaultColumnWidthProvider(column);
+		var sum = metrics.boundingRect("WWWWWWWWWW").width + Kirigami.Units.largeSpacing * 2;
+		if (sum >= mins) {
+			return sum;
+		}
+		return mins;
 	}
 
-	Components.Table {
-		id: table
+	FontMetrics {
+		id: metrics
+		font: Kirigami.Theme.defaultFont
+	}
 
-		showHeaders: false
-		model: currentServer.updates
-		anchors.fill: parent
-		
-		columnWidthProvider: function (column) {
-			if (column === 0) {
-				return dynamic_column(column);
+	delegate: DelegateChooser {
+		DelegateChoice {
+			column: 0
+			delegate: Components.Table.Item {
+				text: model.name
 			}
-			var mins = defaultColumnWidthProvider(column);
-			var sum = metrics.boundingRect("WWWWWWWWWW").width + Kirigami.Units.largeSpacing * 2;
-			if (sum >= mins) {
-				return sum;
-			}
-			return mins;
 		}
-
-		FontMetrics {
-			id: metrics
-			font: Kirigami.Theme.defaultFont
+		DelegateChoice {
+			column: 1
+			delegate: Components.Table.Item {
+				text: model.old_version
+			}
 		}
-
-		delegate: DelegateChooser {
-			DelegateChoice {
-				column: 0
-				delegate: Components.Table.Item {
-					text: model.name
-				}
-			}
-			DelegateChoice {
-				column: 1
-				delegate: Components.Table.Item {
-					text: model.old_version
-				}
-			}
-			DelegateChoice {
-				column: 2
-				delegate: Components.Table.Item {
-					text: model.new_version
-					rightBorder: false
-				}
+		DelegateChoice {
+			column: 2
+			delegate: Components.Table.Item {
+				text: model.new_version
+				rightBorder: false
 			}
 		}
 	}

@@ -29,11 +29,11 @@ Rectangle {
 	readonly property real  totalWidth   : contentWidth  + scrollWidth  + 0
 	readonly property real  totalHeight  : contentHeight + scrollHeight + columnsHeader.height
 
-	readonly property bool fillsParent: anchors.fill === parent
+	readonly property bool fillsParent: anchors.fill === parent || (Layout.fillWidth && Layout.fillHeight)
 
 	readonly property alias table : grid.table
 
-	color: /*Kirigami.Theme.backgroundColor //*/ "transparent"
+	color: Kirigami.Theme.backgroundColor //*/ "transparent"
 
 	function forceLayout() {
 		table.forceLayout();
@@ -51,6 +51,12 @@ Rectangle {
 		forceLayout();
 	}
 
+	Connections {
+		target: model
+		function onDataChanged() {
+			base.forceLayout();
+		}
+	}
 	Connections {
 		target: scrollView.Controls.ScrollBar.vertical
 		onVisibleChanged: {
@@ -119,6 +125,11 @@ Rectangle {
 		return sum;
 	}
 
+	FontMetrics {
+		id: metrics
+		font: Kirigami.Theme.defaultFont
+	}
+
 	GridLayout {
 		id: grid
 		columns: 2
@@ -170,12 +181,13 @@ Rectangle {
 				property bool hasColumnHeaders: table.model.headerData(-1, Qt.Horizontal) !== 0
 				property bool hasRowHeaders   : table.model.headerData(-1, Qt.Vertical  ) !== 0
 
+				property var columnsExtra : columnsExtra
+
 				contentWidth: {
 					var sum = 0;
 					for (var i = 0; i < table.columns; i++) {
 						sum += table.columnWidthProvider(i);
 					}
-					console.log(sum);
 					return sum;
 				}
 
@@ -199,76 +211,62 @@ Rectangle {
 				rowHeightProvider  : base.defaultRowHeightProvider
 
 				property real remainHeight: base.height - table.contentHeight - base.scrollHeight
-				property real remainWidth : base.width  - table.contentWidth  - base.scrollWidth
+				property real remainWidth : base.width  - table.totalWidth
 
 				pixelAligned: true
+			}
+			Row {
+				id: columnsExtra
+				y: table.contentY + table.contentHeight + table.topMargin
+				z: 3
 
-				Row {
-					id: columnsExtra
-					y: table.contentY + table.contentHeight + table.topMargin
-					z: 3
+				width : table.contentWidth + table.leftMargin + (table.remainWidth > 0 ? table.remainWidth : 0)
 
-					width : table.contentWidth + table.leftMargin + (table.remainWidth > 0 ? table.remainWidth : 0)
+				onWidthChanged: {
+					updateSize();
+				}
 
-					onWidthChanged: {
-						updateSize();
-					}
+				signal updateSize()
 
-					signal updateSize()
+				Repeater {
+					model: table.columns >= 0 ? table.columns : 0
+					Item {
+						id: headerItem
 
-					Repeater {
-						model: table.columns >= 0 ? table.columns : 0
-						Item {
-							id: headerItem
+						width: table.columnWidthProvider(modelData)
+						height: table.remainHeight > 0 ? table.remainHeight : 0
+						text : ""
+						leftBorder  : !base.fillsParent ? modelData === 0 : false
+						bottomBorder: !base.fillsParent
+						rightBorder : (base.fillsParent && modelData === table.columns - 1) ? table.remainWidth > 0 : true
 
-							width: table.columnWidthProvider(modelData)
-							height: table.remainHeight > 0 ? table.remainHeight : 0
-							text : ""
-							leftBorder  : !base.fillsParent ? modelData === 0 : false
-							bottomBorder: !base.fillsParent
-							rightBorder : (base.fillsParent && modelData === table.columns - 1) ? table.remainWidth > 0 : true
-
-							Connections {
-								target: table.model
-								function onDataChanged() {
-									headerItem.width = table.columnWidthProvider(modelData);
-								}
+						Connections {
+							target: table.model
+							function onDataChanged() {
+								headerItem.width = table.columnWidthProvider(modelData);
 							}
-							Connections {
-								target: columnsExtra
-								function onUpdateSize() {
-									headerItem.width = table.columnWidthProvider(modelData);
-								}
+						}
+						Connections {
+							target: columnsExtra
+							function onUpdateSize() {
+								headerItem.width = table.columnWidthProvider(modelData);
 							}
 						}
 					}
-					Item {
-						x: table.contentWidth + table.leftMargin
-						width: table.remainWidth > 0 ? table.remainWidth : 0
-						visible: table.remainWidth > 0
-
-						bottomBorder: !base.fillsParent
-						rightBorder : !base.fillsParent
-					}
 				}
+				Item {
+					x: table.contentWidth + table.leftMargin
+					width: table.remainWidth > 0 ? table.remainWidth : 0
+					visible: table.remainWidth > 0
 
-				Connections {
-					target: table.model
-					function onDataChanged() {
-						table.forceLayout();
-					}
-				}
-
-				FontMetrics {
-					id: metrics
-					font: Kirigami.Theme.defaultFont
+					bottomBorder: !base.fillsParent
+					rightBorder : !base.fillsParent
 				}
 			}
 		}
 	}
 
-	component Item : 
-	Controls.Control {
+	component Item : Controls.Control {
 		property alias text: column.text
 		property alias horizontalAlignment: column.horizontalAlignment
 
