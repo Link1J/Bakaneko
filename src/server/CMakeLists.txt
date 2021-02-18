@@ -6,7 +6,7 @@ set(SRCS
     rest.cpp
     drives.cpp
     system.cpp
-    updates.cpp
+    updates.cpp 
     windows_service.cpp
     network.cpp
     info.cpp
