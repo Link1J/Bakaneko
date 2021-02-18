@@ -104,8 +104,7 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
         return true;
     };
 
-    if (!run("yay", "-Qu", pacman_decode))
-        run("pacman", "-Qu", pacman_decode);
+    run("pacman", "-Qu", pacman_decode);
     run("apt", "list --upgradable", apt_decode);
     run("apk", "version -v -l '<'", apk_decode);
 #else
