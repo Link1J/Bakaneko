@@ -8,12 +8,12 @@
 #### Server
 | Build Type | Status|
 |---|---|
-| Linux (GLibc) | ![Build Status](https://ci.link1j.me/badges/bakaneko-server-linux_glibc.svg) |
+| Linux (GLibc) | [![Build Status](https://ci.link1j.me/badges/bakaneko-server-linux_glibc.svg)](https://ci.link1j.me/#/builders/3) |
 
 #### Client
 | Build Type | Status|
 |---|---|
-| Linux (GLibc) | ![Build Status](https://ci.link1j.me/badges/bakaneko-client-linux_glibc.svg) |
+| Linux (GLibc) | [![Build Status](https://ci.link1j.me/badges/bakaneko-client-linux_glibc.svg)](https://ci.link1j.me/#/builders/4) |
 
 ## Building
 ### Windows
