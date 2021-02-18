@@ -54,7 +54,7 @@ Kirigami.Page {
 
 	header:
 	Controls.ToolBar {
-		height: bar.contentHeight + Kirigami.Units.smallSpacing + 1
+		height: bar.contentHeight + Kirigami.Units.smallSpacing
 		Controls.TabBar {
 			id: bar
 			width: parent.width
