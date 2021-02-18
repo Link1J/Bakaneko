@@ -4,6 +4,17 @@
 
 > A server management tool that has nothing to do with cats.
 
+## Build Status
+#### Server
+| Build Type | Status|
+|---|---|
+| Linux (GLibc) | ![Build Status](https://ci.link1j.me/badges/bakaneko-server-linux_glibc.svg) |
+
+#### Client
+| Build Type | Status|
+|---|---|
+| Linux (GLibc) | ![Build Status](https://ci.link1j.me/badges/bakaneko-client-linux_glibc.svg) |
+
 ## Building
 ### Windows
 #### Requirements
