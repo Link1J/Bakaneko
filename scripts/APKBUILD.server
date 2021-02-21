@@ -7,33 +7,36 @@ pkgdesc="Server for Bakaneko"
 url="https://link1j.me"
 arch="all"
 license="GPL-3.0-or-later"
-depends="boost protobuf openssl dbus"
+depends="boost protobuf openssl dbus openrc-dev"
 makedepends="cmake extra-cmake-modules boost-dev protobuf-dev openssl-dev dbus-dev"
 install=""
 source="${pkgname}-v${pkgver}.tar.gz::https://github.com/Link1J/Bakaneko/archive/v${pkgver}.tar.gz"
 builddir="$srcdir/Bakaneko-${pkgver}"
 
 build() {
-	if [ "$CBUILD" != "$CHOST" ]; then
-		CMAKE_CROSSOPTS="-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_HOST_SYSTEM_NAME=Linux"
-	fi
-	cmake -B build \
-		-DCMAKE_INSTALL_PREFIX=/usr \
-		-DCMAKE_INSTALL_LIBDIR=lib \
-		-DBUILD_SHARED_LIBS=True \
-		-DCMAKE_BUILD_TYPE=None \
-		-DBAKANEKO_BUILD_CLIENT=OFF \
-		$CMAKE_CROSSOPTS .
-	cmake --build build
+  if [ "$CBUILD" != "$CHOST" ]; then
+    CMAKE_CROSSOPTS="-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_HOST_SYSTEM_NAME=Linux"
+  fi
+  cmake -B build \
+    -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=True \
+    -DCMAKE_BUILD_TYPE=None \
+    -DBAKANEKO_BUILD_CLIENT=OFF \
+    $CMAKE_CROSSOPTS .
+  cmake --build build
 }
 
 check() {
-	cd build
-	CTEST_OUTPUT_ON_FAILURE=TRUE ctest
+  cd build
+  CTEST_OUTPUT_ON_FAILURE=TRUE ctest
 }
 
 package() {
 	DESTDIR="$pkgdir" cmake --install build
+	install -Dm600 "extras/bakaneko-server.ini" "$pkgdir/etc/bakaneko-server.ini"
+	install -Dm644 "extras/bakaneko-server.openrc" "$pkgdir/etc/init.d/bakaneko-server.openrc"
 }
 
 sha512sums="549337ed6bd334146025dcb1a97d3cce8f0b9066570dc035b51b89ca5d55db96cdfd62e11b69cc964e21b44f38371dfb2a0929c904c130bd032c75ba6a069755  bakaneko-server-v0.1.0.tar.gz"

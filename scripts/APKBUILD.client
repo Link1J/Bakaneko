@@ -1,0 +1,36 @@
+# Maintainer: Jared Irwin <jrairwin@sympatico.ca>
+pkgname=bakaneko
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Bakaneko Client"
+url="https://link1j.me"
+arch="all"
+license="GPL-3.0-or-later"
+depends="boost protobuf openssl qqc2-desktop-style kiconthemes kcrash kdeclarative
+  ki18n kconfig kcoreaddons qt5-base qt5-declarative qt5-svg qt5-quickcontrols2
+  libssh"
+makedepends="cmake extra-cmake-modules boost-dev protobuf-dev openssl-dev kiconthemes-dev
+  kcrash-dev kdeclarative-dev ki18n-dev kconfig-dev kcoreaddons-dev qt5-qtbase-dev
+  qt5-qtdeclarative-dev qt5-qtsvg-dev qt5-qtquickcontrols2-dev libssh-dev"
+install=""
+source="${pkgname}-v${pkgver}.tar.gz::https://github.com/Link1J/Bakaneko/archive/v${pkgver}.tar.gz"
+builddir="$srcdir/Bakaneko-${pkgver}"
+
+build() {
+  if [ "$CBUILD" != "$CHOST" ]; then
+    CMAKE_CROSSOPTS="-DCMAKE_SYSTEM_NAME=Linux -DCMAKE_HOST_SYSTEM_NAME=Linux"
+  fi
+  cmake -B build \
+    -Wno-dev \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_INSTALL_LIBDIR=lib \
+    -DBUILD_SHARED_LIBS=True \
+    -DCMAKE_BUILD_TYPE=None \
+    -DBAKANEKO_BUILD_SERVER=OFF \
+    $CMAKE_CROSSOPTS .
+  make -C build
+}
+
+package() {
+  make -C build DESTDIR="$pkgdir/" install
+}

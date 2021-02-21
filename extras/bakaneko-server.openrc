@@ -1,0 +1,6 @@
+#!/sbin/openrc-run
+description="Server for Bakaneko"
+command="/usr/bin/bakaneko-server"
+command_args=""
+command_background=True
+pidfile="/run/${RC_SVCNAME}.pid"
