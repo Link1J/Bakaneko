@@ -18,7 +18,7 @@ build() {
     -Wno-dev \
     -DCMAKE_BUILD_TYPE='None' \
     -DCMAKE_INSTALL_PREFIX='/usr' \
-    -DBAKANEKO_DONT_BUILD_SERVER=ON
+    -DBAKANEKO_BUILD_SERVER=OFF
   make -C build
 }
 

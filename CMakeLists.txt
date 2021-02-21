@@ -7,6 +7,9 @@ project(bakaneko)
 
 include(FeatureSummary)
 
+option(BAKANEKO_BUILD_CLIENT "Build Qt Client" ON)
+option(BAKANEKO_BUILD_SERVER "Build Server" ON)
+
 set(CMAKE_MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 
 find_package(ECM 5.68 REQUIRED NO_MODULE)
@@ -26,11 +29,11 @@ add_subdirectory(src/protobuf)
 
 set_target_properties(ljh spdlog protobuf-files PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 
-if (NOT BAKANEKO_DONT_BUILD_CLIENT)
+if (BAKANEKO_BUILD_CLIENT)
     add_subdirectory(src/client)
     set_target_properties(bakaneko-client PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
-if (NOT BAKANEKO_DONT_BUILD_SERVER)
+if (BAKANEKO_BUILD_SERVER)
     add_subdirectory(src/server)
     set_target_properties(bakaneko-server PROPERTIES MSVC_RUNTIME_LIBRARY MultiThreadedDLL)
 endif()
