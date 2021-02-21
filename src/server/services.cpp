@@ -50,7 +50,7 @@ service_manager get_service_manager()
             }
         }
 
-        spdlog::warning("Could not determine Service Manager");
+        spdlog::warn("Could not determine Service Manager");
         return service_manager::Unknown;
     }();
     return manager;
