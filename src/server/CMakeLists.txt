@@ -11,7 +11,6 @@ set(SRCS
     network.cpp
     info.cpp
     services.cpp
-    openrc.hpp
 )
 
 add_executable(bakaneko-server ${SRCS})

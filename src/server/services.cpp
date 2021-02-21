@@ -17,13 +17,16 @@
 #elif defined(LJH_TARGET_Linux)
 #include <ljh/unix/dbus.hpp>
 #endif
+#include "openrc.hpp"
 
 #include <spdlog/spdlog.h>
+
+extern std::tuple<int, std::string> exec(const std::string& cmd);
 
 #if defined(LJH_TARGET_Linux)
 enum class service_manager
 {
-    Unknown, systemd,
+    Unknown, systemd, openrc,
 };
 
 service_manager get_service_manager()
@@ -35,6 +38,11 @@ service_manager get_service_manager()
     std::lock_guard _(mutex);
     if (!ran)
     {
+        if (rc_service_add)
+        {
+            manager = service_manager::openrc;
+        }
+
         ljh::unix::dbus::connection system_bus(ljh::unix::dbus::bus::SYSTEM);
         auto interface = system_bus.get(DBUS_SERVICE_DBUS, DBUS_PATH_DBUS, DBUS_INTERFACE_DBUS);
         auto dbus_services = interface.call("ListNames").run<std::vector<std::string>>();
@@ -96,6 +104,9 @@ ljh::expected<Bakaneko::ServiceInfo, Errors> Info::Service(const Fields& fields)
         *info.add_types() = "Snapshot";
         *info.add_types() = "Slice";
         *info.add_types() = "Scope";
+        break;
+    case service_manager::openrc:
+        info.set_server("openrc");
         break;
     
     default:
@@ -320,6 +331,45 @@ ljh::expected<Bakaneko::Services, Errors> Info::Services(const Fields& fields, B
             throw std::runtime_error{error_message};
         }
         break;
+
+    case service_manager::openrc:
+        {
+            auto run_levels = rc_runlevel_list();
+            for (auto& service_file_thing : std::filesystem::directory_iterator(RC_INITDIR))
+            {
+                auto id = service_file_thing.path().filename().string();
+                if (!rc_service_exists(id.c_str()))
+                    continue;
+
+                auto service = info.add_service();
+
+                auto desc = rc_service_description(id.c_str(), nullptr);
+
+                service->set_id(id);
+                service->set_display_name(id);
+                service->set_description(desc);
+
+                free(desc);
+
+                for (auto np = run_levels->tqh_first; np != NULL; np = np->entries.tqe_next)
+                {
+                    if (rc_service_in_runlevel(id.c_str(), np->value))
+                    {
+                        service->set_enabled(true);
+                    }
+                }
+
+                auto state = rc_service_state(id.c_str());
+                if ((state & RC_SERVICE(0xFF)) == RC_SERVICE::STARTED)
+                    service->set_state(Bakaneko::Service_State_Running );
+                else if ((state & RC_SERVICE(0xFF)) == RC_SERVICE::STARTING)
+                    service->set_state(Bakaneko::Service_State_Starting);
+                else if ((state & RC_SERVICE(0xFF)) == RC_SERVICE::STOPPING)
+                    service->set_state(Bakaneko::Service_State_Stopping);
+            }
+            rc_stringlist_free(run_levels);
+        }
+        break;
     
     default:
         return ljh::unexpected{Errors::NotImplemented};
@@ -338,7 +388,7 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
     if (!Helpers::Authenticate(fields.authentication.value()))
         return ljh::unexpected{Errors::NeedsPassword};
 
-    spdlog::debug("Action {} requsested on {}", data.action(), data.id());
+    spdlog::info("Action {} requsested on {}", data.action(), data.id());
 
 #if defined(LJH_TARGET_Windows)
     Win32ServiceHandle sc_handle(OpenSCManagerA, nullptr, SERVICES_ACTIVE_DATABASE, GENERIC_READ);
@@ -412,11 +462,58 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
                 }
                 break;
             }
+            default:
+                return ljh::unexpected{Errors::NotImplemented};
         }
         catch(const ljh::unix::dbus::error& e)
         {
             auto error_message = fmt::format("DBus Error: ({}) {}", e.name(), e.message());
             throw std::runtime_error{error_message};
+        }
+        break;
+    
+    case service_manager::openrc:
+        {
+            auto path = [data]{
+                auto temp = rc_service_resolve(data.id().c_str());
+                std::string out = temp;
+                free(temp);
+                return out;
+            }();
+
+            switch (data.action())
+            {
+            case Bakaneko::Service_Control_Action_Stop:
+                exec(path + "stop");
+                break;
+            case Bakaneko::Service_Control_Action_Start:
+                exec(path + "start");
+                break;
+            case Bakaneko::Service_Control_Action_Restart:
+                exec(path + "restart");
+                break;
+            case Bakaneko::Service_Control_Action_Enable:
+                {
+                    if (!rc_service_add("default", data.id().c_str()))
+                        return ljh::unexpected{Errors::Failed};
+                }
+                break;
+            case Bakaneko::Service_Control_Action_Disable:
+                {
+                    auto run_levels = rc_runlevel_list();
+                    for (auto np = run_levels->tqh_first; np != NULL; np = np->entries.tqe_next)
+                    {
+                        if (rc_service_in_runlevel(data.id().c_str(), np->value))
+                        {
+                            rc_service_delete(np->value, data.id().c_str());
+                        }
+                    }
+                    rc_stringlist_free(run_levels);
+                }
+                break;
+            }
+            default:
+                return ljh::unexpected{Errors::NotImplemented};
         }
         break;
     

@@ -57,8 +57,7 @@ namespace ljh
 	class function_pointer<\
 		R LJH_CALLING_CONVENTION_##CC (Args...) LJH_NOEXCEPT_FUNCTION_TYPE(Noexcept),\
 		std::is_same<calling_conventions::cdecl_::type, calling_conventions::CC##_::type>::value\
-			? calling_conventions::CC##_::id \
-			: 0 \
+			? calling_conventions::CC##_::id : 0 \
 	>\
 	{\
 	public:\
@@ -121,6 +120,10 @@ namespace ljh
 #else
 #define MAKE_POINTERS(CC)\
 	POINTERS_INTERALS(CC, false)
+#endif
+
+#ifdef cdecl
+#undef cdecl
 #endif
 
 	MAKE_POINTERS(cdecl             );
