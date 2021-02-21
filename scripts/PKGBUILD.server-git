@@ -30,5 +30,6 @@ build() {
 
 package() {
   make -C build DESTDIR="$pkgdir/" install
+  install -Dm644 "$pkgname/extras/bakaneko-server.ini" "$pkgdir/etc/bakaneko-server.ini"
   install -Dm644 "$pkgname/extras/bakaneko-server.service" "$pkgdir/usr/lib/systemd/system/bakaneko-server.service"
 }

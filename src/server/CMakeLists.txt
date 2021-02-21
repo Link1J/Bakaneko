@@ -46,9 +46,3 @@ if (WIN32)
 endif()
 
 install(TARGETS bakaneko-server ${KDE_INSTALL_TARGETS_DEFAULT_ARGS})
-
-if (UNIX)
-    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_FULL_SYSCONFDIR}")
-else()
-    install(FILES "${CMAKE_SOURCE_DIR}/extras/bakaneko-server.ini" DESTINATION "${KDE_INSTALL_BINDIR}")
-endif()
