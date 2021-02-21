@@ -91,10 +91,10 @@ void Server::update_info()
             steps_done.count_down();
             steps_done.count_down();
             
-            if (avaliable_adapters) network_get("/drives"          , &Server::got_drives  );
-            if (avaliable_drives  ) network_get("/updates"         , &Server::got_updates );
-            if (avaliable_updates ) network_get("/network/adapters", &Server::got_adapters);
-            if (avaliable_services) network_get("/services"        , &Server::got_services);
+            if (avaliable_adapters) network_get("/drives"          , &Server::got_drives  ); else steps_done.count_down();
+            if (avaliable_drives  ) network_get("/updates"         , &Server::got_updates ); else steps_done.count_down();
+            if (avaliable_updates ) network_get("/network/adapters", &Server::got_adapters); else steps_done.count_down();
+            if (avaliable_services) network_get("/services"        , &Server::got_services); else steps_done.count_down();
         }
         else
         {
@@ -321,6 +321,10 @@ void Server::network_get(std::string path, void(Server::*signal)(T), bool& contr
                     control = false;
                     Q_EMIT changed_enabled_pages();
                 }
+            }
+            if (&avaliable_adapters == &control)
+            {
+                steps_done.count_down();
             }
             steps_done.count_down();
         }

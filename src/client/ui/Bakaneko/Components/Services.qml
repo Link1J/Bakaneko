@@ -101,10 +101,12 @@ ColumnLayout {
 			rightBorder: (table.fillsParent && column === table.columns - 1) ? table.table.remainWidth > 0 : true
 
 			TableView.onPooled: {
-				mouseArea.contextMenu.visible = false
-				mouseArea.contextMenu.dismiss()
+				mouseArea.contextMenu.enabled = false;
+				mouseArea.contextMenu.visible = false;
+				mouseArea.contextMenu.dismiss();
 			}
 			TableView.onReused: {
+				mouseArea.contextMenu.enabled = true;
 			}
 
 			Controls.ToolTip {
@@ -114,6 +116,7 @@ ColumnLayout {
 			}
 			MouseArea {
 				id: mouseArea
+				anchors.fill: parent
 				acceptedButtons: Qt.LeftButton | Qt.RightButton
 				onClicked: {
 					if (mouse.button === Qt.RightButton)
@@ -129,7 +132,7 @@ ColumnLayout {
 				Controls.Menu {
 					id: contextMenu
 					Controls.MenuItem {
-						visible: service_state == 0
+						enabled: service_state == 0
 						text: "Start"
 						onTriggered: {
 							login_prompt1.createObject(overlay, { source_page: page }).open();
@@ -144,7 +147,7 @@ ColumnLayout {
 						}
 					}
 					Controls.MenuItem {
-						visible: service_state == 1
+						enabled: service_state == 1
 						text: "Stop"
 						onTriggered: {
 							login_prompt2.createObject(overlay, { source_page: page }).open();
@@ -159,7 +162,7 @@ ColumnLayout {
 						}
 					}
 					Controls.MenuItem {
-						visible: service_state == 1
+						enabled: service_state == 1
 						text: "Restart"
 						onTriggered: {
 							login_prompt3.createObject(overlay, { source_page: page }).open();
@@ -177,7 +180,7 @@ ColumnLayout {
 					Controls.MenuSeparator {}
 
 					Controls.MenuItem {
-						visible: !service_enabled
+						enabled: !service_enabled
 						text: "Enable"
 						onTriggered: {
 							login_prompt4.createObject(overlay, { source_page: page }).open();
@@ -192,7 +195,7 @@ ColumnLayout {
 						}
 					}
 					Controls.MenuItem {
-						visible: service_enabled
+						enabled: service_enabled
 						text: "Disable"
 						onTriggered: {
 							login_prompt5.createObject(overlay, { source_page: page }).open();

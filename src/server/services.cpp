@@ -31,16 +31,11 @@ enum class service_manager
 
 service_manager get_service_manager()
 {
-    static service_manager manager = service_manager::Unknown;
-    static bool ran = false;
-    static std::mutex mutex;
-
-    std::lock_guard _(mutex);
-    if (!ran)
-    {
+    static service_manager manager = []{
         if (rc_service_add)
         {
-            manager = service_manager::openrc;
+            spdlog::info("Service Manager: openrc");
+            return service_manager::openrc;
         }
 
         ljh::unix::dbus::connection system_bus(ljh::unix::dbus::bus::SYSTEM);
@@ -50,11 +45,14 @@ service_manager get_service_manager()
         {
             if (service == "org.freedesktop.systemd1")
             {
-                manager = service_manager::systemd;
-                break;
+                spdlog::info("Service Manager: systemd");
+                return service_manager::systemd;
             }
         }
-    }
+
+        spdlog::warning("Could not determine Service Manager");
+        return service_manager::Unknown;
+    }();
     return manager;
 }
 #endif
@@ -107,6 +105,7 @@ ljh::expected<Bakaneko::ServiceInfo, Errors> Info::Service(const Fields& fields)
         break;
     case service_manager::openrc:
         info.set_server("openrc");
+        *info.add_types() = "Service";
         break;
     
     default:
@@ -351,6 +350,8 @@ ljh::expected<Bakaneko::Services, Errors> Info::Services(const Fields& fields, B
 
                 free(desc);
 
+                service->set_type("Service");
+
                 for (auto np = run_levels->tqh_first; np != NULL; np = np->entries.tqe_next)
                 {
                     if (rc_service_in_runlevel(id.c_str(), np->value))
@@ -484,13 +485,22 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
             switch (data.action())
             {
             case Bakaneko::Service_Control_Action_Stop:
-                exec(path + "stop");
+                {
+                    auto [code, std_out] = exec(path + " stop");
+                    if (code != 0) return ljh::unexpected{Errors::Failed};
+                }
                 break;
             case Bakaneko::Service_Control_Action_Start:
-                exec(path + "start");
+                {
+                    auto [code, std_out] = exec(path + " start");
+                    if (code != 0) return ljh::unexpected{Errors::Failed};
+                }
                 break;
             case Bakaneko::Service_Control_Action_Restart:
-                exec(path + "restart");
+                {
+                    auto [code, std_out] = exec(path + " restart");
+                    if (code != 0) return ljh::unexpected{Errors::Failed};
+                }
                 break;
             case Bakaneko::Service_Control_Action_Enable:
                 {
