@@ -511,9 +511,9 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
                     rc_stringlist_free(run_levels);
                 }
                 break;
-            }
             default:
                 return ljh::unexpected{Errors::NotImplemented};
+            }
         }
         break;
     
