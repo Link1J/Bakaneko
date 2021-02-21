@@ -20,7 +20,7 @@ pkgver() {
 }
 
 build() {
-  cmake -B build -S ${pkgname} \
+  cmake -B build -S $pkgname \
     -Wno-dev \
     -DCMAKE_BUILD_TYPE='None' \
     -DCMAKE_INSTALL_PREFIX='/usr' \
@@ -30,4 +30,5 @@ build() {
 
 package() {
   make -C build DESTDIR="$pkgdir/" install
+  install -Dm644 "$pkgname/extras/bakaneko-server.service" "$pkgdir/usr/lib/systemd/system/bakaneko-server.service"
 }

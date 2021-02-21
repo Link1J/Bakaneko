@@ -12,7 +12,7 @@ depends=('boost' 'protobuf' 'openssl' 'qqc2-desktop-style' 'kiconthemes' 'kcrash
 makedepends=('cmake' 'extra-cmake-modules' 'git')
 provides=("${pkgname%-git}")
 conflicts=("${pkgname%-git}")
-source=("${pkgname}::git+https://github.com/Link1J/Bakaneko.git")
+source=("$pkgname::git+https://github.com/Link1J/Bakaneko.git")
 md5sums=('SKIP')
 
 pkgver() {
@@ -21,7 +21,7 @@ pkgver() {
 }
 
 build() {
-  cmake -B build -S ${pkgname} \
+  cmake -B build -S $pkgname \
     -Wno-dev \
     -DCMAKE_BUILD_TYPE='None' \
     -DCMAKE_INSTALL_PREFIX='/usr' \
