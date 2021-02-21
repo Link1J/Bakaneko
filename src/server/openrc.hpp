@@ -51,10 +51,6 @@ const std::string RC_SYS_VSERVER        = "VSERVER";
 const std::string RC_SYS_XEN0           = "XEN0";
 const std::string RC_SYS_XENU           = "XENU";
 
-using pid_t = size_t;
-using uid_t = size_t;
-using ssize_t = long long;
-
 template<typename TYPE>
 struct _i_TAILQ_ENTRY
 {

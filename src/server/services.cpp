@@ -16,8 +16,8 @@
 #include <ljh/windows/wmi.hpp>
 #elif defined(LJH_TARGET_Linux)
 #include <ljh/unix/dbus.hpp>
-#endif
 #include "openrc.hpp"
+#endif
 
 #include <spdlog/spdlog.h>
 
@@ -461,9 +461,9 @@ ljh::expected<void, Errors> Control::Service(const Fields& fields, Bakaneko::Ser
                     interface.call("DisableUnitFiles").args(std::vector{data.id()}, false).run(_2);
                 }
                 break;
-            }
             default:
                 return ljh::unexpected{Errors::NotImplemented};
+            }
         }
         catch(const ljh::unix::dbus::error& e)
         {
