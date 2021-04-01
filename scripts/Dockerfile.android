@@ -1,7 +1,86 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # SPDX-FileCopyrightText: 2021 Jared Irwin <jrairwin@sympatico.ca>
-FROM kdeorg/android-kf5-sdk
-RUN sudo apt install -y python3-pip
-RUN python3 -m pip install requests
-RUN /opt/helpers/build-cmake libssh https://git.libssh.org/projects/libssh.git -DWITH_INTERNAL_DOC=OFF -DWITH_TESTING=OFF -DWITH_SERVER=OFF -DWITH_EXAMPLES=OFF -DCMAKE_BUILD_TYPE=Release \
-&& rm -rf src/* && rm -rf build-*/*
+FROM alvrme/alpine-android
+
+ENV PREFIX=/opt/android-prefix
+
+ENV BUILD_TYPE=Debug
+
+ENV ANDROID_ABI=arm64-v8a
+ENV TARGET=aarch64-linux-android
+ENV API=21
+ENV ANDROID_STL=c++_shared
+ENV BUILD_SHARED_LIB=1
+
+ENV NDK=/opt/sdk/ndk-bundle
+ENV TOOLCHAIN=$NDK/toolchains/llvm/prebuilt/linux-x86_64
+
+ENV ANDROID_PLATFORM=android-$API
+ENV ANDROID_NDK_HOME=$NDK
+
+ENV AR=$TOOLCHAIN/bin/llvm-ar
+ENV CC=$TOOLCHAIN/bin/$TARGET$API-clang
+ENV AS=$CC
+ENV CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
+ENV LD=$TOOLCHAIN/bin/ld
+ENV RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+ENV STRIP=$TOOLCHAIN/bin/llvm-strip
+
+# $(($(nproc --all) * 5 / 4))
+ARG JOBS=4
+
+RUN sdkmanager --sdk_root=${ANDROID_SDK_ROOT} --install ndk-bundle
+
+RUN apk add --no-cache protobuf cmake make perl autoconf automake libtool gcc g++ wget \
+&& rm -rf /tmp/* /var/tmp/*
+
+RUN mkdir /opt/android-prefix
+
+RUN cd $HOME
+
+# RUN sudo apt install -y python3-pip protobuf-compiler
+# RUN python3 -m pip install requests
+
+# Bug with NDK r22
+#RUN git clone git://git.openssl.org/openssl.git --recurse-submodules -b OpenSSL_1_1_1i \
+RUN git clone https://github.com/iguessthislldo/openssl.git -b igtd/android-ndk-r22 --recurse-submodules \
+&& cd openssl \
+&& PATH="$TOOLCHAIN/bin:$PATH" ./Configure android-arm64 --prefix=$PREFIX --openssldir=$PREFIX/usr/local/ssl -D__ANDROID_API__=$API \
+&& PATH="$TOOLCHAIN/bin:$PATH" make -j$JOBS \
+&& PATH="$TOOLCHAIN/bin:$PATH" make -j$JOBS install_sw \
+&& cd $HOME && rm -rf openssl
+
+RUN git clone https://git.libssh.org/projects/libssh.git -b libssh-0.9.5 \
+&& cd libssh && mkdir build && cd build \
+&& cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=$NDK/build/cmake/android.toolchain.cmake \
+    -DANDROID_ABI=$ANDROID_ABI \
+    -DANDROID_NATIVE_API_LEVEL=$API \
+    -DCMAKE_BUILD_TYPE=$BUILD_TYPE \
+    -DCMAKE_INSTALL_PREFIX=$PREFIX \
+    -DCMAKE_PREFIX_PATH=$PREFIX \
+    -DCMAKE_FIND_ROOT_PATH="$PREFIX" \
+    -DWITH_INTERNAL_DOC=OFF -DWITH_TESTING=OFF -DWITH_SERVER=OFF -DWITH_EXAMPLES=OFF \
+&& cmake --build . -- install -j$JOBS \
+&& cd $HOME && rm -rf libssh
+
+RUN git clone https://github.com/protocolbuffers/protobuf.git --recurse-submodules -b v$(protoc --version | cut -d' ' -f2) \
+&& cd protobuf \
+&& ./autogen.sh \
+&& PATH="$TOOLCHAIN/bin:$PATH" LDFLAGS="-llog" DIST_LANG=cpp ./configure --prefix="$PREFIX" --host="$TARGET" --with-protoc=protoc --enable-cross-compile --enable-shared \
+&& make -j$JOBS \
+&& make install \
+&& cd $HOME && rm -rf protobuf
+
+RUN git clone https://github.com/boostorg/boost.git --recurse-submodules -b boost-1.75.0 \
+&& cd boost \
+&& cd tools/build && ./bootstrap.sh && ./b2 install --prefix=$PREFIX && cd ../.. \
+&& b2 toolset=clang-$ANDROID_ABI target-os=android --build-dir=./build stage \
+&& b2 install --prefix=$PREFIX \
+&& cd $HOME && rm -rf boost
+
+RUN git clone https://code.qt.io/qt/qt5.git -b 5.14 && mkdir qt5-build && cd qt5-build \
+&& $HOME/qt5/configure -xplatform android-clang -prefix $PREFIX -android-ndk $NDK -android-sdk /opt/sdk \
+&& make -j$JOBS \
+&& make install \
+&& cd $HOME && rm -rf qt5 qt5-build
