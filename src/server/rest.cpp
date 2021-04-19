@@ -143,7 +143,8 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             else
             {
                 typename FunctionTraits::template argument_type<1> message_req;
-                message_req = json::parse(req.body());
+                if (Body::size(req.body()))
+                    message_req = json::parse(req.body());
                 return function(fields, message_req);
             }
         }();
