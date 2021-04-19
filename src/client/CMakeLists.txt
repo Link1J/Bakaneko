@@ -15,6 +15,7 @@ set(CMAKE_AUTORCC ON)
 find_package(Qt5 ${QT5_MIN_VERSION} REQUIRED COMPONENTS Core Gui Qml Quick QuickControls2 Svg Concurrent)
 find_package(KF5 ${KF5_MIN_VERSION} REQUIRED COMPONENTS Kirigami2 I18n Crash Notifications CoreAddons IconThemes Config)
 find_package(libssh REQUIRED)
+find_package(Threads REQUIRED)
 
 set(SRCS
     main.cpp
@@ -97,6 +98,8 @@ target_link_libraries(bakaneko-client PUBLIC
     
     KF5::ConfigCore
     KF5::ConfigGui
+    
+    Threads::Threads
 
     protobuf-files
     ssh

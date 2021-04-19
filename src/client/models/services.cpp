@@ -126,46 +126,46 @@ QVariant ServiceModel::data(const QModelIndex& index, int role) const
 
     if (role == Qt::ToolTipRole)
     {
-        return QString::fromStdString(temp.description());
+        return QString::fromStdString(temp.description);
     }
     if (role == ROLE_state)
     {
-        return temp.state();
+        return temp.state;
     }
     if (role == ROLE_enable)
     {
-        return temp.enabled();
+        return temp.enabled;
     }
     if (role == ROLE_id)
     {
-        return QString::fromStdString(temp.id());
+        return QString::fromStdString(temp.id);
     }
 
     switch (index.column())
     {
     case 0:
-        switch (temp.state())
+        switch (temp.state)
         {
-        case Bakaneko::Service_State_Running:
+        case Bakaneko::Service::State::Running:
             return "Running";
-        case Bakaneko::Service_State_Starting:
+        case Bakaneko::Service::State::Starting:
             return "Starting";
-        case Bakaneko::Service_State_Stopped:
+        case Bakaneko::Service::State::Stopped:
             return "Stopped";
-        case Bakaneko::Service_State_Stopping:
+        case Bakaneko::Service::State::Stopping:
             return "Stopping";
         default:
             return "Unknown";
         }
 
     case 1:
-        return temp.enabled() ? "Enabled" : "Disabled";
+        return temp.enabled ? "Enabled" : "Disabled";
 
     case 2:
-        return QString::fromStdString(temp.type());
+        return QString::fromStdString(temp.type);
 
     case 3:
-        return QString::fromStdString(temp.display_name());
+        return QString::fromStdString(temp.display_name);
     }
     return QVariant();
 }
@@ -233,7 +233,7 @@ bool ServiceModel::fuzzy_check(int row, QString data)
         return false;
 
     std::string search = data.toUtf8().data();
-    std::string text = updates[row].display_name();
+    std::string text = updates[row].display_name;
 
     std::transform(search.begin(), search.end(), search.begin(), &toupper);
     std::transform(text  .begin(), text  .end(), text  .begin(), &toupper);

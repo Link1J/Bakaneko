@@ -5,7 +5,7 @@
 
 #include <QAbstractTableModel>
 
-#include "updates.pb.h"
+#include "updates.hpp"
 
 class Server;
 

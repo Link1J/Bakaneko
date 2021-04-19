@@ -39,11 +39,11 @@ QVariant DrivesModel::data(const QModelIndex& index, int role) const
 
     auto& temp = updates[index.row()];
 
-    if (role == ROLE_dev_node    ) return QVariant::fromValue(QString::fromStdString(                      temp.dev_node    () ));
-    if (role == ROLE_size        ) return QVariant::fromValue(QString::fromStdString(bytes_to_string<1000>(temp.size        ())));
-    if (role == ROLE_model       ) return QVariant::fromValue(QString::fromStdString(                      temp.model       () ));
-    if (role == ROLE_manufacturer) return QVariant::fromValue(QString::fromStdString(                      temp.manufacturer() ));
-    if (role == ROLE_interface   ) return QVariant::fromValue(QString::fromStdString(                      temp.interface   () ));
+    if (role == ROLE_dev_node    ) return QVariant::fromValue(QString::fromStdString(                      temp.dev_node     ));
+    if (role == ROLE_size        ) return QVariant::fromValue(QString::fromStdString(bytes_to_string<1000>(temp.size        )));
+    if (role == ROLE_model       ) return QVariant::fromValue(QString::fromStdString(                      temp.model        ));
+    if (role == ROLE_manufacturer) return QVariant::fromValue(QString::fromStdString(                      temp.manufacturer ));
+    if (role == ROLE_interface   ) return QVariant::fromValue(QString::fromStdString(                      temp.interface    ));
     if (role == ROLE_partition   ) return QVariant::fromValue(partitions[index.row()].get());
 
     return QVariant();
@@ -125,11 +125,11 @@ QVariant PartitionModel::data(const QModelIndex& index, int role) const
 
     auto& temp = updates[index.row()];
 
-    if (role == ROLE_dev_node  ) return QVariant::fromValue(QString::fromStdString(                      temp.dev_node  ()                              )      );
-    if (role == ROLE_size      ) return QVariant::fromValue(QString::fromStdString(bytes_to_string<1000>(temp.size      ()                      )       )      );
-    if (role == ROLE_used      ) return QVariant::fromValue(QString::number       (               (int)((temp.used      () / (double)temp.size()) * 100)) + "%");
-    if (role == ROLE_mountpoint) return QVariant::fromValue(QString::fromStdString(                      temp.mountpoint()                              )      );
-    if (role == ROLE_filesystem) return QVariant::fromValue(QString::fromStdString(                      temp.filesystem()                              )      );
+    if (role == ROLE_dev_node  ) return QVariant::fromValue(QString::fromStdString(                      temp.dev_node                              )      );
+    if (role == ROLE_size      ) return QVariant::fromValue(QString::fromStdString(bytes_to_string<1000>(temp.size                          )       )      );
+    if (role == ROLE_used      ) return QVariant::fromValue(QString::number       (               (int)((temp.used       / (double)temp.size) * 100)) + "%");
+    if (role == ROLE_mountpoint) return QVariant::fromValue(QString::fromStdString(                      temp.mountpoint                            )      );
+    if (role == ROLE_filesystem) return QVariant::fromValue(QString::fromStdString(                      temp.filesystem                            )      );
 
     return QVariant();
 }

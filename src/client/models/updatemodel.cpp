@@ -19,9 +19,9 @@ UpdateModel::~UpdateModel() = default;
 bool UpdateModel::setData(int index, std::string value, int role)
 {
     auto& temp = updates[index];
-         if (role == NameRole      ) temp.set_name       (value);
-    else if (role == OldVersionRole) temp.set_old_version(value);
-    else if (role == NewVersionRole) temp.set_new_version(value);
+         if (role == NameRole      ) temp.name        = (value);
+    else if (role == OldVersionRole) temp.old_version = (value);
+    else if (role == NewVersionRole) temp.new_version = (value);
     Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0), {role});
     return true;
 }
@@ -37,9 +37,9 @@ bool UpdateModel::setData(const QModelIndex& index, const QVariant& value, int r
 std::string UpdateModel::data(int index, int role) const
 {
     auto& temp = updates[index];
-    if (role == NameRole      ) return temp.name       ();
-    if (role == OldVersionRole) return temp.old_version();
-    if (role == NewVersionRole) return temp.new_version();
+    if (role == NameRole      ) return temp.name       ;
+    if (role == OldVersionRole) return temp.old_version;
+    if (role == NewVersionRole) return temp.new_version;
     return "";
 }
 

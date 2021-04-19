@@ -7,7 +7,7 @@
 #include <QAbstractTableModel>
 
 #undef interface
-#include "drives.pb.h"
+#include "drives.hpp"
 
 class PartitionModel : public QAbstractTableModel
 {

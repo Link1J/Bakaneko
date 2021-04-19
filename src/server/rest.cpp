@@ -8,14 +8,14 @@
 #include <ljh/function_pointer.hpp>
 #include <ljh/function_traits.hpp>
 
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
+
 Rest::Server::Connection::Connection(asio::ip::tcp::socket socket_)
 #if BOOST_VERSION < 107000
-    : socket(std::move(socket_))
-    , strand(socket.get_executor())
-    , endpoint(socket.remote_endpoint())
+    : socket(std::move(socket_)), strand(socket.get_executor()), endpoint(socket.remote_endpoint())
 #else
-    : stream(std::move(socket_))
-    , endpoint(stream.socket().remote_endpoint())
+    : stream(std::move(socket_)), endpoint(stream.socket().remote_endpoint())
 #endif
 {
     // spdlog::get("networking")->info("Got connection from {}:{}", endpoint.address().to_string(), endpoint.port());
@@ -50,23 +50,19 @@ void Rest::Server::Connection::on_read(boost::system::error_code ec, std::size_t
 {
     boost::ignore_unused(bytes_transferred);
 
-    if(ec == beast::http::error::end_of_stream)
+    if (ec == beast::http::error::end_of_stream)
         return do_close();
 
-    if(ec)
+    if (ec)
         return; // fail(ec, "read");
 
-    handler(std::move(req), [this](auto&& msg){
+    handler(std::move(req), [this](auto &&msg) {
         auto sp = std::make_shared<beast::http::message<false, beast::http::string_body>>(std::move(msg));
         res = sp;
 #if BOOST_VERSION < 107000
-        beast::http::async_write(socket, *sp, boost::asio::bind_executor(strand,
-            std::bind(&Connection::on_write, shared_from_this(), sp->need_eof(), std::placeholders::_1, std::placeholders::_2)
-        ));
+        beast::http::async_write(socket, *sp, boost::asio::bind_executor(strand, std::bind(&Connection::on_write, shared_from_this(), sp->need_eof(), std::placeholders::_1, std::placeholders::_2)));
 #else
-        beast::http::async_write(stream, *sp, beast::bind_front_handler(
-            &Connection::on_write, shared_from_this(), sp->need_eof()
-        ));
+            beast::http::async_write(stream, *sp, beast::bind_front_handler(&Connection::on_write, shared_from_this(), sp->need_eof()));
 #endif
     });
 }
@@ -75,10 +71,10 @@ void Rest::Server::Connection::on_write(bool close, boost::system::error_code ec
 {
     boost::ignore_unused(bytes_transferred);
 
-    if(ec)
+    if (ec)
         return; //fail(ec, "write");
 
-    if(close)
+    if (close)
         return do_close();
 
     res = nullptr;
@@ -95,10 +91,8 @@ void Rest::Server::Connection::do_close()
 #endif
 }
 
-Rest::Server::Server(asio::io_context& io_service, asio::ip::tcp::endpoint endpoint)
-    : io_service{io_service}
-    , acceptor{io_service}
-    , socket{io_service}
+Rest::Server::Server(asio::io_context &io_service, asio::ip::tcp::endpoint endpoint)
+    : io_service{io_service}, acceptor{io_service}, socket{io_service}
 {
     acceptor.open(endpoint.protocol());
     acceptor.set_option(asio::socket_base::reuse_address(true));
@@ -109,7 +103,7 @@ Rest::Server::Server(asio::io_context& io_service, asio::ip::tcp::endpoint endpo
 
 void Rest::Server::run()
 {
-    if(!acceptor.is_open())
+    if (!acceptor.is_open())
         return;
     do_accept();
 }
@@ -121,13 +115,13 @@ void Rest::Server::do_accept()
 
 void Rest::Server::on_accept(boost::system::error_code ec)
 {
-    if(!ec)
+    if (!ec)
         std::make_shared<Connection>(std::move(socket))->run();
     do_accept();
 }
 
-template<class Function, class Body, class Allocator, class Send>
-void Rest::Server::Connection::Run(Function function, beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+template <class Function, class Body, class Allocator, class Send>
+void Rest::Server::Connection::Run(Function function, beast::http::request<Body, beast::http::basic_fields<Allocator>> &&req, Send &&send)
 {
     using FunctionTraits = ljh::function_traits<Function>;
     using MessageReply = typename FunctionTraits::return_type::value_type;
@@ -141,7 +135,7 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             fields.authentication = std::string(field.data(), field.size());
         }
 
-        auto message_res = [&fields, &req, &function]{
+        auto message_res = [&fields, &req, &function] {
             if constexpr (FunctionTraits::argument_count < 2)
             {
                 return function(fields);
@@ -149,7 +143,7 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             else
             {
                 typename FunctionTraits::template argument_type<1> message_req;
-                message_req.ParseFromString(req.body());
+                message_req = json::parse(req.body());
                 return function(fields, message_req);
             }
         }();
@@ -160,25 +154,24 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             {
                 if (auto content_type = req.find(beast::http::field::content_type); content_type != req.end())
                 {
-                    if (content_type->value() == "application/x-protobuf")
+                    if (content_type->value() == "application/json")
                     {
                         beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
                         res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                        res.set(beast::http::field::content_type, "application/x-protobuf");
-                        res.set("Protobuf-Type", message_res->GetTypeName());
-                        res.body() = message_res->SerializeAsString();
+                        res.set(beast::http::field::content_type, "application/json");
+                        res.body() = json(*message_res).dump();
                         res.prepare_payload();
                         return send(std::move(res));
                     }
-                    else if (content_type->value() == "text/plain")
-                    {
-                        beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
-                        res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
-                        res.set(beast::http::field::content_type, "text/plain");
-                        res.body() = message_res->Utf8DebugString();
-                        res.prepare_payload();
-                        return send(std::move(res));
-                    }
+                    //else if (content_type->value() == "text/plain")
+                    //{
+                    //    beast::http::response<beast::http::string_body> res{beast::http::status::ok, req.version()};
+                    //    res.set(beast::http::field::server, "Bakaneko/" BAKANEKO_VERSION_STRING);
+                    //    res.set(beast::http::field::content_type, "text/plain");
+                    //    res.body() = message_res->Utf8DebugString();
+                    //    res.prepare_payload();
+                    //    return send(std::move(res));
+                    //}
                     else
                     {
                         std::string_view lpath(content_type->value().data(), content_type->value().size());
@@ -231,7 +224,7 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
             return send(std::move(res));
         }
     }
-    catch (const std::exception& e)
+    catch (const std::exception &e)
     {
         spdlog::error(e.what());
 
@@ -243,13 +236,13 @@ void Rest::Server::Connection::Run(Function function, beast::http::request<Body,
     }
 }
 
-template<class Body, class Allocator, class Send>
-void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::basic_fields<Allocator>>&& req, Send&& send)
+template <class Body, class Allocator, class Send>
+void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::basic_fields<Allocator>> &&req, Send &&send)
 {
     auto path = req.target();
 
     spdlog::get("networking")->debug("API Requested: ({}) {}", req.method(), std::string{path.data(), path.size()});
-    
+
     if (path == "/")
     {
         beast::http::response<beast::http::empty_body> res{beast::http::status::found, req.version()};
@@ -262,15 +255,15 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
     if (req.method() == beast::http::verb::get)
     {
         if (path == "/drives")
-            return Run(&Info::Drives  , std::move(req), std::move(send));
+            return Run(&Info::Drives, std::move(req), std::move(send));
         if (path == "/system")
-            return Run(&Info::System  , std::move(req), std::move(send));
+            return Run(&Info::System, std::move(req), std::move(send));
         if (path == "/updates")
-            return Run(&Info::Updates , std::move(req), std::move(send));
+            return Run(&Info::Updates, std::move(req), std::move(send));
         if (path == "/network/adapters")
             return Run(&Info::Adapters, std::move(req), std::move(send));
         if (path == "/service")
-            return Run(&Info::Service , std::move(req), std::move(send));
+            return Run(&Info::Service, std::move(req), std::move(send));
         if (path == "/services")
             return Run(&Info::Services, std::move(req), std::move(send));
     }
@@ -279,9 +272,9 @@ void Rest::Server::Connection::handler(beast::http::request<Body, beast::http::b
         if (path == "/power/shutdown")
             return Run(&Control::Shutdown, std::move(req), std::move(send));
         if (path == "/power/reboot")
-            return Run(&Control::Reboot  , std::move(req), std::move(send));
+            return Run(&Control::Reboot, std::move(req), std::move(send));
         if (path == "/service")
-            return Run(&Control::Service , std::move(req), std::move(send));
+            return Run(&Control::Service, std::move(req), std::move(send));
     }
 
     std::string_view lpath(path.data(), path.size());

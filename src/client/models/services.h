@@ -8,7 +8,7 @@
 #include <QStringList>
 
 #undef interface
-#include "services.pb.h"
+#include "services.hpp"
 
 class ServiceTypeList : public QAbstractListModel
 {

@@ -14,9 +14,9 @@
 #include <wuapi.h>
 #endif
 
-extern std::tuple<int, std::string> exec(const std::string& cmd);
+extern std::tuple<int, std::string> exec(const std::string &cmd);
 
-ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
+ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields &fields)
 {
     decltype(Info::Updates(fields))::value_type updates;
 
@@ -40,22 +40,22 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
 
         ljh::windows::com_bstr update_name;
         winrt::check_hresult(update_item->get_Title(update_name.put()));
-        update->set_name(ljh::convert_string(update_name));
+        update.name = (ljh::convert_string(update_name));
     }
 #elif defined(LJH_TARGET_Linux)
-    auto run = [&updates](const std::string& command, const std::string& flags, bool(*decode)(Bakaneko::Update&, std::string)) -> bool {
+    auto run = [&updates](const std::string &command, const std::string &flags, bool (*decode)(Bakaneko::Update &, std::string)) -> bool {
         auto [exit_code, std_out] = exec(command + ' ' + flags);
         if (exit_code == 0)
         {
             auto packages = ljh::split(std_out, '\n');
-            for (auto& package : packages)
+            for (auto &package : packages)
             {
                 if (package.empty())
                     continue;
 
                 Bakaneko::Update update;
                 if (decode(update, package))
-                    updates.mutable_update()->Add(std::move(update));
+                    updates.updates.emplace_back(std::move(update));
             }
 
             return true;
@@ -63,31 +63,31 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
         return false;
     };
 
-    auto pacman_decode = [](Bakaneko::Update& update, std::string package) {
+    auto pacman_decode = [](Bakaneko::Update &update, std::string package) {
         size_t space = package.find(' '), pre_space = 0;
-        update.set_name(package.substr(pre_space, space - pre_space));
+        update.name = (package.substr(pre_space, space - pre_space));
 
         pre_space = space;
         space = package.find(' ', space + 1);
-        update.set_old_version(package.substr(pre_space, space - pre_space));
+        update.old_version = (package.substr(pre_space, space - pre_space));
 
         pre_space = space + 4;
-        update.set_new_version(package.substr(pre_space));
+        update.new_version = (package.substr(pre_space));
 
         return true;
     };
-    auto apt_decode = [](Bakaneko::Update& update, std::string package) {
+    auto apt_decode = [](Bakaneko::Update &update, std::string package) {
         auto info = ljh::split(package, ' ');
         if (info.size() != 6)
             return false;
 
-        update.set_name       (info[0].substr(0, info[0].find('/')));
-        update.set_old_version(info[5].substr(0, info[5].size()-1 ));
-        update.set_new_version(info[1]                             );
+        update.name = (info[0].substr(0, info[0].find('/')));
+        update.old_version = (info[5].substr(0, info[5].size() - 1));
+        update.new_version = (info[1]);
 
         return true;
     };
-    auto apk_decode = [](Bakaneko::Update& update, std::string package) {
+    auto apk_decode = [](Bakaneko::Update &update, std::string package) {
         auto info = ljh::split(package, '=');
         if (info.size() != 2)
             return false;
@@ -97,9 +97,9 @@ ljh::expected<Bakaneko::Updates, Errors> Info::Updates(const Fields& fields)
         if (!std::regex_search(info[0], sm, version))
             return false;
 
-        update.set_name       (sm  [1].str());
-        update.set_old_version(sm  [2].str());
-        update.set_new_version(info[1]      );
+        update.name = (sm[1].str());
+        update.old_version = (sm[2].str());
+        update.new_version = (info[1]);
 
         return true;
     };

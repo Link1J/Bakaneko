@@ -24,11 +24,11 @@
 #include "logindata.h"
 
 #undef interface
-#include "server.pb.h"
-#include "drives.pb.h"
-#include "updates.pb.h"
-#include "network.pb.h"
-#include "services.pb.h"
+#include "server.hpp"
+#include "drives.hpp"
+#include "updates.hpp"
+#include "network.hpp"
+#include "services.hpp"
 
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/connect.hpp>

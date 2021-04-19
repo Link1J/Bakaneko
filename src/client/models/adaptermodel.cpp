@@ -49,36 +49,36 @@ QVariant AdapterModel::data(const QModelIndex& index, int role) const
     auto row = index.row();
     auto& temp = updates[row];
 
-    if (role == ROLE_name       ) return QVariant::fromValue(QString::fromStdString(temp.name       ()));
-    if (role == ROLE_mtu        ) return QVariant::fromValue(                       temp.mtu        () );
-    if (role == ROLE_mac_address) return QVariant::fromValue(QString::fromStdString(temp.mac_address()));
-    if (role == ROLE_ip_address ) return QVariant::fromValue(QString::fromStdString(temp.ip_address ()));
+    if (role == ROLE_name       ) return QVariant::fromValue(QString::fromStdString(temp.name       ));
+    if (role == ROLE_mtu        ) return QVariant::fromValue(                       temp.mtu         );
+    if (role == ROLE_mac_address) return QVariant::fromValue(QString::fromStdString(temp.mac_address));
+    if (role == ROLE_ip_address ) return QVariant::fromValue(QString::fromStdString(temp.ip_address ));
 
     if (role == ROLE_link_speed)
     {
-        if (temp.link_speed() == 0)
+        if (temp.link_speed == 0)
             return QVariant::fromValue(QString::fromStdString("Unknown"));
-        return QVariant::fromValue(QString::fromStdString(bitrate_to_string(temp.link_speed())));
+        return QVariant::fromValue(QString::fromStdString(bitrate_to_string(temp.link_speed)));
     }
 
     if (role == ROLE_state)
     {
-        return QVariant::fromValue(QString::fromStdString(temp.state() == Bakaneko::Adapter_State_Up ? "Up" : "Down"));
+        return QVariant::fromValue(QString::fromStdString(temp.state == Bakaneko::Adapter::State::Up ? "Up" : "Down"));
     }
 
     
     auto& prec = prevous[row];
-    auto delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::nanoseconds(temp.time() - prec.time()));
+    auto delta_time = std::chrono::duration_cast<std::chrono::duration<double>>(std::chrono::nanoseconds(temp.time - prec.time));
 
     if (role == ROLE_rx_rate)
     {
-        auto delta_bytes = (temp.bytes_rx() - prec.bytes_rx()) * 8;
+        auto delta_bytes = (temp.bytes_rx - prec.bytes_rx) * 8;
         return QVariant::fromValue(QString::fromStdString(bitrate_to_string(delta_bytes / delta_time.count())));
     }
 
     if (role == ROLE_tx_rate)
     {
-        auto delta_bytes = (temp.bytes_tx() - prec.bytes_tx()) * 8;
+        auto delta_bytes = (temp.bytes_tx - prec.bytes_tx) * 8;
         return QVariant::fromValue(QString::fromStdString(bitrate_to_string(delta_bytes / delta_time.count())));
     }
 

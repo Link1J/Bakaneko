@@ -6,7 +6,7 @@ pkgdesc="Bakaneko Client"
 arch=('x86_64')
 url="https://github.com/Link1J/Bakaneko"
 license=('GPL3')
-depends=('boost' 'protobuf' 'openssl' 'qqc2-desktop-style' 'kiconthemes' 'kcrash' 'kdeclarative'
+depends=('boost' 'openssl' 'qqc2-desktop-style' 'kiconthemes' 'kcrash' 'kdeclarative'
   'ki18n' 'kconfig' 'kcoreaddons' 'qt5-base' 'qt5-declarative' 'qt5-svg' 'qt5-quickcontrols2'
   'libssh')
 makedepends=('cmake' 'extra-cmake-modules' 'git')

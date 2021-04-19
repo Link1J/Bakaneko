@@ -19,6 +19,8 @@
 #include <thread>
 #include <atomic>
 
+using json = nlohmann::json;
+
 static asio::io_context io_context;
 
 Bakaneko::System get_system_info(asio::ip::tcp::socket& socket, const std::string& ip_address)
@@ -44,7 +46,7 @@ Bakaneko::System get_system_info(asio::ip::tcp::socket& socket, const std::strin
     if (ec) return info;
     if (res.result_int() != 200) return info;
 
-    info.ParseFromString(res.body());
+    info = json::parse(res.body());
     return info;
 }
 
@@ -242,7 +244,7 @@ void ServerManager::change_server_options(int index, QString ip)
 
     auto system_info = get_system_info(socket, ip_address);
 
-    if (system_info.hostname().empty() || system_info.mac_address().empty() || system_info.ip_address().empty())
+    if (system_info.hostname.empty() || system_info.mac_address.empty() || system_info.ip_address.empty())
         return;
     
     if (model != nullptr && index == servers.size())
@@ -250,7 +252,7 @@ void ServerManager::change_server_options(int index, QString ip)
         model->beginRowAppend();
     }
 
-    auto temp = std::make_shared<Server>(system_info.hostname(), system_info.mac_address(), ip_address, this);
+    auto temp = std::make_shared<Server>(system_info.hostname, system_info.mac_address, ip_address, this);
 
     connect(temp.get(), &Server::this_online , this, &ServerManager::server_online );
     connect(temp.get(), &Server::this_offline, this, &ServerManager::server_offline);

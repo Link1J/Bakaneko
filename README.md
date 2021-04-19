@@ -110,4 +110,8 @@ Copyright © 2020 [Jared Irwin](https://github.com/Link1J).
 
 This project is [GPL v3 or later](LICENSE.md) licensed.
 
+Some files are also licensed under [Boost Software License 1.0](LICENSE_1_0.txt), as to 
+allow the file's use in external projects without forcing GPL onto them. Files with the 
+dual GPLv3/BSL-1.0 will say so at the top.
+
 Licenses for external libaries used are in [NOTICES.md](NOTICES.md)

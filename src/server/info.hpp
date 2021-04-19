@@ -6,11 +6,11 @@
 #include <optional>
 #include <string>
 
-#include "server.pb.h"
-#include "updates.pb.h"
-#include "drives.pb.h"
-#include "network.pb.h"
-#include "services.pb.h"
+#include "server.hpp"
+#include "updates.hpp"
+#include "drives.hpp"
+#include "network.hpp"
+#include "services.hpp"
 
 enum class Errors
 {
@@ -41,5 +41,5 @@ namespace Control
 {
     ljh::expected<void, Errors> Shutdown(const Fields& fields);
     ljh::expected<void, Errors> Reboot  (const Fields& fields);
-    ljh::expected<void, Errors> Service (const Fields& fields, Bakaneko::Service_Control data);
+    ljh::expected<void, Errors> Service (const Fields& fields, Bakaneko::Service::Control data);
 };

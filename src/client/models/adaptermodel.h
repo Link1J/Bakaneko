@@ -6,7 +6,7 @@
 #include <QAbstractListModel>
 
 #undef interface
-#include "network.pb.h"
+#include "network.hpp"
 class AdapterModel : public QAbstractTableModel
 {
     Q_OBJECT

@@ -48,7 +48,7 @@ std::string remove_quotes(std::string input)
     return input;
 }
 
-ljh::expected<Bakaneko::System, Errors> Info::System(const Fields& fields)
+ljh::expected<Bakaneko::System, Errors> Info::System(const Fields &fields)
 {
     decltype(Info::System(fields))::value_type system;
 
@@ -63,7 +63,7 @@ ljh::expected<Bakaneko::System, Errors> Info::System(const Fields& fields)
 
     static auto enclosure = ljh::windows::wmi::service::root().get_class(L"Win32_SystemEnclosure")[0];
     int chassis_type = enclosure.get<ljh::windows::com_safe_array<int32_t>>(L"ChassisTypes")[0];
-    
+
     auto ip_addresses = Win32Run(GetAdaptersAddresses, AF_UNSPEC, 0, nullptr);
     for (auto adapter = ip_addresses.get(); adapter != nullptr; adapter = adapter->Next)
     {
@@ -84,33 +84,36 @@ ljh::expected<Bakaneko::System, Errors> Info::System(const Fields& fields)
             }
         }
         continue;
-GOT_ADDRESS:
+    GOT_ADDRESS:
         sprintf(mac_address, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
-            adapter->PhysicalAddress[0], adapter->PhysicalAddress[1], adapter->PhysicalAddress[2],
-            adapter->PhysicalAddress[3], adapter->PhysicalAddress[4], adapter->PhysicalAddress[5]
-        );
+                adapter->PhysicalAddress[0], adapter->PhysicalAddress[1], adapter->PhysicalAddress[2],
+                adapter->PhysicalAddress[3], adapter->PhysicalAddress[4], adapter->PhysicalAddress[5]);
         break;
     }
 
-    system.set_hostname(Win32Run(GetComputerNameExA, ComputerNamePhysicalDnsHostname));
-    system.set_operating_system(*ljh::system_info::get_string());
-    system.set_kernel("NT "s + std::string{*ljh::system_info::get_version()});
-    system.set_architecture(std::getenv("PROCESSOR_ARCHITECTURE"));
-    system.set_icon(chassis_type_as_system_icon(chassis_type));
+    system.hostname = (Win32Run(GetComputerNameExA, ComputerNamePhysicalDnsHostname));
+    system.operating_system = (*ljh::system_info::get_string());
+    system.kernel = ("NT "s + std::string{*ljh::system_info::get_version()});
+    system.architecture = (std::getenv("PROCESSOR_ARCHITECTURE"));
+    system.icon = (chassis_type_as_system_icon(chassis_type));
 #elif defined(LJH_TARGET_Linux)
     struct utsname buffer;
     uname(&buffer);
 
     std::string name, id, pretty_name, version;
     std::ifstream file("/etc/os-release");
-    while(file)
+    while (file)
     {
         std::string temp;
         std::getline(file, temp);
-        if (temp.find("NAME="       ) == 0) name        = remove_quotes(temp.substr( 5));
-        if (temp.find("VERSION="    ) == 0) version     = remove_quotes(temp.substr( 8));
-        if (temp.find("ID="         ) == 0) id          = remove_quotes(temp.substr( 3));
-        if (temp.find("PRETTY_NAME=") == 0) pretty_name = remove_quotes(temp.substr(12));
+        if (temp.find("NAME=") == 0)
+            name = remove_quotes(temp.substr(5));
+        if (temp.find("VERSION=") == 0)
+            version = remove_quotes(temp.substr(8));
+        if (temp.find("ID=") == 0)
+            id = remove_quotes(temp.substr(3));
+        if (temp.find("PRETTY_NAME=") == 0)
+            pretty_name = remove_quotes(temp.substr(12));
     }
     file.close();
 
@@ -120,12 +123,14 @@ GOT_ADDRESS:
     std::string icon = "unknown";
     std::string hostname = buffer.nodename;
     file.open("/etc/machine-info");
-    while(file)
+    while (file)
     {
         std::string temp;
         std::getline(file, temp);
-        if (temp.find("ICON_NAME="      ) == 0) icon     = remove_quotes(temp.substr(10));
-        if (temp.find("PRETTY_HOSTNAME=") == 0) hostname = remove_quotes(temp.substr(16));
+        if (temp.find("ICON_NAME=") == 0)
+            icon = remove_quotes(temp.substr(10));
+        if (temp.find("PRETTY_HOSTNAME=") == 0)
+            hostname = remove_quotes(temp.substr(16));
     }
     file.close();
 
@@ -135,7 +140,7 @@ GOT_ADDRESS:
             icon = chassis_type_as_system_icon(std::stoi(read_file("/sys/class/dmi/id/chassis_type")));
     }
 
-    struct ifaddrs* base;
+    struct ifaddrs *base;
     std::string_view adapter_name;
     getifaddrs(&base);
 
@@ -168,35 +173,34 @@ GOT_ADDRESS:
     {
         if (adapter_name == address->ifa_name && address->ifa_addr->sa_family == AF_PACKET)
         {
-            struct sockaddr_ll* s = (struct sockaddr_ll*)(address->ifa_addr);
+            struct sockaddr_ll *s = (struct sockaddr_ll *)(address->ifa_addr);
             sprintf(mac_address, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX",
-                s->sll_addr[0], s->sll_addr[1], s->sll_addr[2],
-                s->sll_addr[3], s->sll_addr[4], s->sll_addr[5]
-            );
+                    s->sll_addr[0], s->sll_addr[1], s->sll_addr[2],
+                    s->sll_addr[3], s->sll_addr[4], s->sll_addr[5]);
             break;
         }
     }
 
     freeifaddrs(base);
 
-    system.set_hostname(hostname);
-    system.set_operating_system(pretty_name);
-    system.set_kernel(buffer.sysname + std::string{" "} + buffer.release);
-    system.set_architecture(buffer.machine);
-    system.set_icon(icon);
+    system.hostname = (hostname);
+    system.operating_system = (pretty_name);
+    system.kernel = (buffer.sysname + std::string{" "} + buffer.release);
+    system.architecture = (buffer.machine);
+    system.icon = (icon);
 #else
     return ljh::unexpected{Errors::NotImplemented};
 #endif
 
-    system.set_mac_address(mac_address);
-    system.set_ip_address (ip_address );
+    system.mac_address = (mac_address);
+    system.ip_address = (ip_address);
 
     return std::move(system);
 }
 
 inline std::string chassis_type_as_system_icon(int a)
 {
-    switch(a)
+    switch (a)
     {
     case 0x01: // Other
     case 0x03: // Desktop
@@ -250,11 +254,11 @@ inline std::string chassis_type_as_system_icon(int a)
     return "";
 }
 
-extern std::tuple<int, std::string> exec(const std::string& cmd);
+extern std::tuple<int, std::string> exec(const std::string &cmd);
 
 namespace Control
 {
-    ljh::expected<void, Errors> Shutdown(const Fields& fields)
+    ljh::expected<void, Errors> Shutdown(const Fields &fields)
     {
 #if defined(LJH_TARGET_Windows)
         if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, false, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)
@@ -276,7 +280,7 @@ namespace Control
 #endif
     }
 
-    ljh::expected<void, Errors> Reboot(const Fields& fields)
+    ljh::expected<void, Errors> Reboot(const Fields &fields)
     {
 #if defined(LJH_TARGET_Windows)
         if (InitiateSystemShutdownExA(nullptr, nullptr, 0, false, true, SHTDN_REASON_MAJOR_OTHER | SHTDN_REASON_MINOR_OTHER) == 0)

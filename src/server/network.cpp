@@ -29,7 +29,7 @@
 
 extern std::string read_file(std::filesystem::path file_path);
 
-ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
+ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields &fields)
 {
     Bakaneko::Adapters adapters;
 
@@ -47,45 +47,44 @@ ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
         if (item.PhysicalMediumType != NdisPhysicalMediumNative802_11 && item.PhysicalMediumType != NdisPhysicalMediumWirelessLan && item.PhysicalMediumType != NdisPhysicalMedium802_3 && item.PhysicalMediumType != NdisPhysicalMediumUnspecified)
             continue;
 
-        auto adapter = adapters.add_adapter();
+        auto &adapter = adapters.adapters.emplace_back();
 
-        adapter->set_name(ljh::convert_string(item.Alias));
+        adapter.name = (ljh::convert_string(item.Alias));
 
-        adapter->set_mac_address(fmt::format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-            info_adapter->Address[0], info_adapter->Address[1], info_adapter->Address[2], info_adapter->Address[3],
-            info_adapter->Address[4], info_adapter->Address[5], info_adapter->Address[6], info_adapter->Address[7]
-        ));
+        adapter.mac_address = (fmt::format("{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+                                           info_adapter->Address[0], info_adapter->Address[1], info_adapter->Address[2], info_adapter->Address[3],
+                                           info_adapter->Address[4], info_adapter->Address[5], info_adapter->Address[6], info_adapter->Address[7]));
 
         if (item.OperStatus == IfOperStatusUp)
         {
-            adapter->set_state(Bakaneko::Adapter_State_Up);
-            adapter->set_ip_address(info_adapter->IpAddressList.IpAddress.String);
+            adapter.state = (Bakaneko::Adapter::State::Up);
+            adapter.ip_address = (info_adapter->IpAddressList.IpAddress.String);
         }
 
-        adapter->set_time(time.time_since_epoch().count());
-        adapter->set_bytes_rx(item.InOctets);
-        adapter->set_bytes_tx(item.OutOctets);
-        adapter->set_mtu(item.Mtu);
-        adapter->set_link_speed(item.TransmitLinkSpeed);
+        adapter.time = (time.time_since_epoch().count());
+        adapter.bytes_rx = (item.InOctets);
+        adapter.bytes_tx = (item.OutOctets);
+        adapter.mtu = (item.Mtu);
+        adapter.link_speed = (item.TransmitLinkSpeed);
     }
 #elif defined(LJH_TARGET_Linux)
-    for (auto& adapter_file : std::filesystem::directory_iterator{"/sys/class/net"})
+    for (auto &adapter_file : std::filesystem::directory_iterator{"/sys/class/net"})
     {
         auto adapter_path = adapter_file.path();
-        if (!std::filesystem::exists(adapter_path/"type"))
+        if (!std::filesystem::exists(adapter_path / "type"))
             continue;
-        if (read_file(adapter_path/"type") == "772")
+        if (read_file(adapter_path / "type") == "772")
             continue;
-        auto adapter = adapters.add_adapter();
+        auto &adapter = adapters.adapters.emplace_back();
 
-        adapter->set_name(adapter_path.filename().string());
+        adapter.name = (adapter_path.filename().string());
 
-        adapter->set_mac_address(read_file(adapter_path/"address"));
+        adapter.mac_address = (read_file(adapter_path / "address"));
 
-        auto state = read_file(adapter_path/"operstate");
+        auto state = read_file(adapter_path / "operstate");
         if (state == "up")
         {
-            adapter->set_state(Bakaneko::Adapter_State_Up);
+            adapter.state = (Bakaneko::Adapter::State::Up);
 
             auto fd = socket(AF_INET, SOCK_DGRAM, 0);
             struct ifreq ifr;
@@ -94,21 +93,21 @@ ljh::expected<Bakaneko::Adapters, Errors> Info::Adapters(const Fields& fields)
             ioctl(fd, SIOCGIFADDR, &ifr);
             close(fd);
 
-            adapter->set_ip_address(inet_ntoa(((struct sockaddr_in*)&ifr.ifr_addr)->sin_addr));
+            adapter.ip_address = (inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
         }
 
-        auto rx = read_file(adapter_path/"statistics"/"rx_bytes");
-        auto tx = read_file(adapter_path/"statistics"/"tx_bytes");
+        auto rx = read_file(adapter_path / "statistics" / "rx_bytes");
+        auto tx = read_file(adapter_path / "statistics" / "tx_bytes");
         auto time = std::chrono::steady_clock::now();
 
-        adapter->set_time(time.time_since_epoch().count());
-        adapter->set_bytes_rx(std::stoull(rx));
-        adapter->set_bytes_tx(std::stoull(tx));
-        
-        adapter->set_mtu(std::stoull(read_file(adapter_path/"mtu")));
+        adapter.time = (time.time_since_epoch().count());
+        adapter.bytes_rx = (std::stoull(rx));
+        adapter.bytes_tx = (std::stoull(tx));
 
-        if (auto speed = read_file(adapter_path/"speed"); !speed.empty() && speed != "-1")
-            adapter->set_link_speed(std::stoull(speed) * 1000000);
+        adapter.mtu = (std::stoull(read_file(adapter_path / "mtu")));
+
+        if (auto speed = read_file(adapter_path / "speed"); !speed.empty() && speed != "-1")
+            adapter.link_speed = (std::stoull(speed) * 1000000);
     }
 #else
     return ljh::unexpected{Errors::NotImplemented};

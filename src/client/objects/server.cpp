@@ -37,20 +37,22 @@
 #include <netinet/ip.h>
 #endif
 
+using json = nlohmann::json;
+
 using namespace std::string_view_literals;
 
 asio::io_context ioctx;
 
 QString Server::get_icon()
 {
-    if (system_info.icon().empty())
+    if (system_info.icon.empty())
     {
         if (QIcon::hasThemeIcon("computer-fail"))
             return "computer-fail";
         else
             return "computer-fail-symbolic";
     }
-    return QString::fromStdString(system_info.icon());
+    return QString::fromStdString(system_info.icon);
 }
 
 Server::State Server::get_state() { return state; }
@@ -59,9 +61,9 @@ QString Server::get_hostname() { return QString::fromStdString(hostname   ); }
 QString Server::get_ip      () { return QString::fromStdString(ip_address ); }
 QString Server::get_mac     () { return QString::fromStdString(mac_address); }
 
-QString Server::get_os    () { return QString::fromStdString(system_info.operating_system()); }
-QString Server::get_arch  () { return QString::fromStdString(system_info.architecture    ()); }
-QString Server::get_kernel() { return QString::fromStdString(system_info.kernel          ()); }
+QString Server::get_os    () { return QString::fromStdString(system_info.operating_system); }
+QString Server::get_arch  () { return QString::fromStdString(system_info.architecture    ); }
+QString Server::get_kernel() { return QString::fromStdString(system_info.kernel          ); }
 
 UpdateModel * Server::get_updates () { return &updates ; }
 DrivesModel * Server::get_drives  () { return &drives  ; }
@@ -277,7 +279,7 @@ void Server::network_get(std::string path, void(Server::*signal)(T), bool& contr
 
             req.set(beast::http::field::host, ip_address);
             req.set(beast::http::field::user_agent, "Bakaneko/" BAKANEKO_VERSION_STRING);
-            req.set(beast::http::field::content_type, "application/x-protobuf");
+            req.set(beast::http::field::content_type, "application/json");
             req.version(11);
             req.keep_alive(false);
 
@@ -293,7 +295,7 @@ void Server::network_get(std::string path, void(Server::*signal)(T), bool& contr
             T info;
 
             if (res.result() != beast::http::status::ok) throw res.result();
-            if (info.GetTypeName() != res["Protobuf-Type"]) throw 0;
+            //if (info.GetTypeName() != res["Protobuf-Type"]) throw 0;
 
             if (&dont_care != &control)
             {
@@ -301,7 +303,7 @@ void Server::network_get(std::string path, void(Server::*signal)(T), bool& contr
                 Q_EMIT changed_enabled_pages();
             }
 
-            info.ParseFromString(res.body());
+            info = json::parse(res.body());
             Q_EMIT (*this.*signal)(info);
         }
         catch (std::exception e)
@@ -344,7 +346,7 @@ void Server::network_post(std::string path, T data, std::string auth, void(Serve
             req.set(beast::http::field::authorization, auth);
             req.version(11);
             req.keep_alive(false);
-            req.body() = data.SerializeAsString();
+            req.body() = json(data).dump();
             req.prepare_payload();
 
             auto channel = connection();
@@ -399,9 +401,9 @@ void Server::handle_info(Bakaneko::System info)
     Q_EMIT changed_kernel();
     Q_EMIT changed_arch();
 
-    if (hostname != info.hostname())
+    if (hostname != info.hostname)
     {
-        hostname = info.hostname();
+        hostname = info.hostname;
         Q_EMIT changed_hostname();
     }
 
@@ -410,22 +412,22 @@ void Server::handle_info(Bakaneko::System info)
 
 void Server::handle_updates(Bakaneko::Updates updates_info)
 {
-    if (updates.rowCount() < updates_info.update_size())
-        updates.insertRows(updates.rowCount(), updates_info.update_size() - updates.rowCount());
-    if (updates.rowCount() > updates_info.update_size())
-        updates.removeRows(updates_info.update_size(), updates.rowCount() - updates_info.update_size());
+    if (updates.rowCount() < updates_info.updates.size())
+        updates.insertRows(updates.rowCount(), updates_info.updates.size() - updates.rowCount());
+    if (updates.rowCount() > updates_info.updates.size())
+        updates.removeRows(updates_info.updates.size(), updates.rowCount() - updates_info.updates.size());
 
-    for (int a = 0; a < updates_info.update_size(); a++)
+    for (int a = 0; a < updates_info.updates.size(); a++)
     {
-        if (updates.data(a, UpdateModel::NameRole) != updates_info.update()[a].name())
+        if (updates.data(a, UpdateModel::NameRole) != updates_info.updates[a].name)
         {
-            updates.setData(a, updates_info.update()[a].name       (), UpdateModel::NameRole      );
-            updates.setData(a, updates_info.update()[a].old_version(), UpdateModel::OldVersionRole);
-            updates.setData(a, updates_info.update()[a].new_version(), UpdateModel::NewVersionRole);
+            updates.setData(a, updates_info.updates[a].name       , UpdateModel::NameRole      );
+            updates.setData(a, updates_info.updates[a].old_version, UpdateModel::OldVersionRole);
+            updates.setData(a, updates_info.updates[a].new_version, UpdateModel::NewVersionRole);
         }
-        else if (updates.data(a, UpdateModel::NewVersionRole) != updates_info.update()[a].new_version())
+        else if (updates.data(a, UpdateModel::NewVersionRole) != updates_info.updates[a].new_version)
         {
-            updates.setData(a, updates_info.update()[a].new_version(), UpdateModel::NewVersionRole);
+            updates.setData(a, updates_info.updates[a].new_version, UpdateModel::NewVersionRole);
         }
     }
 
@@ -434,13 +436,13 @@ void Server::handle_updates(Bakaneko::Updates updates_info)
 
 void Server::handle_drives(Bakaneko::Drives info)
 {
-    std::vector vinfo(info.drive().begin(), info.drive().end());
+    std::vector vinfo(info.drives.begin(), info.drives.end());
 
     for (int a = 0; a < drives.rowCount(); a++)
     {
         bool found = false;
-        for (auto& dinfo : info.drive())
-            if (drives.data(a).dev_node() == dinfo.dev_node())
+        for (auto& dinfo : info.drives)
+            if (drives.data(a).dev_node == dinfo.dev_node)
                 found = true;
         if (!found)
         {
@@ -451,19 +453,19 @@ void Server::handle_drives(Bakaneko::Drives info)
 
     auto update_partitions = [this](int idnex, const Bakaneko::Drive& dinfo) {
         auto& partitions = drives.partition(idnex);
-        auto& ipartition = dinfo .partition(     );
+        auto& ipartition = dinfo .partitions;
 
-        if (partitions.rowCount() < dinfo.partition_size())
-            partitions.insertRows(partitions.rowCount(), dinfo.partition_size() - partitions.rowCount());
-        if (partitions.rowCount() > dinfo.partition_size())
-            partitions.removeRows(dinfo.partition_size(), partitions.rowCount() - dinfo.partition_size());
+        if (partitions.rowCount() < dinfo.partitions.size())
+            partitions.insertRows(partitions.rowCount(), dinfo.partitions.size() - partitions.rowCount());
+        if (partitions.rowCount() > dinfo.partitions.size())
+            partitions.removeRows(dinfo.partitions.size(), partitions.rowCount() - dinfo.partitions.size());
 
-        for (int a = 0; a < dinfo.partition_size(); a++)
+        for (int a = 0; a < dinfo.partitions.size(); a++)
         {
             auto& pdata = partitions.data(a);
             auto& pinfo = ipartition     [a];
 
-            if (pdata.dev_node() != pinfo.dev_node())
+            if (pdata.dev_node != pinfo.dev_node)
             {
                 pdata = pinfo;
                 partitions.flag(a, {
@@ -476,37 +478,37 @@ void Server::handle_drives(Bakaneko::Drives info)
             }
             else
             {
-                if (pdata.size() != pinfo.size())
+                if (pdata.size != pinfo.size)
                 {
-                    pdata.set_size(pinfo.size());
+                    pdata.size = (pinfo.size);
                     partitions.flag(a, { PartitionModel::ROLE_size });
                 }
-                if (pdata.used() != pinfo.used())
+                if (pdata.used != pinfo.used)
                 {
-                    pdata.set_used(pinfo.used());
+                    pdata.used = (pinfo.used);
                     partitions.flag(a, { PartitionModel::ROLE_used });
                 }
-                if (pdata.mountpoint() != pinfo.mountpoint())
+                if (pdata.mountpoint != pinfo.mountpoint)
                 {
-                    pdata.set_mountpoint(pinfo.mountpoint());
+                    pdata.mountpoint = (pinfo.mountpoint);
                     partitions.flag(a, { PartitionModel::ROLE_mountpoint });
                 }
-                if (pdata.filesystem() != pinfo.filesystem())
+                if (pdata.filesystem != pinfo.filesystem)
                 {
-                    pdata.set_filesystem(pinfo.filesystem());
+                    pdata.filesystem = (pinfo.filesystem);
                     partitions.flag(a, { PartitionModel::ROLE_filesystem });
                 }
             }
         }
     };
 
-    for (auto& dinfo : info.drive())
+    for (auto& dinfo : info.drives)
     {
         bool done = false;
         for (int a = 0; a < drives.rowCount(); a++)
         {
             auto& drive = drives.data(a);
-            if (drive.dev_node() == dinfo.dev_node())
+            if (drive.dev_node == dinfo.dev_node)
             {
                 update_partitions(a, dinfo);
                 done = true;
@@ -516,11 +518,11 @@ void Server::handle_drives(Bakaneko::Drives info)
         {
             drives.insertRow(drives.rowCount());
             auto& drive = drives.data(drives.rowCount() - 1);
-            drive.set_dev_node    (dinfo.dev_node    ());
-            drive.set_size        (dinfo.size        ());
-            drive.set_model       (dinfo.model       ());
-            drive.set_manufacturer(dinfo.manufacturer());
-            drive.set_interface   (dinfo.interface   ());
+            drive.dev_node     = (dinfo.dev_node    );
+            drive.size         = (dinfo.size        );
+            drive.model        = (dinfo.model       );
+            drive.manufacturer = (dinfo.manufacturer);
+            drive.interface    = (dinfo.interface   );
             drives.flag(drives.rowCount() - 1, {
                 DrivesModel::ROLE_dev_node,
                 DrivesModel::ROLE_size,
@@ -540,8 +542,8 @@ void Server::handle_adapters(Bakaneko::Adapters info)
     for (int a = 0; a < adapters.rowCount(); a++)
     {
         bool found = false;
-        for (auto& dinfo : info.adapter())
-            if (adapters.data(a).name() == dinfo.name())
+        for (auto& dinfo : info.adapters)
+            if (adapters.data(a).name == dinfo.name)
                 found = true;
         if (!found)
         {
@@ -550,23 +552,23 @@ void Server::handle_adapters(Bakaneko::Adapters info)
         }
     }
 
-    for (auto& din : info.adapter())
+    for (auto& din : info.adapters)
     {
         bool done = false;
         for (int a = 0; a < adapters.rowCount(); a++)
         {
             auto& cur = adapters.data(a);
-            if (cur.name() == din.name())
+            if (cur.name == din.name)
             {
                 auto& pre = adapters.prev(a);
-                pre.set_bytes_rx  (cur.bytes_rx  ());
-                pre.set_bytes_tx  (cur.bytes_tx  ());
-                pre.set_time      (cur.time      ());
-                cur.set_bytes_rx  (din.bytes_rx  ());
-                cur.set_bytes_tx  (din.bytes_tx  ());
-                cur.set_time      (din.time      ());
-                cur.set_state     (din.state     ());
-                cur.set_link_speed(din.link_speed());
+                pre.bytes_rx   = (cur.bytes_rx  );
+                pre.bytes_tx   = (cur.bytes_tx  );
+                pre.time       = (cur.time      );
+                cur.bytes_rx   = (din.bytes_rx  );
+                cur.bytes_tx   = (din.bytes_tx  );
+                cur.time       = (din.time      );
+                cur.state      = (din.state     );
+                cur.link_speed = (din.link_speed);
                 adapters.flag(a,{
                     AdapterModel::ROLE_link_speed,
                     AdapterModel::ROLE_state,
@@ -581,9 +583,9 @@ void Server::handle_adapters(Bakaneko::Adapters info)
             adapters.insertRow(adapters.rowCount());
             adapters.data(adapters.rowCount() - 1) = din;
             auto& pre = adapters.prev(adapters.rowCount() - 1);
-            pre.set_bytes_rx(din.bytes_rx());
-            pre.set_bytes_tx(din.bytes_tx());
-            pre.set_time    (din.time    ());
+            pre.bytes_rx = (din.bytes_rx);
+            pre.bytes_tx = (din.bytes_tx);
+            pre.time     = (din.time    );
             adapters.flag(adapters.rowCount() - 1, {
                 AdapterModel::ROLE_name,
                 AdapterModel::ROLE_link_speed,
@@ -676,10 +678,10 @@ void Server::open_term(LoginData* login)
 
 void Server::handle_service(Bakaneko::ServiceInfo info)
 {
-    service_manager = info.server();
+    service_manager = info.server;
     Q_EMIT changed_service_manager();
 
-    for (auto& type : info.types())
+    for (auto& type : info.types)
     {
         bool has = false;
         for (int a = 0; a < service_types.rowCount(); a++)
@@ -702,8 +704,8 @@ void Server::handle_services(Bakaneko::Services info)
     for (int a = 0; a < services.rowCount(); a++)
     {
         bool found = false;
-        for (auto& dinfo : info.service())
-            if (services.data(a).id() == dinfo.id())
+        for (auto& dinfo : info.services)
+            if (services.data(a).id == dinfo.id)
                 found = true;
         if (!found)
         {
@@ -712,32 +714,32 @@ void Server::handle_services(Bakaneko::Services info)
         }
     }
 
-    for (auto& din : info.service())
+    for (auto& din : info.services)
     {
         bool done = false;
         for (int a = 0; a < services.rowCount(); a++)
         {
             auto& cur = services.data(a);
-            if (cur.id() == din.id())
+            if (cur.id == din.id)
             {
                 done = true;
                 std::vector<int> delta;
                 std::vector<int> roles;
-                if (cur.state() != din.state())
+                if (cur.state != din.state)
                 {
-                    cur.set_state(din.state());
+                    cur.state = (din.state);
                     delta.emplace_back(0);
                     roles.emplace_back(ServiceModel::ROLE_state);
                 }
-                if (cur.enabled() != din.enabled())
+                if (cur.enabled != din.enabled)
                 {
-                    cur.set_enabled(din.enabled());
+                    cur.enabled = (din.enabled);
                     delta.emplace_back(1);
                     roles.emplace_back(ServiceModel::ROLE_enable);
                 }
-                if (cur.display_name() != din.display_name())
+                if (cur.display_name != din.display_name)
                 {
-                    cur.set_display_name(din.display_name());
+                    cur.display_name = (din.display_name);
                     delta.emplace_back(3);
                 }
                 services.flag(a, delta, roles);
@@ -766,8 +768,8 @@ void Server::control_service(LoginData* login, QString id, int action)
 
     std::string auth = "Basic " + Base64::encode(user + ":" + pass);
 
-    Bakaneko::Service_Control data;
-    data.set_id(id.toUtf8().data());
-    data.set_action((Bakaneko::Service_Control_Action)action);
+    Bakaneko::Service::Control data;
+    data.id = (id.toUtf8().data());
+    data.action = ((Bakaneko::Service::Control::Action)action);
     network_post("/service", data, auth, &Server::service_action_done, &Server::connecting_fail);
 }

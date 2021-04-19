@@ -3,6 +3,7 @@
 
 #include "info.hpp"
 #include <filesystem>
+#include <set>
 #include <ljh/system_info.hpp>
 #include <ljh/string_utils.hpp>
 
@@ -15,104 +16,103 @@
 #undef interface
 
 extern std::string read_file(std::filesystem::path file_path);
-extern std::tuple<int, std::string> exec(const std::string& cmd);
+extern std::tuple<int, std::string> exec(const std::string &cmd);
 
-ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
+ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields &fields)
 {
     decltype(Info::Drives(fields))::value_type drives;
 
 #if defined(LJH_TARGET_Windows)
     using namespace std::string_literals;
 
-    for (auto& drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_DiskDrive"))
+    for (auto &drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_DiskDrive"))
     {
         if (!drive_info.get<bool>(L"MediaLoaded") || drive_info.get<uint64_t>(L"Size") == 0)
             continue;
 
-        auto drive = drives.add_drive();
+        auto &drive = drives.drives.emplace_back();
 
-        drive->set_dev_node    (drive_info.get<std::string>(L"DeviceID"     ));
-        drive->set_interface   (drive_info.get<std::string>(L"InterfaceType"));
-        drive->set_size        (drive_info.get<uint64_t   >(L"Size"         ));
-        drive->set_model       (drive_info.get<std::string>(L"Model"        ));
-        drive->set_manufacturer(drive_info.get<std::string>(L"Manufacturer" ));
+        drive.dev_node = (drive_info.get<std::string>(L"DeviceID"));
+        drive.interface = (drive_info.get<std::string>(L"InterfaceType"));
+        drive.size = (drive_info.get<uint64_t>(L"Size"));
+        drive.model = (drive_info.get<std::string>(L"Model"));
+        drive.manufacturer = (drive_info.get<std::string>(L"Manufacturer"));
 
-        for (auto& partition_info : drive_info.associators(L"Win32_DiskDriveToDiskPartition"))
+        for (auto &partition_info : drive_info.associators(L"Win32_DiskDriveToDiskPartition"))
         {
-            auto partition = drive->add_partition();
+            auto &partition = drive.partitions.emplace_back();
 
-            partition->set_dev_node(partition_info.get<std::string>(L"DeviceID"));
+            partition.set_dev_node(partition_info.get<std::string>(L"DeviceID"));
 
             if (auto volumes = partition_info.associators(L"Win32_LogicalDiskToPartition"); volumes.size() > 0)
             {
                 auto volume_info = volumes[0];
 
-                partition->set_mountpoint(volume_info.get<std::string>(L"DeviceID"  ));
-                partition->set_filesystem(volume_info.get<std::string>(L"FileSystem"));
+                partition.mountpoint = (volume_info.get<std::string>(L"DeviceID"));
+                partition.filesystem = (volume_info.get<std::string>(L"FileSystem"));
 
-                auto size =        volume_info.get<uint64_t>(L"Size"     );
+                auto size = volume_info.get<uint64_t>(L"Size");
                 auto used = size - volume_info.get<uint64_t>(L"FreeSpace");
 
-                partition->set_size(size);
-                partition->set_used(used);
+                partition.size = (size);
+                partition.used = (used);
             }
             else
             {
                 auto size = partition_info.get<uint64_t>(L"Size");
-                partition->set_size(size);
-                partition->set_used(size);
+                partition.size = (size);
+                partition.used = (size);
             }
         }
     }
-    for (auto& drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_CDROMDrive"))
+    for (auto &drive_info : ljh::windows::wmi::service::root().get_class(L"Win32_CDROMDrive"))
     {
         if (!drive_info.get<bool>(L"MediaLoaded"))
             continue;
-        
-        auto drive = drives.add_drive();
 
-        drive->set_dev_node    (drive_info.get<std::string>(L"DeviceID"     ));
-        // drive->set_interface   (drive_info.get<std::string>(L"InterfaceType"));
-        drive->set_size        (drive_info.get<uint64_t   >(L"Size"         ));
-        drive->set_model       (drive_info.get<std::string>(L"Name"         ));
-        drive->set_manufacturer(drive_info.get<std::string>(L"Manufacturer" ));
+        auto &drive = drives.drives.emplace_back();
+
+        drive.dev_node = (drive_info.get<std::string>(L"DeviceID"));
+        // drive.interface    = (drive_info.get<std::string>(L"InterfaceType"));
+        drive.size = (drive_info.get<uint64_t>(L"Size"));
+        drive.model = (drive_info.get<std::string>(L"Name"));
+        drive.manufacturer = (drive_info.get<std::string>(L"Manufacturer"));
 
         if (auto volumes = ljh::windows::wmi::service::root().get_class(L"Win32_Volume", L"DriveLetter", drive_info.get(L"Drive")); volumes.size() > 0)
         {
             auto volume_info = volumes[0];
-            auto partition = drive->add_partition();
+            auto &partition = drive.partitions.emplace_back();
 
-            partition->set_dev_node  (drive_info.get<std::string>(L"VolumeName"));
-            partition->set_mountpoint(drive_info.get<std::string>(L"Drive"     ));
+            partition.dev_node = (drive_info.get<std::string>(L"VolumeName"));
+            partition.mountpoint = (drive_info.get<std::string>(L"Drive"));
 
-            partition->set_filesystem(volume_info.get<std::string>(L"FileSystem"));
+            partition.filesystem = (volume_info.get<std::string>(L"FileSystem"));
 
             uint64_t size = 0;
             if (volume_info.has(L"Size"))
                 size = volume_info.get<uint64_t>(L"Size");
             else
-                size = drive_info .get<uint64_t>(L"Size");
+                size = drive_info.get<uint64_t>(L"Size");
 
             auto used = size - volume_info.get<uint64_t>(L"FreeSpace");
 
-            partition->set_size(size);
-            partition->set_used(used);
+            partition.size = (size);
+            partition.used = (used);
         }
     }
-    std::sort(drives.mutable_drive()->begin(), drives.mutable_drive()->end(),
-        [](Bakaneko::Drive& a, Bakaneko::Drive& b) {
-            if (a.dev_node().substr(0, 4) == b.dev_node().substr(0, 4))
-                return a.dev_node() < b.dev_node();
-            return a.dev_node() > b.dev_node();
-        }
-    );
+    std::sort(drives.drives.begin(), drives.drives.end(),
+              [](Bakaneko::Drive &a, Bakaneko::Drive &b) {
+                  if (a.dev_node.substr(0, 4) == b.dev_node.substr(0, 4))
+                      return a.dev_node < b.dev_node;
+                  return a.dev_node > b.dev_node;
+              });
 #elif defined(LJH_TARGET_Linux)
     auto [exit_code, std_out] = exec("lsblk -brn --output NAME,MOUNTPOINT,MODEL,SIZE,FSTYPE,FSSIZE,FSUSED");
     if (exit_code != 0)
         std::tie(exit_code, std_out) = exec("lsblk -brn --output NAME,MOUNTPOINT,MODEL,SIZE,FSTYPE");
 
     std::set<std::string> drives_seen;
-    std::map<std::string, Bakaneko::Drive*> drives_;
+    std::map<std::string, Bakaneko::Drive *> drives_;
 
     auto drive_strings = ljh::split(std_out, '\n');
     for (auto drive_line : drive_strings)
@@ -130,7 +130,7 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
 
         if (!contains_base_drive)
         {
-            auto drive = drives.add_drive();
+            Bakaneko::Drive &drive = drives.drives.emplace_back();
 
             for (int a = 0; a < info[2].size(); a++)
             {
@@ -146,17 +146,17 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
                     info[2] = top + bot;
                 }
             }
-            
-            drive->set_dev_node(            info[0] );
-            drive->set_model   (            info[2] );
-            drive->set_size    (std::stoull(info[3]));
 
-            drives_.emplace(info[0], drive);
+            drive.dev_node = (info[0]);
+            drive.model = (info[2]);
+            drive.size = (std::stoull(info[3]));
+
+            drives_.emplace(info[0], &drive);
         }
 
         if (number != std::string::npos)
         {
-            auto parition = drives_.at(contains_base_drive ? info[0].substr(0, number) : info[0])->add_partition();
+            auto &parition = drives_.at(contains_base_drive ? info[0].substr(0, number) : info[0])->partitions.emplace_back();
 
             for (int a = 0; a < info[1].size(); a++)
             {
@@ -173,9 +173,9 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
                 }
             }
 
-            parition->set_dev_node  (info[0]);
-            parition->set_mountpoint(info[1]);
-            parition->set_filesystem(info[4]);
+            parition.dev_node = (info[0]);
+            parition.mountpoint = (info[1]);
+            parition.filesystem = (info[4]);
 
             if (info.size() <= 5)
             {
@@ -201,33 +201,31 @@ ljh::expected<Bakaneko::Drives, Errors> Info::Drives(const Fields& fields)
 
             if (!info[5].empty())
             {
-                parition->set_size(std::stoull(info[5]));
-                parition->set_used(std::stoull(info[6]));
+                parition.size = (std::stoull(info[5]));
+                parition.used = (std::stoull(info[6]));
             }
             else
             {
                 auto size = std::stoull(info[3]);
-                parition->set_size(size);
-                parition->set_used(size);
+                parition.size = (size);
+                parition.used = (size);
             }
         }
 
         drives_seen.emplace(info[0]);
     }
 
-    std::sort(drives.mutable_drive()->begin(), drives.mutable_drive()->end(), 
-        [](Bakaneko::Drive& a, Bakaneko::Drive& b) {
-            auto a2 = a.dev_node().substr(2), b2 = b.dev_node().substr(2);
-            if (a2 == b2)
-                return a.dev_node() > b.dev_node();
-            return a2 < b2;
-        }
-    );
-    for (auto& drive : *drives.mutable_drive())
+    std::sort(drives.drives.begin(), drives.drives.end(),
+              [](Bakaneko::Drive &a, Bakaneko::Drive &b) {
+                  auto a2 = a.dev_node.substr(2), b2 = b.dev_node.substr(2);
+                  if (a2 == b2)
+                      return a.dev_node > b.dev_node;
+                  return a2 < b2;
+              });
+    for (auto &drive : drives.drives)
     {
-        std::sort(drive.mutable_partition()->begin(), drive.mutable_partition()->end(),
-            [](Bakaneko::Partition& a, Bakaneko::Partition& b) { return a.dev_node() < b.dev_node(); }
-        );
+        std::sort(drive.partitions.begin(), drive.partitions.end(),
+                  [](Bakaneko::Partition &a, Bakaneko::Partition &b) { return a.dev_node < b.dev_node; });
     }
 #else
     return ljh::unexpected{Errors::NotImplemented};

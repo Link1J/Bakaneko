@@ -7,3 +7,7 @@ set(ljh_INSTALL OFF CACHE BOOL "")
 add_subdirectory(ljh)
 
 add_subdirectory(spdlog)
+
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(JSON_Install OFF CACHE INTERNAL "")
+add_subdirectory(nlohmann_json)
